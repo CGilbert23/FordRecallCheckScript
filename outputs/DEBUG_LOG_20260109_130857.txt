@@ -1,0 +1,21 @@
+[13:08:58] VIN 1FMSK8BH8LGC20515: URL after load: https://www.ford.com/support/recalls-details/
+[13:08:59] VIN 1FMSK8BH8LGC20515: VIN field value: 
+[13:08:59] VIN 1FMSK8BH8LGC20515: WARNING: VIN mismatch! Entered: , Expected: 1FMSK8BH8LGC20515
+[13:09:01] VIN 1FMSK8BH8LGC20515: VIN entered, about to submit
+[13:09:02] VIN 1FMSK8BH8LGC20515: RETURN pressed
+[13:09:07] VIN 1FMSK8BH8LGC20515: URL after submit: https://www.ford.com/support/recalls-details/
+[13:09:07] VIN 1FMSK8BH8LGC20515: Navigating back to force fresh load...
+[13:09:10] VIN 1FMSK8BH8LGC20515: URL after refresh: https://www.ford.com/support/recalls-details/
+[13:09:10] VIN 1FMSK8BH8LGC20515: Page title: Ford Recalls | Ford Owner Support
+[13:09:12] VIN 1FTER4FH4KLB17968: URL after load: https://www.ford.com/support/recalls-details/
+[13:09:13] VIN 1FTER4FH4KLB17968: VIN field value: 
+[13:09:13] VIN 1FTER4FH4KLB17968: WARNING: VIN mismatch! Entered: , Expected: 1FTER4FH4KLB17968
+[13:09:15] VIN 1FTER4FH4KLB17968: VIN entered, about to submit
+[13:09:15] VIN 1FTER4FH4KLB17968: RETURN pressed
+[13:09:21] VIN 1FTER4FH4KLB17968: URL after submit: https://www.ford.com/support/recalls-details/
+[13:09:21] VIN 1FTER4FH4KLB17968: Navigating back to force fresh load...
+[13:09:24] VIN 1FTER4FH4KLB17968: URL after refresh: https://www.ford.com/support/recalls-details/
+[13:09:25] VIN 1FTER4FH4KLB17968: Page title: Ford Recalls | Ford Owner Support
+[13:09:27] VIN 1FM5K8FW4MNA05491: URL after load: https://www.ford.com/support/recalls-details/
+[13:09:28] VIN 1FM5K8FW4MNA05491: VIN field value: 
+[13:09:28] VIN 1FM5K8FW4MNA05491: WARNING: VIN mismatch! Entered: , Expected: 1FM5K8FW4MNA05491

@@ -1,0 +1,5 @@
+[13:10:03] VIN 1FMSK8BH8LGC20515: URL after load: https://www.ford.com/support/recalls-details/
+[13:10:06] VIN 1FTER4FH4KLB17968: URL after load: https://www.ford.com/support/recalls-details/
+[13:10:09] VIN 1FM5K8FW4MNA05491: URL after load: https://www.ford.com/support/recalls-details/
+[13:10:12] VIN 1FMSK8DH9PGB73661: URL after load: https://www.ford.com/support/recalls-details/
+[13:10:15] VIN 1FMSK8JH3MGC18075: URL after load: https://www.ford.com/support/recalls-details/

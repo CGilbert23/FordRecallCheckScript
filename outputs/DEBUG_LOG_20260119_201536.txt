@@ -1,0 +1,102 @@
+[20:15:39] VIN 1FT8W3DT9MED52087: URL after load: https://www.ford.com/support/recalls-details/
+[20:15:44] VIN 1FT8W3DT9MED52087: Attempting to enter VIN: 1FT8W3DT9MED52087
+[20:15:44] VIN 1FT8W3DT9MED52087: Field value BEFORE clear: ''
+[20:15:44] VIN 1FT8W3DT9MED52087: Field value AFTER clear: ''
+[20:15:46] VIN 1FT8W3DT9MED52087: Field value AFTER typing: '1FT8W3DT9MED52087'
+[20:15:46] VIN 1FT8W3DT9MED52087: VIN entered, about to submit
+[20:15:46] VIN 1FT8W3DT9MED52087: RETURN pressed
+[20:15:52] VIN 1FT8W3DT9MED52087: URL after submit: https://www.ford.com/support/recalls-details/
+[20:15:52] VIN 1FT8W3DT9MED52087: No redirect, waiting for results...
+[20:15:53] VIN 1FT8W3DT9MED52087: Results detected on page
+[20:15:53] VIN 1FT8W3DT9MED52087: Page title: Ford Recalls | Ford Owner Support
+[20:16:03] VIN 1FTFW1E81MFD05099: URL after load: https://www.ford.com/support/recalls-details/
+[20:16:05] VIN 1FTFW1E81MFD05099: Attempting to enter VIN: 1FTFW1E81MFD05099
+[20:16:05] VIN 1FTFW1E81MFD05099: Field value BEFORE clear: '1FT8W3DT9MED52087'
+[20:16:06] VIN 1FTFW1E81MFD05099: Field value AFTER clear: ''
+[20:16:07] VIN 1FTFW1E81MFD05099: Field value AFTER typing: '1FTFW1E81MFD05099'
+[20:16:07] VIN 1FTFW1E81MFD05099: VIN entered, about to submit
+[20:16:07] VIN 1FTFW1E81MFD05099: RETURN pressed
+[20:16:13] VIN 1FTFW1E81MFD05099: URL after submit: https://www.ford.com/support/recalls-details
+[20:16:13] VIN 1FTFW1E81MFD05099: Redirect detected, navigating back...
+[20:16:19] VIN 1FTFW1E81MFD05099: URL after redirect: https://www.ford.com/support/recalls-details/
+[20:16:19] VIN 1FTFW1E81MFD05099: Page title: Ford Recalls | Ford Owner Support
+[20:16:31] VIN 1FTBR1C8XPKB62609: URL after load: https://www.ford.com/support/recalls-details/
+[20:16:48] VIN 1FTBR1C8XPKB62609: Click attempt 1 failed: Message: 
+
+[20:17:05] VIN 1FTBR1C8XPKB62609: Click attempt 2 failed: Message: 
+
+[20:17:25] VIN 3FMCR9C6XPRE29255: URL after load: https://www.ford.com/support/recalls-details/
+[20:17:41] VIN 3FMCR9C6XPRE29255: Click attempt 1 failed: Message: 
+
+[20:17:59] VIN 3FMCR9C6XPRE29255: Click attempt 2 failed: Message: 
+
+[20:18:18] VIN 1FMCU9GDXKUB44323: URL after load: https://www.ford.com/support/recalls-details/
+[20:18:34] VIN 1FMCU9GDXKUB44323: Click attempt 1 failed: Message: 
+
+[20:18:52] VIN 1FMCU9GDXKUB44323: Click attempt 2 failed: Message: 
+
+[20:19:10] VIN 1FDWE3FN9RDD23142: URL after load: https://www.ford.com/support/recalls-details/
+[20:19:28] VIN 1FDWE3FN9RDD23142: Click attempt 1 failed: Message: 
+
+[20:19:45] VIN 1FDWE3FN9RDD23142: Click attempt 2 failed: Message: 
+
+[20:20:05] VIN 3FMCR9B66PRE30078: URL after load: https://www.ford.com/support/recalls-details/
+[20:20:21] VIN 3FMCR9B66PRE30078: Click attempt 1 failed: Message: 
+
+[20:20:39] VIN 3FMCR9B66PRE30078: Click attempt 2 failed: Message: 
+
+[20:20:58] VIN 1FMSK8DH6PGB89459: URL after load: https://www.ford.com/support/recalls-details/
+[20:21:15] VIN 1FMSK8DH6PGB89459: Click attempt 1 failed: Message: 
+
+[20:21:32] VIN 1FMSK8DH6PGB89459: Click attempt 2 failed: Message: 
+
+[20:21:52] VIN 1ZVBP8EM3E5285749: URL after load: https://www.ford.com/support/recalls-details/
+[20:22:08] VIN 1ZVBP8EM3E5285749: Click attempt 1 failed: Message: 
+
+[20:22:25] VIN 1ZVBP8EM3E5285749: Click attempt 2 failed: Message: 
+
+[20:22:45] VIN 3FMCR9D95PRD96061: URL after load: https://www.ford.com/support/recalls-details/
+[20:23:01] VIN 3FMCR9D95PRD96061: Click attempt 1 failed: Message: 
+
+[20:23:19] VIN 3FMCR9D95PRD96061: Click attempt 2 failed: Message: 
+
+[20:23:38] VIN 1FMSK8DH9LGD12150: URL after load: https://www.ford.com/support/recalls-details/
+[20:23:55] VIN 1FMSK8DH9LGD12150: Click attempt 1 failed: Message: 
+
+[20:24:12] VIN 1FMSK8DH9LGD12150: Click attempt 2 failed: Message: 
+
+[20:24:32] VIN 1FMJU2A82PEA66860: URL after load: https://www.ford.com/support/recalls-details/
+[20:24:48] VIN 1FMJU2A82PEA66860: Click attempt 1 failed: Message: 
+
+[20:25:05] VIN 1FMJU2A82PEA66860: Click attempt 2 failed: Message: 
+
+[20:25:25] VIN 2FMPK4J90LBB05150: URL after load: https://www.ford.com/support/recalls-details/
+[20:25:41] VIN 2FMPK4J90LBB05150: Click attempt 1 failed: Message: 
+
+[20:25:58] VIN 2FMPK4J90LBB05150: Click attempt 2 failed: Message: 
+
+[20:26:18] VIN 1FMSK8DH7PGC07130: URL after load: https://www.ford.com/support/recalls-details/
+[20:26:34] VIN 1FMSK8DH7PGC07130: Click attempt 1 failed: Message: 
+
+[20:26:52] VIN 1FMSK8DH7PGC07130: Click attempt 2 failed: Message: 
+
+[20:27:10] VIN 1FMSK8DH3LGD12080: URL after load: https://www.ford.com/support/recalls-details/
+[20:27:27] VIN 1FMSK8DH3LGD12080: Click attempt 1 failed: Message: 
+
+[20:27:44] VIN 1FMSK8DH3LGD12080: Click attempt 2 failed: Message: 
+
+[20:28:04] VIN 1FT7W2BN3MED75536: URL after load: https://www.ford.com/support/recalls-details/
+[20:28:20] VIN 1FT7W2BN3MED75536: Click attempt 1 failed: Message: 
+
+[20:28:38] VIN 1FT7W2BN3MED75536: Click attempt 2 failed: Message: 
+
+[20:28:57] VIN 1FMCU9GN6PUB36820: URL after load: https://www.ford.com/support/recalls-details/
+[20:29:13] VIN 1FMCU9GN6PUB36820: Click attempt 1 failed: Message: 
+
+[20:29:31] VIN 1FMCU9GN6PUB36820: Click attempt 2 failed: Message: 
+
+[20:29:50] VIN 2FMPK4K97KBB12335: URL after load: https://www.ford.com/support/recalls-details/
+[20:30:06] VIN 2FMPK4K97KBB12335: Click attempt 1 failed: Message: 
+
+[20:30:23] VIN 2FMPK4K97KBB12335: Click attempt 2 failed: Message: 
+

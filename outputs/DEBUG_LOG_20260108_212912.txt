@@ -1,0 +1,29 @@
+[21:29:14] VIN 3FMCR9B61NRD06653: URL after load: https://www.ford.com/support/recalls-details/
+[21:29:15] VIN 3FMCR9B61NRD06653: VIN entered, about to submit
+[21:29:16] VIN 3FMCR9B61NRD06653: RETURN pressed
+[21:29:22] VIN 3FMCR9B61NRD06653: URL after submit: https://www.ford.com/support/recalls-details/
+[21:29:22] VIN 3FMCR9B61NRD06653: Page title: Ford Recalls | Ford Owner Support
+[21:29:31] VIN 1FMUK8DH7SGB01763: URL after load: https://www.ford.com/support/recalls-details/
+[21:29:32] VIN 1FMUK8DH7SGB01763: VIN entered, about to submit
+[21:29:33] VIN 1FMUK8DH7SGB01763: RETURN pressed
+[21:29:38] VIN 1FMUK8DH7SGB01763: URL after submit: https://www.ford.com/support/recalls-details
+[21:29:38] VIN 1FMUK8DH7SGB01763: REDIRECT DETECTED! Navigating back (results should be cached)...
+[21:29:43] VIN 1FMUK8DH7SGB01763: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[21:29:44] VIN 1FMUK8DH7SGB01763: Page title: Ford Recalls | Ford Owner Support
+[21:29:48] VIN 1FTER4FH8MLD11843: URL after load: https://www.ford.com/support/recalls-details/
+[21:29:49] VIN 1FTER4FH8MLD11843: VIN entered, about to submit
+[21:29:50] VIN 1FTER4FH8MLD11843: RETURN pressed
+[21:29:55] VIN 1FTER4FH8MLD11843: URL after submit: https://www.ford.com/support/recalls-details
+[21:29:55] VIN 1FTER4FH8MLD11843: REDIRECT DETECTED! Navigating back (results should be cached)...
+[21:29:59] VIN 1FTER4FH8MLD11843: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[21:29:59] VIN 1FTER4FH8MLD11843: Page title: Ford Recalls | Ford Owner Support
+[21:30:01] VIN 1FADP3K20JL219480: URL after load: https://www.ford.com/support/recalls-details/
+[21:30:03] VIN 1FADP3K20JL219480: VIN entered, about to submit
+[21:30:03] VIN 1FADP3K20JL219480: RETURN pressed
+[21:30:08] VIN 1FADP3K20JL219480: URL after submit: https://www.ford.com/support/recalls-details
+[21:30:08] VIN 1FADP3K20JL219480: REDIRECT DETECTED! Navigating back (results should be cached)...
+[21:30:12] VIN 1FADP3K20JL219480: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[21:30:12] VIN 1FADP3K20JL219480: Page title: Ford Recalls | Ford Owner Support
+[21:30:14] VIN 1FT7W2B66LED05875: URL after load: https://www.ford.com/support/recalls-details/
+[21:30:15] VIN 1FT7W2B66LED05875: VIN entered, about to submit
+[21:30:16] VIN 1FT7W2B66LED05875: RETURN pressed

@@ -1,0 +1,176 @@
+[16:52:17] VIN 1FTEX1EB0LFB37233: URL after load: https://www.ford.com/support/recalls-details/
+[16:52:19] VIN 1FTEX1EB0LFB37233: Attempting to enter VIN: 1FTEX1EB0LFB37233
+[16:52:19] VIN 1FTEX1EB0LFB37233: Field value BEFORE clear: ''
+[16:52:20] VIN 1FTEX1EB0LFB37233: Field value AFTER clear: ''
+[16:52:21] VIN 1FTEX1EB0LFB37233: Field value AFTER typing: '1FTEX1EB0LFB37233'
+[16:52:21] VIN 1FTEX1EB0LFB37233: VIN entered, about to submit
+[16:52:21] VIN 1FTEX1EB0LFB37233: RETURN pressed
+[16:52:27] VIN 1FTEX1EB0LFB37233: URL after submit: https://www.ford.com/support/recalls-details/
+[16:52:27] VIN 1FTEX1EB0LFB37233: No redirect, waiting for results...
+[16:52:27] VIN 1FTEX1EB0LFB37233: Results detected on page
+[16:52:27] VIN 1FTEX1EB0LFB37233: Page title: Ford Recalls | Ford Owner Support
+[16:52:31] VIN 1FTEX1EB1KFB65346: URL after load: https://www.ford.com/support/recalls-details/
+[16:52:32] VIN 1FTEX1EB1KFB65346: Attempting to enter VIN: 1FTEX1EB1KFB65346
+[16:52:32] VIN 1FTEX1EB1KFB65346: Field value BEFORE clear: '1FTEX1EB0LFB37233'
+[16:52:33] VIN 1FTEX1EB1KFB65346: Field value AFTER clear: ''
+[16:52:33] VIN 1FTEX1EB1KFB65346: Field value AFTER typing: '1FTEX1EB1KFB65346'
+[16:52:33] VIN 1FTEX1EB1KFB65346: VIN entered, about to submit
+[16:52:34] VIN 1FTEX1EB1KFB65346: RETURN pressed
+[16:52:39] VIN 1FTEX1EB1KFB65346: URL after submit: https://www.ford.com/support/recalls-details
+[16:52:39] VIN 1FTEX1EB1KFB65346: Redirect detected, navigating back...
+[16:52:44] VIN 1FTEX1EB1KFB65346: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:52:44] VIN 1FTEX1EB1KFB65346: Page title: Ford Recalls | Ford Owner Support
+[16:52:49] VIN 1FTEX1EB1LFB37225: URL after load: https://www.ford.com/support/recalls-details/
+[16:52:51] VIN 1FTEX1EB1LFB37225: Attempting to enter VIN: 1FTEX1EB1LFB37225
+[16:52:51] VIN 1FTEX1EB1LFB37225: Field value BEFORE clear: '1FTEX1EB1KFB65346'
+[16:52:51] VIN 1FTEX1EB1LFB37225: Field value AFTER clear: ''
+[16:52:52] VIN 1FTEX1EB1LFB37225: Field value AFTER typing: '1FTEX1EB1LFB37225'
+[16:52:52] VIN 1FTEX1EB1LFB37225: VIN entered, about to submit
+[16:52:53] VIN 1FTEX1EB1LFB37225: RETURN pressed
+[16:52:58] VIN 1FTEX1EB1LFB37225: URL after submit: https://www.ford.com/support/recalls-details
+[16:52:58] VIN 1FTEX1EB1LFB37225: Redirect detected, navigating back...
+[16:53:03] VIN 1FTEX1EB1LFB37225: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:53:03] VIN 1FTEX1EB1LFB37225: Page title: Ford Recalls | Ford Owner Support
+[16:53:08] VIN 1FTEX1EB2LFB37234: URL after load: https://www.ford.com/support/recalls-details/
+[16:53:10] VIN 1FTEX1EB2LFB37234: Attempting to enter VIN: 1FTEX1EB2LFB37234
+[16:53:10] VIN 1FTEX1EB2LFB37234: Field value BEFORE clear: '1FTEX1EB1LFB37225'
+[16:53:10] VIN 1FTEX1EB2LFB37234: Field value AFTER clear: ''
+[16:53:11] VIN 1FTEX1EB2LFB37234: Field value AFTER typing: '1FTEX1EB2LFB37234'
+[16:53:11] VIN 1FTEX1EB2LFB37234: VIN entered, about to submit
+[16:53:11] VIN 1FTEX1EB2LFB37234: RETURN pressed
+[16:53:17] VIN 1FTEX1EB2LFB37234: URL after submit: https://www.ford.com/support/recalls-details/
+[16:53:17] VIN 1FTEX1EB2LFB37234: No redirect, waiting for results...
+[16:53:17] VIN 1FTEX1EB2LFB37234: Results detected on page
+[16:53:17] VIN 1FTEX1EB2LFB37234: Page title: Ford Recalls | Ford Owner Support
+[16:53:22] VIN 1FTEX1EB3LFB37226: URL after load: https://www.ford.com/support/recalls-details/
+[16:53:24] VIN 1FTEX1EB3LFB37226: Attempting to enter VIN: 1FTEX1EB3LFB37226
+[16:53:24] VIN 1FTEX1EB3LFB37226: Field value BEFORE clear: '1FTEX1EB2LFB37234'
+[16:53:24] VIN 1FTEX1EB3LFB37226: Field value AFTER clear: ''
+[16:53:25] VIN 1FTEX1EB3LFB37226: Field value AFTER typing: '1FTEX1EB3LFB37226'
+[16:53:25] VIN 1FTEX1EB3LFB37226: VIN entered, about to submit
+[16:53:26] VIN 1FTEX1EB3LFB37226: RETURN pressed
+[16:53:31] VIN 1FTEX1EB3LFB37226: URL after submit: https://www.ford.com/support/recalls-details/
+[16:53:31] VIN 1FTEX1EB3LFB37226: No redirect, waiting for results...
+[16:53:31] VIN 1FTEX1EB3LFB37226: Results detected on page
+[16:53:31] VIN 1FTEX1EB3LFB37226: Page title: Ford Recalls | Ford Owner Support
+[16:53:34] VIN 1FTEX1EB5KFB65351: URL after load: https://www.ford.com/support/recalls-details/
+[16:53:35] VIN 1FTEX1EB5KFB65351: Attempting to enter VIN: 1FTEX1EB5KFB65351
+[16:53:35] VIN 1FTEX1EB5KFB65351: Field value BEFORE clear: '1FTEX1EB3LFB37226'
+[16:53:36] VIN 1FTEX1EB5KFB65351: Field value AFTER clear: ''
+[16:53:36] VIN 1FTEX1EB5KFB65351: Field value AFTER typing: '1FTEX1EB5KFB65351'
+[16:53:36] VIN 1FTEX1EB5KFB65351: VIN entered, about to submit
+[16:53:37] VIN 1FTEX1EB5KFB65351: RETURN pressed
+[16:53:42] VIN 1FTEX1EB5KFB65351: URL after submit: https://www.ford.com/support/recalls-details
+[16:53:42] VIN 1FTEX1EB5KFB65351: Redirect detected, navigating back...
+[16:53:47] VIN 1FTEX1EB5KFB65351: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:53:47] VIN 1FTEX1EB5KFB65351: Page title: Ford Recalls | Ford Owner Support
+[16:53:48] VIN 1FTEX1EB5LFB37227: URL after load: https://www.ford.com/support/recalls-details/
+[16:53:50] VIN 1FTEX1EB5LFB37227: Attempting to enter VIN: 1FTEX1EB5LFB37227
+[16:53:50] VIN 1FTEX1EB5LFB37227: Field value BEFORE clear: '1FTEX1EB5KFB65351'
+[16:53:51] VIN 1FTEX1EB5LFB37227: Field value AFTER clear: ''
+[16:53:52] VIN 1FTEX1EB5LFB37227: Field value AFTER typing: '1FTEX1EB5LFB37227'
+[16:53:52] VIN 1FTEX1EB5LFB37227: VIN entered, about to submit
+[16:53:52] VIN 1FTEX1EB5LFB37227: RETURN pressed
+[16:53:57] VIN 1FTEX1EB5LFB37227: URL after submit: https://www.ford.com/support/recalls-details
+[16:53:57] VIN 1FTEX1EB5LFB37227: Redirect detected, navigating back...
+[16:54:02] VIN 1FTEX1EB5LFB37227: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:54:02] VIN 1FTEX1EB5LFB37227: Page title: Ford Recalls | Ford Owner Support
+[16:54:07] VIN 1FTEX1EB5LFB37230: URL after load: https://www.ford.com/support/recalls-details/
+[16:54:09] VIN 1FTEX1EB5LFB37230: Attempting to enter VIN: 1FTEX1EB5LFB37230
+[16:54:09] VIN 1FTEX1EB5LFB37230: Field value BEFORE clear: '1FTEX1EB5LFB37227'
+[16:54:09] VIN 1FTEX1EB5LFB37230: Field value AFTER clear: ''
+[16:54:10] VIN 1FTEX1EB5LFB37230: Field value AFTER typing: '1FTEX1EB5LFB37230'
+[16:54:10] VIN 1FTEX1EB5LFB37230: VIN entered, about to submit
+[16:54:11] VIN 1FTEX1EB5LFB37230: RETURN pressed
+[16:54:16] VIN 1FTEX1EB5LFB37230: URL after submit: https://www.ford.com/support/recalls-details
+[16:54:16] VIN 1FTEX1EB5LFB37230: Redirect detected, navigating back...
+[16:54:21] VIN 1FTEX1EB5LFB37230: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:54:21] VIN 1FTEX1EB5LFB37230: Page title: Ford Recalls | Ford Owner Support
+[16:54:26] VIN 1FTEX1EB7KFB65349: URL after load: https://www.ford.com/support/recalls-details/
+[16:54:28] VIN 1FTEX1EB7KFB65349: Attempting to enter VIN: 1FTEX1EB7KFB65349
+[16:54:28] VIN 1FTEX1EB7KFB65349: Field value BEFORE clear: '1FTEX1EB5LFB37230'
+[16:54:28] VIN 1FTEX1EB7KFB65349: Field value AFTER clear: ''
+[16:54:29] VIN 1FTEX1EB7KFB65349: Field value AFTER typing: '1FTEX1EB7KFB65349'
+[16:54:29] VIN 1FTEX1EB7KFB65349: VIN entered, about to submit
+[16:54:29] VIN 1FTEX1EB7KFB65349: RETURN pressed
+[16:54:35] VIN 1FTEX1EB7KFB65349: URL after submit: https://www.ford.com/support/recalls-details
+[16:54:35] VIN 1FTEX1EB7KFB65349: Redirect detected, navigating back...
+[16:54:40] VIN 1FTEX1EB7KFB65349: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:54:40] VIN 1FTEX1EB7KFB65349: Page title: Ford Recalls | Ford Owner Support
+[16:54:44] VIN 1FTEX1EB7KFB65352: URL after load: https://www.ford.com/support/recalls-details/
+[16:54:46] VIN 1FTEX1EB7KFB65352: Attempting to enter VIN: 1FTEX1EB7KFB65352
+[16:54:46] VIN 1FTEX1EB7KFB65352: Field value BEFORE clear: '1FTEX1EB7KFB65349'
+[16:54:46] VIN 1FTEX1EB7KFB65352: Field value AFTER clear: ''
+[16:54:47] VIN 1FTEX1EB7KFB65352: Field value AFTER typing: '1FTEX1EB7KFB65352'
+[16:54:47] VIN 1FTEX1EB7KFB65352: VIN entered, about to submit
+[16:54:48] VIN 1FTEX1EB7KFB65352: RETURN pressed
+[16:54:53] VIN 1FTEX1EB7KFB65352: URL after submit: https://www.ford.com/support/recalls-details
+[16:54:53] VIN 1FTEX1EB7KFB65352: Redirect detected, navigating back...
+[16:54:57] VIN 1FTEX1EB7KFB65352: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:54:57] VIN 1FTEX1EB7KFB65352: Page title: Ford Recalls | Ford Owner Support
+[16:54:59] VIN 1FTEX1EB7LFB37228: URL after load: https://www.ford.com/support/recalls-details/
+[16:55:01] VIN 1FTEX1EB7LFB37228: Attempting to enter VIN: 1FTEX1EB7LFB37228
+[16:55:01] VIN 1FTEX1EB7LFB37228: Field value BEFORE clear: '1FTEX1EB7KFB65352'
+[16:55:01] VIN 1FTEX1EB7LFB37228: Field value AFTER clear: ''
+[16:55:02] VIN 1FTEX1EB7LFB37228: Field value AFTER typing: '1FTEX1EB7LFB37228'
+[16:55:02] VIN 1FTEX1EB7LFB37228: VIN entered, about to submit
+[16:55:03] VIN 1FTEX1EB7LFB37228: RETURN pressed
+[16:55:08] VIN 1FTEX1EB7LFB37228: URL after submit: https://www.ford.com/support/recalls-details
+[16:55:08] VIN 1FTEX1EB7LFB37228: Redirect detected, navigating back...
+[16:55:13] VIN 1FTEX1EB7LFB37228: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:55:13] VIN 1FTEX1EB7LFB37228: Page title: Ford Recalls | Ford Owner Support
+[16:55:17] VIN 1FTEX1EB7LFB37231: URL after load: https://www.ford.com/support/recalls-details/
+[16:55:19] VIN 1FTEX1EB7LFB37231: Attempting to enter VIN: 1FTEX1EB7LFB37231
+[16:55:19] VIN 1FTEX1EB7LFB37231: Field value BEFORE clear: '1FTEX1EB7LFB37228'
+[16:55:20] VIN 1FTEX1EB7LFB37231: Field value AFTER clear: ''
+[16:55:20] VIN 1FTEX1EB7LFB37231: Field value AFTER typing: '1FTEX1EB7LFB37231'
+[16:55:20] VIN 1FTEX1EB7LFB37231: VIN entered, about to submit
+[16:55:21] VIN 1FTEX1EB7LFB37231: RETURN pressed
+[16:55:26] VIN 1FTEX1EB7LFB37231: URL after submit: https://www.ford.com/support/recalls-details
+[16:55:26] VIN 1FTEX1EB7LFB37231: Redirect detected, navigating back...
+[16:55:30] VIN 1FTEX1EB7LFB37231: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:55:31] VIN 1FTEX1EB7LFB37231: Page title: Ford Recalls | Ford Owner Support
+[16:55:35] VIN 1FTEX1EB8LFB37223: URL after load: https://www.ford.com/support/recalls-details/
+[16:55:37] VIN 1FTEX1EB8LFB37223: Attempting to enter VIN: 1FTEX1EB8LFB37223
+[16:55:37] VIN 1FTEX1EB8LFB37223: Field value BEFORE clear: '1FTEX1EB7LFB37231'
+[16:55:37] VIN 1FTEX1EB8LFB37223: Field value AFTER clear: ''
+[16:55:38] VIN 1FTEX1EB8LFB37223: Field value AFTER typing: '1FTEX1EB8LFB37223'
+[16:55:38] VIN 1FTEX1EB8LFB37223: VIN entered, about to submit
+[16:55:38] VIN 1FTEX1EB8LFB37223: RETURN pressed
+[16:55:44] VIN 1FTEX1EB8LFB37223: URL after submit: https://www.ford.com/support/recalls-details
+[16:55:44] VIN 1FTEX1EB8LFB37223: Redirect detected, navigating back...
+[16:55:48] VIN 1FTEX1EB8LFB37223: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:55:48] VIN 1FTEX1EB8LFB37223: Page title: Ford Recalls | Ford Owner Support
+[16:55:50] VIN 1FTEX1EB9KFB65353: URL after load: https://www.ford.com/support/recalls-details/
+[16:55:52] VIN 1FTEX1EB9KFB65353: Attempting to enter VIN: 1FTEX1EB9KFB65353
+[16:55:52] VIN 1FTEX1EB9KFB65353: Field value BEFORE clear: '1FTEX1EB8LFB37223'
+[16:55:52] VIN 1FTEX1EB9KFB65353: Field value AFTER clear: ''
+[16:55:53] VIN 1FTEX1EB9KFB65353: Field value AFTER typing: '1FTEX1EB9KFB65353'
+[16:55:53] VIN 1FTEX1EB9KFB65353: VIN entered, about to submit
+[16:55:53] VIN 1FTEX1EB9KFB65353: RETURN pressed
+[16:55:58] VIN 1FTEX1EB9KFB65353: URL after submit: https://www.ford.com/support/recalls-details
+[16:55:58] VIN 1FTEX1EB9KFB65353: Redirect detected, navigating back...
+[16:56:03] VIN 1FTEX1EB9KFB65353: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:56:04] VIN 1FTEX1EB9KFB65353: Page title: Ford Recalls | Ford Owner Support
+[16:56:08] VIN 1FTEX1EBXKFB65345: URL after load: https://www.ford.com/support/recalls-details/
+[16:56:10] VIN 1FTEX1EBXKFB65345: Attempting to enter VIN: 1FTEX1EBXKFB65345
+[16:56:10] VIN 1FTEX1EBXKFB65345: Field value BEFORE clear: '1FTEX1EB9KFB65353'
+[16:56:10] VIN 1FTEX1EBXKFB65345: Field value AFTER clear: ''
+[16:56:11] VIN 1FTEX1EBXKFB65345: Field value AFTER typing: '1FTEX1EBXKFB65345'
+[16:56:11] VIN 1FTEX1EBXKFB65345: VIN entered, about to submit
+[16:56:12] VIN 1FTEX1EBXKFB65345: RETURN pressed
+[16:56:17] VIN 1FTEX1EBXKFB65345: URL after submit: https://www.ford.com/support/recalls-details
+[16:56:17] VIN 1FTEX1EBXKFB65345: Redirect detected, navigating back...
+[16:56:22] VIN 1FTEX1EBXKFB65345: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:56:22] VIN 1FTEX1EBXKFB65345: Page title: Ford Recalls | Ford Owner Support
+[16:56:26] VIN 1FTEX1EBXLFB37224: URL after load: https://www.ford.com/support/recalls-details/
+[16:56:28] VIN 1FTEX1EBXLFB37224: Attempting to enter VIN: 1FTEX1EBXLFB37224
+[16:56:28] VIN 1FTEX1EBXLFB37224: Field value BEFORE clear: '1FTEX1EBXKFB65345'
+[16:56:28] VIN 1FTEX1EBXLFB37224: Field value AFTER clear: ''
+[16:56:29] VIN 1FTEX1EBXLFB37224: Field value AFTER typing: '1FTEX1EBXLFB37224'
+[16:56:29] VIN 1FTEX1EBXLFB37224: VIN entered, about to submit
+[16:56:30] VIN 1FTEX1EBXLFB37224: RETURN pressed
+[16:56:35] VIN 1FTEX1EBXLFB37224: URL after submit: https://www.ford.com/support/recalls-details
+[16:56:35] VIN 1FTEX1EBXLFB37224: Redirect detected, navigating back...
+[16:56:40] VIN 1FTEX1EBXLFB37224: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:56:40] VIN 1FTEX1EBXLFB37224: Page title: Ford Recalls | Ford Owner Support

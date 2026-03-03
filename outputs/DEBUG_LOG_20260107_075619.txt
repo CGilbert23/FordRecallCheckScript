@@ -1,0 +1,26 @@
+[07:56:21] VIN 1FMUK8HH5TGA12916: URL after load: https://www.ford.com/support/recalls-details/
+[07:56:23] VIN 1FMUK8HH5TGA12916: VIN entered, about to submit
+[07:56:24] VIN 1FMUK8HH5TGA12916: RETURN pressed
+[07:56:32] VIN 1FMUK8HH5TGA12916: URL after submit: https://www.ford.com/support/
+[07:56:32] VIN 1FMUK8HH5TGA12916: REDIRECT DETECTED! Re-navigating...
+[07:56:33] VIN 1FMUK8HH5TGA12916: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[07:56:41] VIN 1FMUK8HH5TGA12916: URL after retry submit: https://www.ford.com/support/recalls-details/
+[07:56:42] VIN 1FMUK8HH5TGA12916: Page title: Ford Recalls | Ford Owner Support
+[07:56:44] VIN 1FMCU9MNXTUA24679: URL after load: https://www.ford.com/support/recalls-details/
+[07:56:45] VIN 1FMCU9MNXTUA24679: VIN entered, about to submit
+[07:56:46] VIN 1FMCU9MNXTUA24679: RETURN pressed
+[07:56:52] VIN 1FMCU9MNXTUA24679: URL after submit: https://www.ford.com/support/
+[07:56:52] VIN 1FMCU9MNXTUA24679: REDIRECT DETECTED! Re-navigating...
+[07:56:53] VIN 1FMCU9MNXTUA24679: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[07:57:02] VIN 1FMCU9MNXTUA24679: URL after retry submit: https://www.ford.com/support/recalls-details/
+[07:57:02] VIN 1FMCU9MNXTUA24679: Page title: Ford Recalls | Ford Owner Support
+[07:57:04] VIN 1FM5K8AT6KGB46223: URL after load: https://www.ford.com/support/recalls-details/
+[07:57:06] VIN 1FM5K8AT6KGB46223: VIN entered, about to submit
+[07:57:06] VIN 1FM5K8AT6KGB46223: RETURN pressed
+[07:57:12] VIN 1FM5K8AT6KGB46223: URL after submit: https://www.ford.com/support/
+[07:57:12] VIN 1FM5K8AT6KGB46223: REDIRECT DETECTED! Re-navigating...
+[07:57:14] VIN 1FM5K8AT6KGB46223: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[07:57:23] VIN 1FM5K8AT6KGB46223: URL after retry submit: https://www.ford.com/support/recalls-details/
+[07:57:23] VIN 1FM5K8AT6KGB46223: Page title: Ford Recalls | Ford Owner Support
+[07:57:26] VIN 1FTFW3LD2SFC01228: URL after load: https://www.ford.com/support/recalls-details/
+[07:57:28] VIN 1FTFW3LD2SFC01228: VIN entered, about to submit

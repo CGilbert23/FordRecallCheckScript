@@ -1,0 +1,501 @@
+[08:52:07] VIN 1FMSK8BH8LGC20515: URL after load: https://www.ford.com/support/recalls-details/
+[08:52:09] VIN 1FMSK8BH8LGC20515: VIN entered, about to submit
+[08:52:10] VIN 1FMSK8BH8LGC20515: RETURN pressed
+[08:52:16] VIN 1FMSK8BH8LGC20515: URL after submit: https://www.ford.com/support/recalls-details/
+[08:52:16] VIN 1FMSK8BH8LGC20515: Page title: Ford Recalls | Ford Owner Support
+[08:52:19] VIN 1FTER4FH4KLB17968: URL after load: https://www.ford.com/support/recalls-details/
+[08:52:22] VIN 1FTER4FH4KLB17968: VIN entered, about to submit
+[08:52:23] VIN 1FTER4FH4KLB17968: RETURN pressed
+[08:52:28] VIN 1FTER4FH4KLB17968: URL after submit: https://www.ford.com/support/recalls-details
+[08:52:28] VIN 1FTER4FH4KLB17968: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:52:31] VIN 1FTER4FH4KLB17968: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:52:32] VIN 1FTER4FH4KLB17968: Page title: Ford Recalls | Ford Owner Support
+[08:52:34] VIN 1FM5K8FW4MNA05491: URL after load: https://www.ford.com/support/recalls-details/
+[08:52:36] VIN 1FM5K8FW4MNA05491: VIN entered, about to submit
+[08:52:36] VIN 1FM5K8FW4MNA05491: RETURN pressed
+[08:52:42] VIN 1FM5K8FW4MNA05491: URL after submit: https://www.ford.com/support/recalls-details
+[08:52:42] VIN 1FM5K8FW4MNA05491: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:52:45] VIN 1FM5K8FW4MNA05491: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:52:45] VIN 1FM5K8FW4MNA05491: Page title: Ford Recalls | Ford Owner Support
+[08:52:50] VIN 1FMSK8DH9PGB73661: URL after load: https://www.ford.com/support/recalls-details/
+[08:52:52] VIN 1FMSK8DH9PGB73661: VIN entered, about to submit
+[08:52:53] VIN 1FMSK8DH9PGB73661: RETURN pressed
+[08:52:58] VIN 1FMSK8DH9PGB73661: URL after submit: https://www.ford.com/support/recalls-details
+[08:52:58] VIN 1FMSK8DH9PGB73661: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:53:01] VIN 1FMSK8DH9PGB73661: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:53:02] VIN 1FMSK8DH9PGB73661: Page title: Ford Recalls | Ford Owner Support
+[08:53:04] VIN 1FMSK8JH3MGC18075: URL after load: https://www.ford.com/support/recalls-details/
+[08:53:06] VIN 1FMSK8JH3MGC18075: VIN entered, about to submit
+[08:53:07] VIN 1FMSK8JH3MGC18075: RETURN pressed
+[08:53:12] VIN 1FMSK8JH3MGC18075: URL after submit: https://www.ford.com/support/recalls-details
+[08:53:12] VIN 1FMSK8JH3MGC18075: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:53:16] VIN 1FMSK8JH3MGC18075: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:53:16] VIN 1FMSK8JH3MGC18075: Page title: Ford Recalls | Ford Owner Support
+[08:53:18] VIN 1FTFW1EDXPFB33107: URL after load: https://www.ford.com/support/recalls-details/
+[08:53:20] VIN 1FTFW1EDXPFB33107: VIN entered, about to submit
+[08:53:21] VIN 1FTFW1EDXPFB33107: RETURN pressed
+[08:53:26] VIN 1FTFW1EDXPFB33107: URL after submit: https://www.ford.com/support/recalls-details
+[08:53:26] VIN 1FTFW1EDXPFB33107: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:53:29] VIN 1FTFW1EDXPFB33107: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:53:30] VIN 1FTFW1EDXPFB33107: Page title: Ford Recalls | Ford Owner Support
+[08:53:34] VIN 1FAHP2E86JG102930: URL after load: https://www.ford.com/support/recalls-details/
+[08:53:35] VIN 1FAHP2E86JG102930: VIN entered, about to submit
+[08:53:36] VIN 1FAHP2E86JG102930: RETURN pressed
+[08:53:41] VIN 1FAHP2E86JG102930: URL after submit: https://www.ford.com/support/recalls-details
+[08:53:41] VIN 1FAHP2E86JG102930: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:53:45] VIN 1FAHP2E86JG102930: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:53:45] VIN 1FAHP2E86JG102930: Page title: Ford Recalls | Ford Owner Support
+[08:53:52] VIN 1FMSK8DH8LGB45778: URL after load: https://www.ford.com/support/recalls-details/
+[08:53:53] VIN 1FMSK8DH8LGB45778: VIN entered, about to submit
+[08:53:54] VIN 1FMSK8DH8LGB45778: RETURN pressed
+[08:53:59] VIN 1FMSK8DH8LGB45778: URL after submit: https://www.ford.com/support/recalls-details
+[08:53:59] VIN 1FMSK8DH8LGB45778: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:54:03] VIN 1FMSK8DH8LGB45778: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:54:03] VIN 1FMSK8DH8LGB45778: Page title: Ford Recalls | Ford Owner Support
+[08:54:07] VIN 1ZVBP8CF0B5145738: URL after load: https://www.ford.com/support/recalls-details/
+[08:54:09] VIN 1ZVBP8CF0B5145738: VIN entered, about to submit
+[08:54:10] VIN 1ZVBP8CF0B5145738: RETURN pressed
+[08:54:15] VIN 1ZVBP8CF0B5145738: URL after submit: https://www.ford.com/support/recalls-details
+[08:54:15] VIN 1ZVBP8CF0B5145738: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:54:18] VIN 1ZVBP8CF0B5145738: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:54:19] VIN 1ZVBP8CF0B5145738: Page title: Ford Recalls | Ford Owner Support
+[08:54:21] VIN 1FTEW1E41LFA90525: URL after load: https://www.ford.com/support/recalls-details/
+[08:54:22] VIN 1FTEW1E41LFA90525: VIN entered, about to submit
+[08:54:23] VIN 1FTEW1E41LFA90525: RETURN pressed
+[08:54:29] VIN 1FTEW1E41LFA90525: URL after submit: https://www.ford.com/support/recalls-details
+[08:54:29] VIN 1FTEW1E41LFA90525: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:54:32] VIN 1FTEW1E41LFA90525: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:54:32] VIN 1FTEW1E41LFA90525: Page title: Ford Recalls | Ford Owner Support
+[08:54:34] VIN 1FTEW1EP4JFB42740: URL after load: https://www.ford.com/support/recalls-details/
+[08:54:36] VIN 1FTEW1EP4JFB42740: VIN entered, about to submit
+[08:54:36] VIN 1FTEW1EP4JFB42740: RETURN pressed
+[08:54:42] VIN 1FTEW1EP4JFB42740: URL after submit: https://www.ford.com/support/recalls-details
+[08:54:42] VIN 1FTEW1EP4JFB42740: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:54:45] VIN 1FTEW1EP4JFB42740: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:54:46] VIN 1FTEW1EP4JFB42740: Page title: Ford Recalls | Ford Owner Support
+[08:54:50] VIN 2FMPK4J91PBA58507: URL after load: https://www.ford.com/support/recalls-details/
+[08:54:51] VIN 2FMPK4J91PBA58507: VIN entered, about to submit
+[08:54:52] VIN 2FMPK4J91PBA58507: RETURN pressed
+[08:54:57] VIN 2FMPK4J91PBA58507: URL after submit: https://www.ford.com/support/recalls-details
+[08:54:57] VIN 2FMPK4J91PBA58507: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:55:01] VIN 2FMPK4J91PBA58507: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:55:01] VIN 2FMPK4J91PBA58507: Page title: Ford Recalls | Ford Owner Support
+[08:55:03] VIN 1FMCU9GD5HUD25760: URL after load: https://www.ford.com/support/recalls-details/
+[08:55:04] VIN 1FMCU9GD5HUD25760: VIN entered, about to submit
+[08:55:05] VIN 1FMCU9GD5HUD25760: RETURN pressed
+[08:55:10] VIN 1FMCU9GD5HUD25760: URL after submit: https://www.ford.com/support/recalls-details
+[08:55:10] VIN 1FMCU9GD5HUD25760: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:55:14] VIN 1FMCU9GD5HUD25760: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:55:14] VIN 1FMCU9GD5HUD25760: Page title: Ford Recalls | Ford Owner Support
+[08:55:16] VIN 1FMCU9MNXSUA10019: URL after load: https://www.ford.com/support/recalls-details/
+[08:55:17] VIN 1FMCU9MNXSUA10019: VIN entered, about to submit
+[08:55:19] VIN 1FMCU9MNXSUA10019: RETURN pressed
+[08:55:24] VIN 1FMCU9MNXSUA10019: URL after submit: https://www.ford.com/support/recalls-details
+[08:55:24] VIN 1FMCU9MNXSUA10019: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:55:27] VIN 1FMCU9MNXSUA10019: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:55:28] VIN 1FMCU9MNXSUA10019: Page title: Ford Recalls | Ford Owner Support
+[08:55:30] VIN 1FMCU9MN4SUA11201: URL after load: https://www.ford.com/support/recalls-details/
+[08:55:31] VIN 1FMCU9MN4SUA11201: VIN entered, about to submit
+[08:55:32] VIN 1FMCU9MN4SUA11201: RETURN pressed
+[08:55:38] VIN 1FMCU9MN4SUA11201: URL after submit: https://www.ford.com/support/recalls-details
+[08:55:38] VIN 1FMCU9MN4SUA11201: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:55:41] VIN 1FMCU9MN4SUA11201: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:55:41] VIN 1FMCU9MN4SUA11201: Page title: Ford Recalls | Ford Owner Support
+[08:55:43] VIN 1FTYE1Y82MKA71084: URL after load: https://www.ford.com/support/recalls-details/
+[08:55:45] VIN 1FTYE1Y82MKA71084: VIN entered, about to submit
+[08:55:46] VIN 1FTYE1Y82MKA71084: RETURN pressed
+[08:55:51] VIN 1FTYE1Y82MKA71084: URL after submit: https://www.ford.com/support/recalls-details
+[08:55:51] VIN 1FTYE1Y82MKA71084: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:55:54] VIN 1FTYE1Y82MKA71084: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:55:55] VIN 1FTYE1Y82MKA71084: Page title: Ford Recalls | Ford Owner Support
+[08:55:56] VIN 1FATP8FF9P5104802: URL after load: https://www.ford.com/support/recalls-details/
+[08:55:58] VIN 1FATP8FF9P5104802: VIN entered, about to submit
+[08:55:59] VIN 1FATP8FF9P5104802: RETURN pressed
+[08:56:04] VIN 1FATP8FF9P5104802: URL after submit: https://www.ford.com/support/recalls-details
+[08:56:04] VIN 1FATP8FF9P5104802: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:56:07] VIN 1FATP8FF9P5104802: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:56:08] VIN 1FATP8FF9P5104802: Page title: Ford Recalls | Ford Owner Support
+[08:56:09] VIN 1FTFW3LD7RFA36819: URL after load: https://www.ford.com/support/recalls-details/
+[08:56:11] VIN 1FTFW3LD7RFA36819: VIN entered, about to submit
+[08:56:12] VIN 1FTFW3LD7RFA36819: RETURN pressed
+[08:56:17] VIN 1FTFW3LD7RFA36819: URL after submit: https://www.ford.com/support/recalls-details
+[08:56:17] VIN 1FTFW3LD7RFA36819: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:56:20] VIN 1FTFW3LD7RFA36819: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:56:21] VIN 1FTFW3LD7RFA36819: Page title: Ford Recalls | Ford Owner Support
+[08:56:23] VIN 1FMDE5BH7PLB92749: URL after load: https://www.ford.com/support/recalls-details/
+[08:56:25] VIN 1FMDE5BH7PLB92749: VIN entered, about to submit
+[08:56:26] VIN 1FMDE5BH7PLB92749: RETURN pressed
+[08:56:31] VIN 1FMDE5BH7PLB92749: URL after submit: https://www.ford.com/support/recalls-details
+[08:56:31] VIN 1FMDE5BH7PLB92749: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:56:34] VIN 1FMDE5BH7PLB92749: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:56:35] VIN 1FMDE5BH7PLB92749: Page title: Ford Recalls | Ford Owner Support
+[08:56:36] VIN 1FTFW1RG0RFB32393: URL after load: https://www.ford.com/support/recalls-details/
+[08:56:38] VIN 1FTFW1RG0RFB32393: VIN entered, about to submit
+[08:56:39] VIN 1FTFW1RG0RFB32393: RETURN pressed
+[08:56:44] VIN 1FTFW1RG0RFB32393: URL after submit: https://www.ford.com/support/recalls-details
+[08:56:44] VIN 1FTFW1RG0RFB32393: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:56:48] VIN 1FTFW1RG0RFB32393: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:56:48] VIN 1FTFW1RG0RFB32393: Page title: Ford Recalls | Ford Owner Support
+[08:56:50] VIN 1FMDE5DH9PLA94075: URL after load: https://www.ford.com/support/recalls-details/
+[08:56:51] VIN 1FMDE5DH9PLA94075: VIN entered, about to submit
+[08:56:52] VIN 1FMDE5DH9PLA94075: RETURN pressed
+[08:56:57] VIN 1FMDE5DH9PLA94075: URL after submit: https://www.ford.com/support/recalls-details
+[08:56:57] VIN 1FMDE5DH9PLA94075: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:57:01] VIN 1FMDE5DH9PLA94075: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:57:01] VIN 1FMDE5DH9PLA94075: Page title: Ford Recalls | Ford Owner Support
+[08:57:05] VIN 1FMJU2AT0NEA10286: URL after load: https://www.ford.com/support/recalls-details/
+[08:57:07] VIN 1FMJU2AT0NEA10286: VIN entered, about to submit
+[08:57:08] VIN 1FMJU2AT0NEA10286: RETURN pressed
+[08:57:13] VIN 1FMJU2AT0NEA10286: URL after submit: https://www.ford.com/support/recalls-details
+[08:57:13] VIN 1FMJU2AT0NEA10286: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:57:16] VIN 1FMJU2AT0NEA10286: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:57:17] VIN 1FMJU2AT0NEA10286: Page title: Ford Recalls | Ford Owner Support
+[08:57:21] VIN 1FMJU1JTXGEF41640: URL after load: https://www.ford.com/support/recalls-details/
+[08:57:22] VIN 1FMJU1JTXGEF41640: VIN entered, about to submit
+[08:57:23] VIN 1FMJU1JTXGEF41640: RETURN pressed
+[08:57:29] VIN 1FMJU1JTXGEF41640: URL after submit: https://www.ford.com/support/recalls-details
+[08:57:29] VIN 1FMJU1JTXGEF41640: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:57:32] VIN 1FMJU1JTXGEF41640: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:57:33] VIN 1FMJU1JTXGEF41640: Page title: Ford Recalls | Ford Owner Support
+[08:57:37] VIN 1FTFW1E43KFC69166: URL after load: https://www.ford.com/support/recalls-details/
+[08:57:38] VIN 1FTFW1E43KFC69166: VIN entered, about to submit
+[08:57:39] VIN 1FTFW1E43KFC69166: RETURN pressed
+[08:57:45] VIN 1FTFW1E43KFC69166: URL after submit: https://www.ford.com/support/recalls-details
+[08:57:45] VIN 1FTFW1E43KFC69166: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:57:48] VIN 1FTFW1E43KFC69166: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:57:49] VIN 1FTFW1E43KFC69166: Page title: Ford Recalls | Ford Owner Support
+[08:57:50] VIN 1FT8W3BT6RED38223: URL after load: https://www.ford.com/support/recalls-details/
+[08:57:52] VIN 1FT8W3BT6RED38223: VIN entered, about to submit
+[08:57:53] VIN 1FT8W3BT6RED38223: RETURN pressed
+[08:57:59] VIN 1FT8W3BT6RED38223: URL after submit: https://www.ford.com/support/recalls-details
+[08:57:59] VIN 1FT8W3BT6RED38223: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:58:02] VIN 1FT8W3BT6RED38223: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:58:03] VIN 1FT8W3BT6RED38223: Page title: Ford Recalls | Ford Owner Support
+[08:58:05] VIN 1FMZK1ZM2JKA90766: URL after load: https://www.ford.com/support/recalls-details/
+[08:58:06] VIN 1FMZK1ZM2JKA90766: VIN entered, about to submit
+[08:58:07] VIN 1FMZK1ZM2JKA90766: RETURN pressed
+[08:58:12] VIN 1FMZK1ZM2JKA90766: URL after submit: https://www.ford.com/support/recalls-details
+[08:58:12] VIN 1FMZK1ZM2JKA90766: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:58:16] VIN 1FMZK1ZM2JKA90766: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:58:16] VIN 1FMZK1ZM2JKA90766: Page title: Ford Recalls | Ford Owner Support
+[08:58:18] VIN 1FTBR1X89MKA24419: URL after load: https://www.ford.com/support/recalls-details/
+[08:58:20] VIN 1FTBR1X89MKA24419: VIN entered, about to submit
+[08:58:21] VIN 1FTBR1X89MKA24419: RETURN pressed
+[08:58:26] VIN 1FTBR1X89MKA24419: URL after submit: https://www.ford.com/support/recalls-details
+[08:58:26] VIN 1FTBR1X89MKA24419: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:58:29] VIN 1FTBR1X89MKA24419: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:58:30] VIN 1FTBR1X89MKA24419: Page title: Ford Recalls | Ford Owner Support
+[08:58:32] VIN 3LNHL2JC3CR818773: URL after load: https://www.ford.com/support/recalls-details/
+[08:58:33] VIN 3LNHL2JC3CR818773: VIN entered, about to submit
+[08:58:34] VIN 3LNHL2JC3CR818773: RETURN pressed
+[08:58:39] VIN 3LNHL2JC3CR818773: URL after submit: https://www.ford.com/support/recalls-details/
+[08:58:40] VIN 3LNHL2JC3CR818773: Page title: Ford Recalls | Ford Owner Support
+[08:58:41] VIN 1FTEW1E51KFB51377: URL after load: https://www.ford.com/support/recalls-details/
+[08:58:43] VIN 1FTEW1E51KFB51377: VIN entered, about to submit
+[08:58:43] VIN 1FTEW1E51KFB51377: RETURN pressed
+[08:58:49] VIN 1FTEW1E51KFB51377: URL after submit: https://www.ford.com/support/recalls-details
+[08:58:49] VIN 1FTEW1E51KFB51377: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:58:52] VIN 1FTEW1E51KFB51377: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:58:52] VIN 1FTEW1E51KFB51377: Page title: Ford Recalls | Ford Owner Support
+[08:58:54] VIN 1FMCU9HD5JUB34439: URL after load: https://www.ford.com/support/recalls-details/
+[08:58:56] VIN 1FMCU9HD5JUB34439: VIN entered, about to submit
+[08:58:56] VIN 1FMCU9HD5JUB34439: RETURN pressed
+[08:59:01] VIN 1FMCU9HD5JUB34439: URL after submit: https://www.ford.com/support/recalls-details
+[08:59:01] VIN 1FMCU9HD5JUB34439: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:59:05] VIN 1FMCU9HD5JUB34439: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:59:05] VIN 1FMCU9HD5JUB34439: Page title: Ford Recalls | Ford Owner Support
+[08:59:08] VIN 2FMPK3J94KBB07797: URL after load: https://www.ford.com/support/recalls-details/
+[08:59:09] VIN 2FMPK3J94KBB07797: VIN entered, about to submit
+[08:59:09] VIN 2FMPK3J94KBB07797: RETURN pressed
+[08:59:15] VIN 2FMPK3J94KBB07797: URL after submit: https://www.ford.com/support/recalls-details
+[08:59:15] VIN 2FMPK3J94KBB07797: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:59:18] VIN 2FMPK3J94KBB07797: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:59:19] VIN 2FMPK3J94KBB07797: Page title: Ford Recalls | Ford Owner Support
+[08:59:21] VIN 1FM5K8D85HGA40426: URL after load: https://www.ford.com/support/recalls-details/
+[08:59:22] VIN 1FM5K8D85HGA40426: VIN entered, about to submit
+[08:59:23] VIN 1FM5K8D85HGA40426: RETURN pressed
+[08:59:28] VIN 1FM5K8D85HGA40426: URL after submit: https://www.ford.com/support/recalls-details
+[08:59:28] VIN 1FM5K8D85HGA40426: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:59:32] VIN 1FM5K8D85HGA40426: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:59:32] VIN 1FM5K8D85HGA40426: Page title: Ford Recalls | Ford Owner Support
+[08:59:39] VIN 1FM5K8GT2JGA11388: URL after load: https://www.ford.com/support/recalls-details/
+[08:59:41] VIN 1FM5K8GT2JGA11388: VIN entered, about to submit
+[08:59:41] VIN 1FM5K8GT2JGA11388: RETURN pressed
+[08:59:47] VIN 1FM5K8GT2JGA11388: URL after submit: https://www.ford.com/support/recalls-details
+[08:59:47] VIN 1FM5K8GT2JGA11388: REDIRECT DETECTED! Navigating back (results should be cached)...
+[08:59:50] VIN 1FM5K8GT2JGA11388: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[08:59:51] VIN 1FM5K8GT2JGA11388: Page title: Ford Recalls | Ford Owner Support
+[08:59:55] VIN 1FTFW1EG7FFA13712: URL after load: https://www.ford.com/support/recalls-details/
+[08:59:57] VIN 1FTFW1EG7FFA13712: VIN entered, about to submit
+[08:59:57] VIN 1FTFW1EG7FFA13712: RETURN pressed
+[09:00:03] VIN 1FTFW1EG7FFA13712: URL after submit: https://www.ford.com/support/recalls-details
+[09:00:03] VIN 1FTFW1EG7FFA13712: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:00:07] VIN 1FTFW1EG7FFA13712: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:00:08] VIN 1FTFW1EG7FFA13712: Page title: Ford Recalls | Ford Owner Support
+[09:00:10] VIN 1FTFW1L5XRKD66328: URL after load: https://www.ford.com/support/recalls-details/
+[09:00:13] VIN 1FTFW1L5XRKD66328: VIN entered, about to submit
+[09:00:13] VIN 1FTFW1L5XRKD66328: RETURN pressed
+[09:00:19] VIN 1FTFW1L5XRKD66328: URL after submit: https://www.ford.com/support/recalls-details
+[09:00:19] VIN 1FTFW1L5XRKD66328: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:00:23] VIN 1FTFW1L5XRKD66328: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:00:23] VIN 1FTFW1L5XRKD66328: Page title: Ford Recalls | Ford Owner Support
+[09:00:25] VIN 1FTFW1E86MKE51599: URL after load: https://www.ford.com/support/recalls-details/
+[09:00:26] VIN 1FTFW1E86MKE51599: VIN entered, about to submit
+[09:00:27] VIN 1FTFW1E86MKE51599: RETURN pressed
+[09:00:32] VIN 1FTFW1E86MKE51599: URL after submit: https://www.ford.com/support/recalls-details
+[09:00:32] VIN 1FTFW1E86MKE51599: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:00:36] VIN 1FTFW1E86MKE51599: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:00:36] VIN 1FTFW1E86MKE51599: Page title: Ford Recalls | Ford Owner Support
+[09:00:40] VIN 1FTFW1E52MFA20014: URL after load: https://www.ford.com/support/recalls-details/
+[09:00:42] VIN 1FTFW1E52MFA20014: VIN entered, about to submit
+[09:00:43] VIN 1FTFW1E52MFA20014: RETURN pressed
+[09:00:48] VIN 1FTFW1E52MFA20014: URL after submit: https://www.ford.com/support/recalls-details
+[09:00:48] VIN 1FTFW1E52MFA20014: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:00:51] VIN 1FTFW1E52MFA20014: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:00:52] VIN 1FTFW1E52MFA20014: Page title: Ford Recalls | Ford Owner Support
+[09:00:53] VIN 1FT8W2BM9REC62001: URL after load: https://www.ford.com/support/recalls-details/
+[09:00:55] VIN 1FT8W2BM9REC62001: VIN entered, about to submit
+[09:00:56] VIN 1FT8W2BM9REC62001: RETURN pressed
+[09:01:01] VIN 1FT8W2BM9REC62001: URL after submit: https://www.ford.com/support/recalls-details
+[09:01:01] VIN 1FT8W2BM9REC62001: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:01:05] VIN 1FT8W2BM9REC62001: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:01:05] VIN 1FT8W2BM9REC62001: Page title: Ford Recalls | Ford Owner Support
+[09:01:07] VIN 3FA6P0G75JR129285: URL after load: https://www.ford.com/support/recalls-details/
+[09:01:08] VIN 3FA6P0G75JR129285: VIN entered, about to submit
+[09:01:09] VIN 3FA6P0G75JR129285: RETURN pressed
+[09:01:14] VIN 3FA6P0G75JR129285: URL after submit: https://www.ford.com/support/recalls-details
+[09:01:14] VIN 3FA6P0G75JR129285: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:01:18] VIN 3FA6P0G75JR129285: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:01:18] VIN 3FA6P0G75JR129285: Page title: Ford Recalls | Ford Owner Support
+[09:01:21] VIN 3FA6P0HD9GR139153: URL after load: https://www.ford.com/support/recalls-details/
+[09:01:22] VIN 3FA6P0HD9GR139153: VIN entered, about to submit
+[09:01:23] VIN 3FA6P0HD9GR139153: RETURN pressed
+[09:01:28] VIN 3FA6P0HD9GR139153: URL after submit: https://www.ford.com/support/recalls-details
+[09:01:28] VIN 3FA6P0HD9GR139153: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:01:32] VIN 3FA6P0HD9GR139153: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:01:32] VIN 3FA6P0HD9GR139153: Page title: Ford Recalls | Ford Owner Support
+[09:01:41] VIN MAJ6P1SL7JC239585: URL after load: https://www.ford.com/support/recalls-details/
+[09:01:43] VIN MAJ6P1SL7JC239585: VIN entered, about to submit
+[09:01:43] VIN MAJ6P1SL7JC239585: RETURN pressed
+[09:01:49] VIN MAJ6P1SL7JC239585: URL after submit: https://www.ford.com/support/recalls-details
+[09:01:49] VIN MAJ6P1SL7JC239585: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:01:52] VIN MAJ6P1SL7JC239585: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:01:53] VIN MAJ6P1SL7JC239585: Page title: Ford Recalls | Ford Owner Support
+[09:01:55] VIN 3FA6P0H70HR338474: URL after load: https://www.ford.com/support/recalls-details/
+[09:01:56] VIN 3FA6P0H70HR338474: VIN entered, about to submit
+[09:01:57] VIN 3FA6P0H70HR338474: RETURN pressed
+[09:02:02] VIN 3FA6P0H70HR338474: URL after submit: https://www.ford.com/support/recalls-details
+[09:02:02] VIN 3FA6P0H70HR338474: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:02:05] VIN 3FA6P0H70HR338474: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:02:06] VIN 3FA6P0H70HR338474: Page title: Ford Recalls | Ford Owner Support
+[09:02:08] VIN 1FTNR2CM4FKA07102: URL after load: https://www.ford.com/support/recalls-details/
+[09:02:09] VIN 1FTNR2CM4FKA07102: VIN entered, about to submit
+[09:02:10] VIN 1FTNR2CM4FKA07102: RETURN pressed
+[09:02:15] VIN 1FTNR2CM4FKA07102: URL after submit: https://www.ford.com/support/recalls-details
+[09:02:15] VIN 1FTNR2CM4FKA07102: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:02:20] VIN 1FTNR2CM4FKA07102: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:02:20] VIN 1FTNR2CM4FKA07102: Page title: Ford Recalls | Ford Owner Support
+[09:02:22] VIN 1FTBW3XGXHKA24625: URL after load: https://www.ford.com/support/recalls-details/
+[09:02:24] VIN 1FTBW3XGXHKA24625: VIN entered, about to submit
+[09:02:25] VIN 1FTBW3XGXHKA24625: RETURN pressed
+[09:02:31] VIN 1FTBW3XGXHKA24625: URL after submit: https://www.ford.com/support/recalls-details
+[09:02:31] VIN 1FTBW3XGXHKA24625: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:02:35] VIN 1FTBW3XGXHKA24625: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:02:36] VIN 1FTBW3XGXHKA24625: Page title: Ford Recalls | Ford Owner Support
+[09:02:37] VIN 1FMSK8DH7NGB60999: URL after load: https://www.ford.com/support/recalls-details/
+[09:02:39] VIN 1FMSK8DH7NGB60999: VIN entered, about to submit
+[09:02:40] VIN 1FMSK8DH7NGB60999: RETURN pressed
+[09:02:45] VIN 1FMSK8DH7NGB60999: URL after submit: https://www.ford.com/support/recalls-details
+[09:02:45] VIN 1FMSK8DH7NGB60999: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:02:49] VIN 1FMSK8DH7NGB60999: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:02:49] VIN 1FMSK8DH7NGB60999: Page title: Ford Recalls | Ford Owner Support
+[09:02:51] VIN 1FDBW5PM0HKA28809: URL after load: https://www.ford.com/support/recalls-details/
+[09:02:53] VIN 1FDBW5PM0HKA28809: VIN entered, about to submit
+[09:02:53] VIN 1FDBW5PM0HKA28809: RETURN pressed
+[09:02:59] VIN 1FDBW5PM0HKA28809: URL after submit: https://www.ford.com/support/recalls-details
+[09:02:59] VIN 1FDBW5PM0HKA28809: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:03:02] VIN 1FDBW5PM0HKA28809: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:03:02] VIN 1FDBW5PM0HKA28809: Page title: Ford Recalls | Ford Owner Support
+[09:03:08] VIN 1FDBW5PM4KKA21272: URL after load: https://www.ford.com/support/recalls-details/
+[09:03:09] VIN 1FDBW5PM4KKA21272: VIN entered, about to submit
+[09:03:10] VIN 1FDBW5PM4KKA21272: RETURN pressed
+[09:03:15] VIN 1FDBW5PM4KKA21272: URL after submit: https://www.ford.com/support/recalls-details
+[09:03:15] VIN 1FDBW5PM4KKA21272: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:03:18] VIN 1FDBW5PM4KKA21272: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:03:19] VIN 1FDBW5PM4KKA21272: Page title: Ford Recalls | Ford Owner Support
+[09:03:22] VIN 1FTEW1EP5LKF36239: URL after load: https://www.ford.com/support/recalls-details/
+[09:03:23] VIN 1FTEW1EP5LKF36239: VIN entered, about to submit
+[09:03:24] VIN 1FTEW1EP5LKF36239: RETURN pressed
+[09:03:29] VIN 1FTEW1EP5LKF36239: URL after submit: https://www.ford.com/support/recalls-details/
+[09:03:29] VIN 1FTEW1EP5LKF36239: Page title: Ford Recalls | Ford Owner Support
+[09:03:31] VIN 1FA6P8CF8H5232550: URL after load: https://www.ford.com/support/recalls-details/
+[09:03:32] VIN 1FA6P8CF8H5232550: VIN entered, about to submit
+[09:03:33] VIN 1FA6P8CF8H5232550: RETURN pressed
+[09:03:39] VIN 1FA6P8CF8H5232550: URL after submit: https://www.ford.com/support/recalls-details
+[09:03:39] VIN 1FA6P8CF8H5232550: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:03:42] VIN 1FA6P8CF8H5232550: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:03:42] VIN 1FA6P8CF8H5232550: Page title: Ford Recalls | Ford Owner Support
+[09:03:49] VIN 1FTEW1EP0MFB52959: URL after load: https://www.ford.com/support/recalls-details/
+[09:03:51] VIN 1FTEW1EP0MFB52959: VIN entered, about to submit
+[09:03:52] VIN 1FTEW1EP0MFB52959: RETURN pressed
+[09:03:57] VIN 1FTEW1EP0MFB52959: URL after submit: https://www.ford.com/support/recalls-details
+[09:03:57] VIN 1FTEW1EP0MFB52959: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:04:01] VIN 1FTEW1EP0MFB52959: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:04:01] VIN 1FTEW1EP0MFB52959: Page title: Ford Recalls | Ford Owner Support
+[09:04:03] VIN 1FA6P8CF1P5300010: URL after load: https://www.ford.com/support/recalls-details/
+[09:04:05] VIN 1FA6P8CF1P5300010: VIN entered, about to submit
+[09:04:05] VIN 1FA6P8CF1P5300010: RETURN pressed
+[09:04:11] VIN 1FA6P8CF1P5300010: URL after submit: https://www.ford.com/support/recalls-details
+[09:04:11] VIN 1FA6P8CF1P5300010: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:04:14] VIN 1FA6P8CF1P5300010: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:04:14] VIN 1FA6P8CF1P5300010: Page title: Ford Recalls | Ford Owner Support
+[09:04:16] VIN 1FTBF2B63KEG62942: URL after load: https://www.ford.com/support/recalls-details/
+[09:04:18] VIN 1FTBF2B63KEG62942: VIN entered, about to submit
+[09:04:18] VIN 1FTBF2B63KEG62942: RETURN pressed
+[09:04:24] VIN 1FTBF2B63KEG62942: URL after submit: https://www.ford.com/support/recalls-details
+[09:04:24] VIN 1FTBF2B63KEG62942: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:04:27] VIN 1FTBF2B63KEG62942: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:04:28] VIN 1FTBF2B63KEG62942: Page title: Ford Recalls | Ford Owner Support
+[09:04:29] VIN 1FT7X2B66MEC80703: URL after load: https://www.ford.com/support/recalls-details/
+[09:04:31] VIN 1FT7X2B66MEC80703: VIN entered, about to submit
+[09:04:32] VIN 1FT7X2B66MEC80703: RETURN pressed
+[09:04:38] VIN 1FT7X2B66MEC80703: URL after submit: https://www.ford.com/support/recalls-details
+[09:04:38] VIN 1FT7X2B66MEC80703: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:04:41] VIN 1FT7X2B66MEC80703: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:04:41] VIN 1FT7X2B66MEC80703: Page title: Ford Recalls | Ford Owner Support
+[09:04:43] VIN 1FMEE5DP1PLB96045: URL after load: https://www.ford.com/support/recalls-details/
+[09:04:45] VIN 1FMEE5DP1PLB96045: VIN entered, about to submit
+[09:04:46] VIN 1FMEE5DP1PLB96045: RETURN pressed
+[09:04:51] VIN 1FMEE5DP1PLB96045: URL after submit: https://www.ford.com/support/recalls-details
+[09:04:51] VIN 1FMEE5DP1PLB96045: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:04:54] VIN 1FMEE5DP1PLB96045: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:04:55] VIN 1FMEE5DP1PLB96045: Page title: Ford Recalls | Ford Owner Support
+[09:04:56] VIN 1FA6P8CF2R5404489: URL after load: https://www.ford.com/support/recalls-details/
+[09:04:59] VIN 1FA6P8CF2R5404489: VIN entered, about to submit
+[09:04:59] VIN 1FA6P8CF2R5404489: RETURN pressed
+[09:05:05] VIN 1FA6P8CF2R5404489: URL after submit: https://www.ford.com/support/recalls-details
+[09:05:05] VIN 1FA6P8CF2R5404489: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:05:08] VIN 1FA6P8CF2R5404489: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:05:09] VIN 1FA6P8CF2R5404489: Page title: Ford Recalls | Ford Owner Support
+[09:05:10] VIN 1FTFW1E57MKD50495: URL after load: https://www.ford.com/support/recalls-details/
+[09:05:12] VIN 1FTFW1E57MKD50495: VIN entered, about to submit
+[09:05:13] VIN 1FTFW1E57MKD50495: RETURN pressed
+[09:05:18] VIN 1FTFW1E57MKD50495: URL after submit: https://www.ford.com/support/recalls-details
+[09:05:18] VIN 1FTFW1E57MKD50495: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:05:21] VIN 1FTFW1E57MKD50495: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:05:22] VIN 1FTFW1E57MKD50495: Page title: Ford Recalls | Ford Owner Support
+[09:05:23] VIN 1FT8W4DM6PEC37305: URL after load: https://www.ford.com/support/recalls-details/
+[09:05:24] VIN 1FT8W4DM6PEC37305: VIN entered, about to submit
+[09:05:25] VIN 1FT8W4DM6PEC37305: RETURN pressed
+[09:05:31] VIN 1FT8W4DM6PEC37305: URL after submit: https://www.ford.com/support/recalls-details
+[09:05:31] VIN 1FT8W4DM6PEC37305: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:05:34] VIN 1FT8W4DM6PEC37305: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:05:34] VIN 1FT8W4DM6PEC37305: Page title: Ford Recalls | Ford Owner Support
+[09:05:36] VIN 1FTEW1EG6FFC66676: URL after load: https://www.ford.com/support/recalls-details/
+[09:05:38] VIN 1FTEW1EG6FFC66676: VIN entered, about to submit
+[09:05:39] VIN 1FTEW1EG6FFC66676: RETURN pressed
+[09:05:44] VIN 1FTEW1EG6FFC66676: URL after submit: https://www.ford.com/support/recalls-details
+[09:05:44] VIN 1FTEW1EG6FFC66676: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:05:47] VIN 1FTEW1EG6FFC66676: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:05:48] VIN 1FTEW1EG6FFC66676: Page title: Ford Recalls | Ford Owner Support
+[09:05:50] VIN 1FTEW1EP6LKE53855: URL after load: https://www.ford.com/support/recalls-details/
+[09:05:51] VIN 1FTEW1EP6LKE53855: VIN entered, about to submit
+[09:05:52] VIN 1FTEW1EP6LKE53855: RETURN pressed
+[09:05:58] VIN 1FTEW1EP6LKE53855: URL after submit: https://www.ford.com/support/recalls-details
+[09:05:58] VIN 1FTEW1EP6LKE53855: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:06:02] VIN 1FTEW1EP6LKE53855: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:06:03] VIN 1FTEW1EP6LKE53855: Page title: Ford Recalls | Ford Owner Support
+[09:06:04] VIN 1FMCU9F66LUA44580: URL after load: https://www.ford.com/support/recalls-details/
+[09:06:06] VIN 1FMCU9F66LUA44580: VIN entered, about to submit
+[09:06:06] VIN 1FMCU9F66LUA44580: RETURN pressed
+[09:06:12] VIN 1FMCU9F66LUA44580: URL after submit: https://www.ford.com/support/recalls-details
+[09:06:12] VIN 1FMCU9F66LUA44580: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:06:16] VIN 1FMCU9F66LUA44580: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:06:16] VIN 1FMCU9F66LUA44580: Page title: Ford Recalls | Ford Owner Support
+[09:06:21] VIN 5LMCJ1D90MUL03800: URL after load: https://www.ford.com/support/recalls-details/
+[09:06:22] VIN 5LMCJ1D90MUL03800: VIN entered, about to submit
+[09:06:23] VIN 5LMCJ1D90MUL03800: RETURN pressed
+[09:06:29] VIN 5LMCJ1D90MUL03800: URL after submit: https://www.ford.com/support/recalls-details
+[09:06:29] VIN 5LMCJ1D90MUL03800: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:06:32] VIN 5LMCJ1D90MUL03800: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:06:32] VIN 5LMCJ1D90MUL03800: Page title: Ford Recalls | Ford Owner Support
+[09:06:37] VIN 1FTEW1EP4KFC00234: URL after load: https://www.ford.com/support/recalls-details/
+[09:06:38] VIN 1FTEW1EP4KFC00234: VIN entered, about to submit
+[09:06:39] VIN 1FTEW1EP4KFC00234: RETURN pressed
+[09:06:44] VIN 1FTEW1EP4KFC00234: URL after submit: https://www.ford.com/support/recalls-details
+[09:06:44] VIN 1FTEW1EP4KFC00234: REDIRECT DETECTED! Navigating back (results should be cached)...
+[09:06:48] VIN 1FTEW1EP4KFC00234: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[09:06:48] VIN 1FTEW1EP4KFC00234: Page title: Ford Recalls | Ford Owner Support
+[09:06:50] VIN 2FMPK4AP9NBA73235: URL after load: https://www.ford.com/support/recalls-details/
+[09:06:52] VIN 2FMPK4AP9NBA73235: VIN entered, about to submit
+[09:06:52] VIN 2FMPK4AP9NBA73235: RETURN pressed
+[09:06:57] VIN 2FMPK4AP9NBA73235: URL after submit: https://www.ford.com/support/recalls-details/
+[09:06:58] VIN 2FMPK4AP9NBA73235: Page title: Ford Recalls | Ford Owner Support
+[09:06:59] VIN 3FA6P0D93FR134126: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:01] VIN 3FA6P0D93FR134126: VIN entered, about to submit
+[09:07:02] VIN 3FA6P0D93FR134126: RETURN pressed
+[09:07:07] VIN 3FA6P0D93FR134126: URL after submit: https://www.ford.com/support/recalls-details/
+[09:07:07] VIN 3FA6P0D93FR134126: Page title: Ford Recalls | Ford Owner Support
+[09:07:09] VIN 2FMPK4J98KBB23135: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:10] VIN 2FMPK4J98KBB23135: VIN entered, about to submit
+[09:07:11] VIN 2FMPK4J98KBB23135: RETURN pressed
+[09:07:16] VIN 2FMPK4J98KBB23135: URL after submit: https://www.ford.com/support/recalls-details/
+[09:07:17] VIN 2FMPK4J98KBB23135: Page title: Ford Recalls | Ford Owner Support
+[09:07:18] VIN 2FMPK4J98KBB59276: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:20] VIN 2FMPK4J98KBB59276: VIN entered, about to submit
+[09:07:21] VIN 2FMPK4J98KBB59276: RETURN pressed
+[09:07:26] VIN 2FMPK4J98KBB59276: URL after submit: https://www.ford.com/support/recalls-details/
+[09:07:26] VIN 2FMPK4J98KBB59276: Page title: Ford Recalls | Ford Owner Support
+[09:07:28] VIN 3FMCR9B67NRD12845: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:30] VIN 3FMCR9B67NRD12845: VIN entered, about to submit
+[09:07:30] VIN 3FMCR9B67NRD12845: RETURN pressed
+[09:07:36] VIN 3FMCR9B67NRD12845: URL after submit: https://www.ford.com/support/recalls-details/
+[09:07:36] VIN 3FMCR9B67NRD12845: Page title: Ford Recalls | Ford Owner Support
+[09:07:37] VIN 1FMWK8GC6SGA05342: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:39] VIN 1FMWK8GC6SGA05342: VIN entered, about to submit
+[09:07:40] VIN 1FMWK8GC6SGA05342: RETURN pressed
+[09:07:45] VIN 1FMWK8GC6SGA05342: URL after submit: https://www.ford.com/support/recalls-details/
+[09:07:45] VIN 1FMWK8GC6SGA05342: Page title: Ford Recalls | Ford Owner Support
+[09:07:47] VIN 1FM5K8GC3RGA90999: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:48] VIN 1FM5K8GC3RGA90999: VIN entered, about to submit
+[09:07:49] VIN 1FM5K8GC3RGA90999: RETURN pressed
+[09:07:54] VIN 1FM5K8GC3RGA90999: URL after submit: https://www.ford.com/support/recalls-details/
+[09:07:55] VIN 1FM5K8GC3RGA90999: Page title: Ford Recalls | Ford Owner Support
+[09:07:56] VIN 1FMCU9J93MUA21275: URL after load: https://www.ford.com/support/recalls-details/
+[09:07:58] VIN 1FMCU9J93MUA21275: VIN entered, about to submit
+[09:07:58] VIN 1FMCU9J93MUA21275: RETURN pressed
+[09:08:04] VIN 1FMCU9J93MUA21275: URL after submit: https://www.ford.com/support/recalls-details/
+[09:08:04] VIN 1FMCU9J93MUA21275: Page title: Ford Recalls | Ford Owner Support
+[09:08:05] VIN 1FMDE5AH3NLB76904: URL after load: https://www.ford.com/support/recalls-details/
+[09:08:07] VIN 1FMDE5AH3NLB76904: VIN entered, about to submit
+[09:08:07] VIN 1FMDE5AH3NLB76904: RETURN pressed
+[09:08:13] VIN 1FMDE5AH3NLB76904: URL after submit: https://www.ford.com/support/recalls-details/
+[09:08:13] VIN 1FMDE5AH3NLB76904: Page title: Ford Recalls | Ford Owner Support
+[09:08:15] VIN 1FMSK8DH1MGA25936: URL after load: https://www.ford.com/support/recalls-details/
+[09:08:16] VIN 1FMSK8DH1MGA25936: VIN entered, about to submit
+[09:08:17] VIN 1FMSK8DH1MGA25936: RETURN pressed
+[09:08:22] VIN 1FMSK8DH1MGA25936: URL after submit: https://www.ford.com/support/recalls-details/
+[09:08:22] VIN 1FMSK8DH1MGA25936: Page title: Ford Recalls | Ford Owner Support
+[09:08:24] VIN 2FMPK3K95HBB87117: URL after load: https://www.ford.com/support/recalls-details/
+[09:08:26] VIN 2FMPK3K95HBB87117: VIN entered, about to submit
+[09:08:26] VIN 2FMPK3K95HBB87117: RETURN pressed
+[09:08:31] VIN 2FMPK3K95HBB87117: URL after submit: https://www.ford.com/support/recalls-details/
+[09:08:32] VIN 2FMPK3K95HBB87117: Page title: Ford Recalls | Ford Owner Support
+[09:08:34] VIN 1LNHL9FT5FG602467: URL after load: https://www.ford.com/support/recalls-details/
+[09:08:35] VIN 1LNHL9FT5FG602467: VIN entered, about to submit
+[09:08:36] VIN 1LNHL9FT5FG602467: RETURN pressed
+[09:08:41] VIN 1LNHL9FT5FG602467: URL after submit: https://www.ford.com/support/recalls-details/
+[09:08:41] VIN 1LNHL9FT5FG602467: Page title: Ford Recalls | Ford Owner Support
+[09:08:43] VIN 1FTFW1EG4GFB61253: URL after load: https://www.ford.com/support/recalls-details/
+[09:08:44] VIN 1FTFW1EG4GFB61253: VIN entered, about to submit
+[09:08:45] VIN 1FTFW1EG4GFB61253: RETURN pressed
+[09:08:50] VIN 1FTFW1EG4GFB61253: URL after submit: https://www.ford.com/support/recalls-details/
+[09:08:51] VIN 1FTFW1EG4GFB61253: Page title: Ford Recalls | Ford Owner Support
+[09:08:53] VIN 1FM5K8F81JGC56793: URL after load: https://www.ford.com/support/recalls-details/
+[09:08:54] VIN 1FM5K8F81JGC56793: VIN entered, about to submit
+[09:08:55] VIN 1FM5K8F81JGC56793: RETURN pressed
+[09:09:00] VIN 1FM5K8F81JGC56793: URL after submit: https://www.ford.com/support/recalls-details/
+[09:09:01] VIN 1FM5K8F81JGC56793: Page title: Ford Recalls | Ford Owner Support
+[09:09:02] VIN 1FMCU9G97DUD31288: URL after load: https://www.ford.com/support/recalls-details/
+[09:09:04] VIN 1FMCU9G97DUD31288: VIN entered, about to submit
+[09:09:05] VIN 1FMCU9G97DUD31288: RETURN pressed

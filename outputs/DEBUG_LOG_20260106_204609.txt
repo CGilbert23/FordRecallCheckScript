@@ -1,0 +1,8 @@
+[20:46:11] VIN 1FMUK8HH5TGA12916: URL after load: https://www.ford.com/support/recalls-details/
+[20:46:18] VIN 1FMUK8HH5TGA12916: URL after submit: https://www.ford.com/support/
+[20:46:18] VIN 1FMUK8HH5TGA12916: REDIRECT DETECTED! Re-navigating...
+[20:46:18] VIN 1FMUK8HH5TGA12916: URL after re-navigate: https://www.ford.com/support/recalls-details/
+[20:46:22] VIN 1FMCU9MNXTUA24679: URL after load: https://www.ford.com/support/recalls-details/
+[20:46:31] VIN 1FMCU9MNXTUA24679: URL after submit: https://www.ford.com/support/
+[20:46:31] VIN 1FMCU9MNXTUA24679: REDIRECT DETECTED! Re-navigating...
+[20:46:32] VIN 1FMCU9MNXTUA24679: URL after re-navigate: https://www.ford.com/support/recalls-details/

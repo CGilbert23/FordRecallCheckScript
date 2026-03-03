@@ -1,0 +1,44 @@
+[16:01:35] VIN 1FDWE3FN7NDC30842: URL after load: https://www.ford.com/support/recalls-details/
+[16:01:37] VIN 1FDWE3FN7NDC30842: Attempting to enter VIN: 1FDWE3FN7NDC30842
+[16:01:37] VIN 1FDWE3FN7NDC30842: Field value BEFORE clear: ''
+[16:01:37] VIN 1FDWE3FN7NDC30842: Field value AFTER clear: ''
+[16:01:40] VIN 1FDWE3FN7NDC30842: Field value AFTER typing: '1FDWE3FN7NDC30842'
+[16:01:40] VIN 1FDWE3FN7NDC30842: VIN entered, about to submit
+[16:01:41] VIN 1FDWE3FN7NDC30842: RETURN pressed
+[16:01:46] VIN 1FDWE3FN7NDC30842: URL after submit: https://www.ford.com/support/recalls-details/
+[16:01:46] VIN 1FDWE3FN7NDC30842: No redirect, waiting for results...
+[16:01:46] VIN 1FDWE3FN7NDC30842: Results detected on page
+[16:01:47] VIN 1FDWE3FN7NDC30842: Page title: Ford Recalls | Ford Owner Support
+[16:01:50] VIN 1FD0W5HT3NEC71070: URL after load: https://www.ford.com/support/recalls-details/
+[16:01:52] VIN 1FD0W5HT3NEC71070: Attempting to enter VIN: 1FD0W5HT3NEC71070
+[16:01:52] VIN 1FD0W5HT3NEC71070: Field value BEFORE clear: '1FDWE3FN7NDC30842'
+[16:01:52] VIN 1FD0W5HT3NEC71070: Field value AFTER clear: ''
+[16:01:53] VIN 1FD0W5HT3NEC71070: Field value AFTER typing: '1FD0W5HT3NEC71070'
+[16:01:53] VIN 1FD0W5HT3NEC71070: VIN entered, about to submit
+[16:01:54] VIN 1FD0W5HT3NEC71070: RETURN pressed
+[16:01:59] VIN 1FD0W5HT3NEC71070: URL after submit: https://www.ford.com/support/recalls-details
+[16:01:59] VIN 1FD0W5HT3NEC71070: Redirect detected, navigating back...
+[16:02:04] VIN 1FD0W5HT3NEC71070: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:02:04] VIN 1FD0W5HT3NEC71070: Page title: Ford Recalls | Ford Owner Support
+[16:02:06] VIN 1FDWE3F69KDC06238: URL after load: https://www.ford.com/support/recalls-details/
+[16:02:08] VIN 1FDWE3F69KDC06238: Attempting to enter VIN: 1FDWE3F69KDC06238
+[16:02:08] VIN 1FDWE3F69KDC06238: Field value BEFORE clear: '1FD0W5HT3NEC71070'
+[16:02:09] VIN 1FDWE3F69KDC06238: Field value AFTER clear: ''
+[16:02:10] VIN 1FDWE3F69KDC06238: Field value AFTER typing: '1FDWE3F69KDC06238'
+[16:02:10] VIN 1FDWE3F69KDC06238: VIN entered, about to submit
+[16:02:11] VIN 1FDWE3F69KDC06238: RETURN pressed
+[16:02:16] VIN 1FDWE3F69KDC06238: URL after submit: https://www.ford.com/support/recalls-details
+[16:02:16] VIN 1FDWE3F69KDC06238: Redirect detected, navigating back...
+[16:02:20] VIN 1FDWE3F69KDC06238: URL after redirect: https://www.ford.com/support/recalls-details/
+[16:02:20] VIN 1FDWE3F69KDC06238: Page title: Ford Recalls | Ford Owner Support
+[16:02:21] VIN 1FD7X2B60KEG53999: URL after load: https://www.ford.com/support/recalls-details/
+[16:02:23] VIN 1FD7X2B60KEG53999: Attempting to enter VIN: 1FD7X2B60KEG53999
+[16:02:23] VIN 1FD7X2B60KEG53999: Field value BEFORE clear: '1FDWE3F69KDC06238'
+[16:02:24] VIN 1FD7X2B60KEG53999: Field value AFTER clear: ''
+[16:02:25] VIN 1FD7X2B60KEG53999: Field value AFTER typing: '1FD7X2B60KEG53999'
+[16:02:25] VIN 1FD7X2B60KEG53999: VIN entered, about to submit
+[16:02:25] VIN 1FD7X2B60KEG53999: RETURN pressed
+[16:02:30] VIN 1FD7X2B60KEG53999: URL after submit: https://www.ford.com/support/recalls-details/
+[16:02:30] VIN 1FD7X2B60KEG53999: No redirect, waiting for results...
+[16:02:31] VIN 1FD7X2B60KEG53999: Results detected on page
+[16:02:31] VIN 1FD7X2B60KEG53999: Page title: Ford Recalls | Ford Owner Support
