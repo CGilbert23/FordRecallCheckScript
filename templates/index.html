@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ford Recall Checker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 700px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .card { background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+        .hint { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
+        textarea { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 0.9rem; resize: vertical; }
+        textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .divider { text-align: center; color: #999; margin: 20px 0; font-size: 0.9rem; }
+        input[type="file"] { margin-bottom: 20px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 12px 32px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+        .btn:hover { background: #0050a8; }
+        .btn:disabled { background: #999; cursor: not-allowed; }
+        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+        .running-notice { background: #fef9c3; border: 1px solid #fde047; color: #854d0e; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ford Recall Checker</h1>
+        <p class="subtitle">Paste VINs or upload a .txt file to check for open recalls.</p>
+
+        <div class="card">
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            {% if running %}
+            <div class="running-notice">A job is currently running. Please wait for it to finish before submitting a new one.</div>
+            {% endif %}
+
+            <form method="POST" action="/submit" enctype="multipart/form-data" id="vinForm">
+                <label for="vins">Paste VINs (one per line)</label>
+                <p class="hint">Each VIN must be exactly 17 characters. Up to 500 VINs supported.</p>
+                <textarea name="vins" id="vins" placeholder="1FM5K8AB3RGA28017&#10;1FM5K8AB7RGA27999&#10;1FAHP2MK9EG127940"></textarea>
+
+                <div class="divider">&mdash; or &mdash;</div>
+
+                <label for="vinfile">Upload a .txt file</label>
+                <input type="file" name="vinfile" id="vinfile" accept=".txt">
+
+                <button type="submit" class="btn" id="submitBtn" {% if running %}disabled{% endif %}>Check Recalls</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('vinForm').addEventListener('submit', function() {
+            var btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+        });
+    </script>
+</body>
+</html>
