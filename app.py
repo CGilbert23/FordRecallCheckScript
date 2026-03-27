@@ -107,7 +107,7 @@ def submit():
 
     logger.info(f"Created job {job_id}")
 
-    t = threading.Thread(target=run_job, args=(job_id, vins, output_file), daemon=True)
+    t = threading.Thread(target=run_job, args=(job_id, vins, output_file))
     t.start()
 
     logger.info(f"Thread started for job {job_id}")
