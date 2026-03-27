@@ -39,6 +39,29 @@ def run_job(job_id, vins, output_file):
         jobs[job_id]['error'] = str(e)
 
 
+@app.route('/test-chrome')
+def test_chrome():
+    """Test if Chrome can start in this environment"""
+    import shutil
+    info = {
+        'chrome_bin_env': os.environ.get('CHROME_BIN', 'not set'),
+        'chromium_exists': os.path.exists('/usr/bin/chromium'),
+        'chromedriver_path': shutil.which('chromedriver'),
+    }
+    try:
+        from recall_checker import setup_driver
+        logger.info("Testing Chrome startup...")
+        driver = setup_driver()
+        driver.get('https://www.google.com')
+        info['title'] = driver.title
+        info['status'] = 'Chrome works!'
+        driver.quit()
+    except Exception as e:
+        info['status'] = f'FAILED: {str(e)}'
+        logger.error(f"Chrome test failed: {str(e)}")
+    return jsonify(info)
+
+
 @app.route('/')
 def index():
     running = any(j['status'] == 'running' for j in jobs.values())

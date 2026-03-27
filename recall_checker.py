@@ -15,6 +15,11 @@ import os
 
 def setup_driver():
     """Setup headless Chrome driver with anti-detection options"""
+    from selenium.webdriver.chrome.service import Service
+    import shutil
+    import logging
+    logger = logging.getLogger(__name__)
+
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--window-size=1920,1080')
@@ -23,21 +28,34 @@ def setup_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_argument('--log-level=3')
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--disable-software-rasterizer')
+    chrome_options.add_argument('--remote-debugging-port=9222')
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
-    chrome_options.add_experimental_option('useAutomationExtension', False)
 
-    # Support custom Chrome binary (e.g. in Docker)
+    # Support custom Chrome binary (e.g. in Docker with Chromium)
     chrome_bin = os.environ.get('CHROME_BIN')
     if chrome_bin:
         chrome_options.binary_location = chrome_bin
+        logger.info(f"Using Chrome binary: {chrome_bin}")
 
-    driver = webdriver.Chrome(options=chrome_options)
+    # Find chromedriver
+    chromedriver_path = shutil.which('chromedriver')
+    if chromedriver_path:
+        logger.info(f"Using chromedriver: {chromedriver_path}")
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    else:
+        logger.info("Using default chromedriver detection")
+        driver = webdriver.Chrome(options=chrome_options)
 
     # Hide navigator.webdriver flag
-    driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-        'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
-    })
+    try:
+        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
+        })
+    except Exception as e:
+        logger.warning(f"Could not set CDP command: {e}")
 
     return driver
 
