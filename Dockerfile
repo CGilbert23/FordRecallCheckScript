@@ -6,6 +6,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ENV CHROME_BIN=/usr/bin/chromium
+ENV WEB_CONCURRENCY=1
 
 WORKDIR /app
 COPY requirements.txt .
@@ -14,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 10000
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000", "--workers", "1", "--threads", "4", "--timeout", "3600"]
+CMD ["gunicorn", "app:app", "-c", "gunicorn.conf.py"]
