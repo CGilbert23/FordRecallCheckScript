@@ -48,6 +48,12 @@
                 <label for="vinfile">Upload a .txt file</label>
                 <input type="file" name="vinfile" id="vinfile" accept=".txt">
 
+                <div style="margin: 20px 0;">
+                    <label for="email">Email address (optional)</label>
+                    <p class="hint">We'll email you the results when processing is done.</p>
+                    <input type="email" name="email" id="email" placeholder="you@example.com" style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem;">
+                </div>
+
                 <button type="submit" class="btn" id="submitBtn" {% if running %}disabled{% endif %}>Check Recalls</button>
             </form>
         </div>

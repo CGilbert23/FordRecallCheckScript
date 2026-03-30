@@ -102,10 +102,17 @@
                 document.getElementById('progressBar').style.background = '#22c55e';
 
                 var result = data.result || {};
+                var emailMsg = '';
+                if (data.email_sent === true) {
+                    emailMsg = '<p style="margin-top:10px;">&#9993; Results emailed to <strong>' + data.email + '</strong></p>';
+                } else if (data.email_sent === false) {
+                    emailMsg = '<p style="margin-top:10px; color:#b91c1c;">Failed to send email. Please download the file instead.</p>';
+                }
                 document.getElementById('resultArea').style.display = 'block';
                 document.getElementById('resultArea').innerHTML =
                     '<div class="complete-box">' +
                     '<strong>Done!</strong> ' + (result.with_recalls || 0) + ' vehicle(s) with recalls found out of ' + (result.processed || 0) + ' checked.' +
+                    emailMsg +
                     '</div>';
 
                 document.getElementById('buttonArea').innerHTML =
