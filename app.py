@@ -182,6 +182,12 @@ def status(job_id):
     return jsonify(jobs[job_id])
 
 
+@app.route('/dashboard')
+def dashboard():
+    sorted_jobs = sorted(jobs.items(), key=lambda x: x[1].get('started', ''), reverse=True)
+    return render_template('dashboard.html', jobs=sorted_jobs)
+
+
 @app.route('/download/<job_id>')
 def download(job_id):
     if job_id not in jobs:

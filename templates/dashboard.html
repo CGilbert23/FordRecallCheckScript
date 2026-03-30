@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Ford Recall Checker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 900px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .card { background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+        tr:last-child td { border-bottom: none; }
+        .status-complete { color: #166534; background: #f0fdf4; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+        .status-running { color: #854d0e; background: #fef9c3; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+        .status-error { color: #b91c1c; background: #fef2f2; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+        .status-starting { color: #1e40af; background: #eff6ff; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+        .email-yes { color: #166534; }
+        .email-no { color: #b91c1c; }
+        .email-pending { color: #888; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-secondary { background: #6b7280; }
+        .btn-secondary:hover { background: #4b5563; }
+        .actions { margin-bottom: 20px; display: flex; gap: 10px; }
+        .empty { text-align: center; color: #888; padding: 40px; }
+        a.job-link { color: #0068d6; text-decoration: none; font-family: monospace; }
+        a.job-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard</h1>
+        <p class="subtitle">All recall check jobs</p>
+
+        <div class="actions">
+            <a href="/" class="btn">New Check</a>
+        </div>
+
+        <div class="card">
+            {% if jobs %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Job ID</th>
+                        <th>Date</th>
+                        <th>VINs</th>
+                        <th>Email</th>
+                        <th>Email Sent</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job_id, job in jobs %}
+                    <tr>
+                        <td><a href="/job/{{ job_id }}" class="job-link">{{ job_id }}</a></td>
+                        <td>{{ job.started[:16] | replace('T', ' ') if job.started else '—' }}</td>
+                        <td>{{ job.vin_count }}</td>
+                        <td>{{ job.email or '—' }}</td>
+                        <td>
+                            {% if job.email_sent == true %}
+                                <span class="email-yes">Sent</span>
+                            {% elif job.email_sent == false %}
+                                <span class="email-no">Failed</span>
+                            {% elif job.status in ['running', 'starting'] %}
+                                <span class="email-pending">Pending</span>
+                            {% elif not job.email %}
+                                <span class="email-pending">—</span>
+                            {% else %}
+                                <span class="email-pending">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if job.status == 'complete' %}
+                                <span class="status-complete">Complete</span>
+                            {% elif job.status == 'running' %}
+                                <span class="status-running">Running</span>
+                            {% elif job.status == 'error' %}
+                                <span class="status-error">Error</span>
+                            {% elif job.status == 'starting' %}
+                                <span class="status-starting">Starting</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty">No jobs yet. Start a new recall check to see results here.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
