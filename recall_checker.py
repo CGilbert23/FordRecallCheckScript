@@ -474,7 +474,7 @@ def process_recalls(vins, output_file, progress_callback=None):
             cell.border = left_border
 
     for col in range(1, results_sheet.max_column + 1):
-        results_sheet.column_dimensions[results_sheet.cell(row=1, column=col).column_letter].width = 20
+        results_sheet.column_dimensions[results_sheet.cell(row=1, column=col).column_letter].width = 25
 
     wb.save(output_file)
 
