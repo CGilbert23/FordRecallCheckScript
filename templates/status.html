@@ -40,7 +40,7 @@
             <div class="details">
                 <p><strong>VINs to check:</strong> <span class="value">{{ job.vin_count }}</span></p>
                 <p><strong>Email:</strong> <span class="value">{{ job.email or '—' }}</span></p>
-                <p><strong>Estimated time:</strong> <span class="value">~{{ (job.vin_count * 8 // 60) if job.vin_count * 8 >= 60 else 1 }} minute{{ 's' if job.vin_count * 8 >= 120 or job.vin_count * 8 < 60 else '' }}</span></p>
+                <p><strong>Estimated time:</strong> <span class="value">~{{ (job.vin_count * 60 // 60) }} minute{{ 's' if job.vin_count != 1 else '' }}</span></p>
             </div>
 
             <a href="/dashboard" class="btn">View Dashboard</a>
