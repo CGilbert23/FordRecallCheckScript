@@ -120,16 +120,8 @@ def submit():
     if any(j['status'] == 'running' for j in jobs.values()):
         return render_template('index.html', running=True, error='A job is already running. Please wait for it to finish.')
 
-    vins = []
-
-    uploaded = request.files.get('vinfile')
-    if uploaded and uploaded.filename:
-        content = uploaded.read().decode('utf-8', errors='ignore')
-        vins = [line.strip() for line in content.splitlines() if line.strip()]
-
-    if not vins:
-        text = request.form.get('vins', '')
-        vins = [line.strip() for line in text.splitlines() if line.strip()]
+    text = request.form.get('vins', '')
+    vins = [line.strip() for line in text.splitlines() if line.strip()]
 
     vins = [v.upper() for v in vins if len(v) == 17 and v.isalnum()]
 
@@ -138,11 +130,17 @@ def submit():
     if not vins:
         return render_template('index.html', running=False, error='No valid VINs found. Each VIN must be exactly 17 alphanumeric characters.')
 
+    email = request.form.get('email', '').strip()
+    name = request.form.get('name', '').strip()
+
     job_id = uuid.uuid4().hex[:12]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(OUTPUT_DIR, f'FORD_RECALLS_{job_id}_{timestamp}.xlsx')
-
-    email = request.form.get('email', '').strip()
+    safe_name = ''.join(c for c in name if c.isalnum() or c in ' _-').strip().replace(' ', '_')
+    if safe_name:
+        filename = f'{safe_name}_Ford_Recalls_{timestamp}.xlsx'
+    else:
+        filename = f'Ford_Recalls_{timestamp}.xlsx'
+    output_file = os.path.join(OUTPUT_DIR, filename)
 
     jobs[job_id] = {
         'status': 'starting',
@@ -151,6 +149,7 @@ def submit():
         'started': datetime.now().isoformat(),
         'vin_count': len(vins),
         'email': email or None,
+        'name': name or None,
     }
 
     logger.info(f"Created job {job_id}")
