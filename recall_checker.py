@@ -361,7 +361,7 @@ def check_ford_recall(driver, vin, log_file=None):
         }
 
 
-def process_recalls(vins, output_file, progress_callback=None):
+def process_recalls(vins, output_file, progress_callback=None, vin_companies=None):
     """
     Process a list of VINs and create Excel results file.
     progress_callback: optional function that receives a dict with status updates.
@@ -442,7 +442,12 @@ def process_recalls(vins, output_file, progress_callback=None):
             log_file.close()
 
     # Build final Excel
-    final_headers = ['VIN', 'Has Recall']
+    has_companies = vin_companies is not None
+
+    final_headers = []
+    if has_companies:
+        final_headers.append('Company')
+    final_headers.extend(['VIN', 'Has Recall'])
     for i in range(1, max_recalls_found + 1):
         final_headers.append(f'Recall #{i}: Number')
         final_headers.append(f'Recall #{i}: Description')
@@ -452,7 +457,10 @@ def process_recalls(vins, output_file, progress_callback=None):
     results_sheet.append(final_headers)
 
     for result in temp_results:
-        row_data = [result['vin'], 'Yes']
+        row_data = []
+        if has_companies:
+            row_data.append(vin_companies.get(result['vin'], ''))
+        row_data.extend([result['vin'], 'Yes'])
         for recall in result['recalls']:
             row_data.append(recall['number'])
             row_data.append(recall['description'])
@@ -467,9 +475,10 @@ def process_recalls(vins, output_file, progress_callback=None):
         results_sheet.append(row_data)
 
     left_border = Border(left=Side(style='thin', color='000000'))
+    base_cols = 3 if has_companies else 2
     for row_idx in range(1, results_sheet.max_row + 1):
         for recall_num in range(1, max_recalls_found + 1):
-            col_idx = 2 + (recall_num - 1) * 3 + 1
+            col_idx = base_cols + (recall_num - 1) * 3 + 1
             cell = results_sheet.cell(row=row_idx, column=col_idx)
             cell.border = left_border
 

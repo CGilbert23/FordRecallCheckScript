@@ -8,6 +8,8 @@ from datetime import datetime
 from flask import Flask, request, render_template, jsonify, send_file, redirect, url_for
 from recall_checker import process_recalls
 import resend
+import io
+import openpyxl
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -27,12 +29,57 @@ OUTPUT_DIR = os.path.join(BASE_DIR, 'outputs')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
+def parse_excel_upload(file_storage):
+    """Parse uploaded Excel file. Returns (vins, vin_companies).
+    vin_companies is a dict {vin: company_name} if company names found, else None.
+    """
+    wb = openpyxl.load_workbook(io.BytesIO(file_storage.read()), read_only=True)
+    ws = wb.active
+
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    if not rows:
+        return [], None
+
+    # Auto-detect format: check if col B has VINs
+    has_company = False
+    for row in rows:
+        if len(row) >= 2 and row[1]:
+            val = str(row[1]).strip()
+            if len(val) == 17 and val.isalnum():
+                has_company = True
+                break
+
+    vins = []
+    vin_companies = {}
+
+    for row in rows:
+        if has_company:
+            if len(row) < 2 or not row[1]:
+                continue
+            company = str(row[0]).strip() if row[0] else ''
+            vin = str(row[1]).strip().upper()
+            if not (len(vin) == 17 and vin.isalnum()):
+                continue
+            vins.append(vin)
+            vin_companies[vin] = company
+        else:
+            if not row[0]:
+                continue
+            vin = str(row[0]).strip().upper()
+            if not (len(vin) == 17 and vin.isalnum()):
+                continue
+            vins.append(vin)
+
+    return vins, vin_companies if has_company else None
+
+
 def queue_worker():
     """Worker thread that processes jobs one at a time from the queue."""
     while True:
-        job_id, vins, output_file = job_queue.get()
+        job_id, vins, output_file, vin_companies = job_queue.get()
         try:
-            run_job(job_id, vins, output_file)
+            run_job(job_id, vins, output_file, vin_companies)
         except Exception as e:
             logger.error(f"Queue worker error for job {job_id}: {str(e)}")
         finally:
@@ -86,14 +133,14 @@ def send_results_email(email, output_file, result):
         return False
 
 
-def run_job(job_id, vins, output_file):
+def run_job(job_id, vins, output_file, vin_companies=None):
     def on_progress(data):
         jobs[job_id]['progress'] = data
 
     try:
         logger.info(f"Job {job_id}: starting with {len(vins)} VINs")
         jobs[job_id]['status'] = 'running'
-        result = process_recalls(vins, output_file, progress_callback=on_progress)
+        result = process_recalls(vins, output_file, progress_callback=on_progress, vin_companies=vin_companies)
         jobs[job_id]['status'] = 'complete'
         jobs[job_id]['result'] = result
         jobs[job_id]['output_file'] = output_file
@@ -143,10 +190,13 @@ def index():
 def submit():
     logger.info("Submit received")
 
-    text = request.form.get('vins', '')
-    vins = [line.strip() for line in text.splitlines() if line.strip()]
-
-    vins = [v.upper() for v in vins if len(v) == 17 and v.isalnum()]
+    excel_file = request.files.get('excel_file')
+    if excel_file and excel_file.filename:
+        vins, vin_companies = parse_excel_upload(excel_file)
+    else:
+        text = request.form.get('vins', '')
+        vins = [v.upper() for v in (line.strip() for line in text.splitlines() if line.strip()) if len(v) == 17 and v.isalnum()]
+        vin_companies = None
 
     logger.info(f"Parsed {len(vins)} valid VINs")
 
@@ -178,11 +228,12 @@ def submit():
         'vin_count': len(vins),
         'email': email or None,
         'name': name or None,
+        'vin_companies': vin_companies,
     }
 
     logger.info(f"Created job {job_id} (status: {initial_status})")
 
-    job_queue.put((job_id, vins, output_file))
+    job_queue.put((job_id, vins, output_file, vin_companies))
 
     return redirect(url_for('job_page', job_id=job_id))
 
