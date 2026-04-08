@@ -25,6 +25,9 @@ OUTPUT_DIR = os.path.join(BASE_DIR, 'outputs')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
+ALWAYS_CC_EMAIL = 'mobileservice@fredbeans.com'
+
+
 def send_results_email(email, output_file, result):
     """Send the Excel results file to the user via Resend."""
     try:
@@ -35,9 +38,13 @@ def send_results_email(email, output_file, result):
         with_recalls = result.get('with_recalls', 0)
         processed = result.get('processed', 0)
 
+        recipients = [email]
+        if email.lower() != ALWAYS_CC_EMAIL.lower():
+            recipients.append(ALWAYS_CC_EMAIL)
+
         resend.Emails.send({
             "from": RESEND_FROM_EMAIL,
-            "to": [email],
+            "to": recipients,
             "subject": f"Ford Recall Results - {with_recalls} recall(s) found",
             "html": (
                 f"<h2>Ford Recall Check Complete</h2>"

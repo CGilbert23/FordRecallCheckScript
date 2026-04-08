@@ -45,8 +45,21 @@
                         <input type="text" name="name" id="name" placeholder="Q1 Fleet Check" required style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem;">
                     </div>
                     <div style="flex: 1;">
-                        <label for="email">Email</label>
-                        <input type="email" name="email" id="email" placeholder="you@example.com" required style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem;">
+                        <label for="emailSelect">Email</label>
+                        <select name="email_select" id="emailSelect" required style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem; background: #fff;">
+                            <option value="" disabled selected>Select email...</option>
+                            <option value="callen@fredbeans.com">callen@fredbeans.com</option>
+                            <option value="chris.gilbert@fredbeans.com">chris.gilbert@fredbeans.com</option>
+                            <option value="ebradley@fredbeans.com">ebradley@fredbeans.com</option>
+                            <option value="estewart@fredbeans.com">estewart@fredbeans.com</option>
+                            <option value="fSmith@fredbeans.com">fSmith@fredbeans.com</option>
+                            <option value="mobileservice@fredbeans.com">mobileservice@fredbeans.com</option>
+                            <option value="sgood@fredbeans.com">sgood@fredbeans.com</option>
+                            <option value="svoyzey@fredbeans.com">svoyzey@fredbeans.com</option>
+                            <option value="OTHER">OTHER (Enter Yourself)</option>
+                        </select>
+                        <input type="email" name="email_custom" id="emailCustom" placeholder="you@example.com" style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem; margin-top: 8px; display: none;">
+                        <input type="hidden" name="email" id="emailHidden">
                     </div>
                 </div>
                 <p class="hint" style="margin-top: -12px; margin-bottom: 20px;">Name your file and get results emailed when done.</p>
@@ -65,7 +78,33 @@
     </div>
 
     <script>
+        var emailSelect = document.getElementById('emailSelect');
+        var emailCustom = document.getElementById('emailCustom');
+        var emailHidden = document.getElementById('emailHidden');
+
+        emailSelect.addEventListener('change', function() {
+            if (this.value === 'OTHER') {
+                emailCustom.style.display = 'block';
+                emailCustom.required = true;
+                emailHidden.value = '';
+            } else {
+                emailCustom.style.display = 'none';
+                emailCustom.required = false;
+                emailCustom.value = '';
+                emailHidden.value = this.value;
+            }
+        });
+
+        emailCustom.addEventListener('input', function() {
+            emailHidden.value = this.value;
+        });
+
         document.getElementById('vinForm').addEventListener('submit', function() {
+            if (emailSelect.value === 'OTHER') {
+                emailHidden.value = emailCustom.value;
+            } else {
+                emailHidden.value = emailSelect.value;
+            }
             var btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Submitting...';
