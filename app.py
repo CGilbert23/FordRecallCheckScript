@@ -1,6 +1,7 @@
 import os
 import sys
 import uuid
+import queue
 import threading
 import logging
 from datetime import datetime
@@ -17,12 +18,30 @@ app = Flask(__name__)
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'fordrecalls@voxapp.co')
 
-# In-memory job store
+# In-memory job store and queue
 jobs = {}
+job_queue = queue.Queue()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, 'outputs')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+def queue_worker():
+    """Worker thread that processes jobs one at a time from the queue."""
+    while True:
+        job_id, vins, output_file = job_queue.get()
+        try:
+            run_job(job_id, vins, output_file)
+        except Exception as e:
+            logger.error(f"Queue worker error for job {job_id}: {str(e)}")
+        finally:
+            job_queue.task_done()
+
+
+# Start the single worker thread
+worker_thread = threading.Thread(target=queue_worker, daemon=True)
+worker_thread.start()
 
 
 ALWAYS_CC_EMAIL = 'mobileservice@fredbeans.com'
@@ -116,16 +135,13 @@ def test_chrome():
 
 @app.route('/')
 def index():
-    running = any(j['status'] == 'running' for j in jobs.values())
-    return render_template('index.html', running=running)
+    active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))
+    return render_template('index.html', active_jobs=active)
 
 
 @app.route('/submit', methods=['POST'])
 def submit():
     logger.info("Submit received")
-
-    if any(j['status'] == 'running' for j in jobs.values()):
-        return render_template('index.html', running=True, error='A job is already running. Please wait for it to finish.')
 
     text = request.form.get('vins', '')
     vins = [line.strip() for line in text.splitlines() if line.strip()]
@@ -135,7 +151,8 @@ def submit():
     logger.info(f"Parsed {len(vins)} valid VINs")
 
     if not vins:
-        return render_template('index.html', running=False, error='No valid VINs found. Each VIN must be exactly 17 alphanumeric characters.')
+        active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))
+        return render_template('index.html', active_jobs=active, error='No valid VINs found. Each VIN must be exactly 17 alphanumeric characters.')
 
     email = request.form.get('email', '').strip()
     name = request.form.get('name', '').strip()
@@ -149,9 +166,13 @@ def submit():
         filename = f'Ford_Recalls_{timestamp}.xlsx'
     output_file = os.path.join(OUTPUT_DIR, filename)
 
+    # Check if another job is already running/queued
+    has_active = any(j['status'] in ('running', 'starting', 'queued') for j in jobs.values())
+    initial_status = 'queued' if has_active else 'starting'
+
     jobs[job_id] = {
-        'status': 'starting',
-        'progress': {'current': 0, 'total': len(vins), 'status': 'starting'},
+        'status': initial_status,
+        'progress': {'current': 0, 'total': len(vins), 'status': initial_status},
         'output_file': output_file,
         'started': datetime.now().isoformat(),
         'vin_count': len(vins),
@@ -159,12 +180,9 @@ def submit():
         'name': name or None,
     }
 
-    logger.info(f"Created job {job_id}")
+    logger.info(f"Created job {job_id} (status: {initial_status})")
 
-    t = threading.Thread(target=run_job, args=(job_id, vins, output_file))
-    t.start()
-
-    logger.info(f"Thread started for job {job_id}")
+    job_queue.put((job_id, vins, output_file))
 
     return redirect(url_for('job_page', job_id=job_id))
 

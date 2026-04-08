@@ -19,6 +19,7 @@
         .status-running { color: #854d0e; background: #fef9c3; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
         .status-error { color: #b91c1c; background: #fef2f2; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
         .status-starting { color: #1e40af; background: #eff6ff; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+        .status-queued { color: #6b21a8; background: #f5f3ff; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
         .email-yes { color: #166534; }
         .email-no { color: #b91c1c; }
         .email-pending { color: #888; }
@@ -66,7 +67,7 @@
                                 <span class="email-yes">Sent</span>
                             {% elif job.email_sent == false %}
                                 <span class="email-no">Failed</span>
-                            {% elif job.status in ['running', 'starting'] %}
+                            {% elif job.status in ['running', 'starting', 'queued'] %}
                                 <span class="email-pending">Pending</span>
                             {% elif not job.email %}
                                 <span class="email-pending">—</span>
@@ -83,6 +84,8 @@
                                 <span class="status-error">Error</span>
                             {% elif job.status == 'starting' %}
                                 <span class="status-starting">Starting</span>
+                            {% elif job.status == 'queued' %}
+                                <span class="status-queued">Queued</span>
                             {% endif %}
                         </td>
                     </tr>

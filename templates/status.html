@@ -31,11 +31,19 @@
         <p class="subtitle">Job <code>{{ job_id }}</code></p>
 
         <div class="card">
+            {% if job.status == 'queued' %}
+            <div class="confirm-icon">&#128338;</div>
+            <p class="confirm-title" style="color: #854d0e;">Your job is queued</p>
+            <p class="confirm-text">
+                A job is currently running. Your job will run as soon as there is availability. Results will be emailed when complete. You can safely close this page.
+            </p>
+            {% else %}
             <div class="confirm-icon">&#9989;</div>
             <p class="confirm-title">Your recall check is in progress!</p>
             <p class="confirm-text">
                 We're processing your VINs now. When it's done, the results will be emailed to you. You can safely close this page.
             </p>
+            {% endif %}
 
             <div class="details">
                 <p><strong>VINs to check:</strong> <span class="value">{{ job.vin_count }}</span></p>
