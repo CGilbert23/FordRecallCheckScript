@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduled Checks - Ford Recall Checker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1000px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        h2 { font-size: 1.1rem; margin: 24px 0 10px; color: #374151; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-secondary { background: #6b7280; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #991b1b; }
+        .actions { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        .filter { margin-left: auto; }
+        .filter select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; background: #fff; }
+        .empty { text-align: center; color: #888; padding: 40px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: #eff6ff; color: #1e40af; }
+        .badge-inactive { background: #f3f4f6; color: #6b7280; }
+        .cadence { text-transform: capitalize; }
+        .inline-actions { display: flex; gap: 6px; }
+        .inline-actions form { display: inline; }
+        .location-section { margin-bottom: 10px; }
+        .location-title { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid #0068d6; }
+        .location-groupwide .location-title { border-color: #7c3aed; }
+        .muted { color: #888; font-size: 0.85rem; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Scheduled Checks</h1>
+        <p class="subtitle">Recurring recall checks for commercial accounts. <a href="/" class="nav-link">New one-time check</a> &middot; <a href="/dashboard" class="nav-link">Job dashboard</a></p>
+
+        <div class="actions">
+            <a href="/schedules/new" class="btn">+ New Schedule</a>
+            <div class="filter">
+                <label for="locFilter" class="muted">Filter:</label>
+                <select id="locFilter">
+                    <option value="">All locations</option>
+                    {% for loc in locations %}
+                    <option value="{{ loc }}">{{ loc }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if not schedules %}
+        <div class="card">
+            <p class="empty">No scheduled checks yet. <a href="/schedules/new" class="nav-link">Create your first one.</a></p>
+        </div>
+        {% else %}
+        {% for loc in locations %}
+            {% set loc_schedules = schedules | selectattr('location', 'equalto', loc) | list %}
+            {% if loc_schedules %}
+            <div class="card location-section {% if loc == 'GroupWide' %}location-groupwide{% endif %}" data-location="{{ loc }}">
+                <div class="location-title">{{ loc }}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Cadence</th>
+                            <th>VINs</th>
+                            <th>Recipients</th>
+                            <th>Last Run</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for s in loc_schedules %}
+                        <tr>
+                            <td><strong>{{ s.company_name }}</strong></td>
+                            <td class="cadence">{{ s.cadence }}</td>
+                            <td>{{ s.vin_count }}</td>
+                            <td class="muted">{{ s.recipients | join(', ') if s.recipients else '—' }}</td>
+                            <td class="muted">
+                                {% if s.last_run %}
+                                    {{ s.last_run }}
+                                    {% if s.last_run_error %}
+                                        <div style="color: #b91c1c; font-size: 0.75rem;">Error: {{ s.last_run_error }}</div>
+                                    {% elif s.last_run_email_sent %}
+                                        <div style="color: #166534; font-size: 0.75rem;">Emailed</div>
+                                    {% else %}
+                                        <div style="color: #888; font-size: 0.75rem;">Not sent</div>
+                                    {% endif %}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if s.active %}
+                                <span class="badge">Active</span>
+                                {% else %}
+                                <span class="badge badge-inactive">Paused</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="inline-actions">
+                                    <form method="POST" action="/schedules/{{ s.id }}/run">
+                                        <button type="submit" class="btn btn-sm">Run Now</button>
+                                    </form>
+                                    <a href="/schedules/{{ s.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                                    <form method="POST" action="/schedules/{{ s.id }}/delete" onsubmit="return confirm('Delete this schedule? This cannot be undone.');">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById('locFilter').addEventListener('change', function() {
+            var selected = this.value;
+            document.querySelectorAll('.location-section').forEach(function(section) {
+                if (!selected || section.dataset.location === selected) {
+                    section.style.display = '';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
