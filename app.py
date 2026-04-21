@@ -255,11 +255,12 @@ def run_job(job_id, vins, output_file, vin_units=None, meta=None):
         recalls_found = result.get('with_recalls', 0)
         logger.info(f"Job {job_id}: complete - {recalls_found} recalls found")
 
-        override_recipients = meta.get('recipients')
-        override_subject = meta.get('subject')
-
-        if override_recipients:
-            sent = send_results_email(output_file, result, override_subject, override_recipients)
+        is_scheduled = meta.get('schedule_run_id') is not None
+        if is_scheduled:
+            # Scheduled runs always send email (always-CC handles empty recipient lists).
+            subject = meta.get('subject') or f"Ford Recall Results - {recalls_found} recall(s) found"
+            recipients = meta.get('recipients') or []
+            sent = send_results_email(output_file, result, subject, recipients)
         else:
             email = jobs[job_id].get('email')
             if email:
