@@ -10,6 +10,7 @@ from recall_checker import process_recalls
 import resend
 import io
 import openpyxl
+import db
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -178,6 +179,16 @@ def test_chrome():
         info['status'] = f'FAILED: {str(e)}'
         logger.error(f"Chrome test failed: {str(e)}")
     return jsonify(info)
+
+
+@app.route('/test-supabase')
+def test_supabase():
+    """Verify Supabase connection and that schedules table is reachable."""
+    try:
+        return jsonify(db.ping())
+    except Exception as e:
+        logger.error(f"Supabase ping failed: {str(e)}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 
 @app.route('/')

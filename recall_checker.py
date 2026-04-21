@@ -493,7 +493,7 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
 
     results_sheet.auto_filter.ref = results_sheet.dimensions
 
-    wide_cols = {'D', 'G', 'J', 'N'}
+    wide_cols = {'E', 'H', 'K', 'O'} if has_units else {'D', 'G', 'J', 'N'}
     for col in range(1, results_sheet.max_column + 1):
         letter = results_sheet.cell(row=1, column=col).column_letter
         results_sheet.column_dimensions[letter].width = 35 if letter in wide_cols else 25
