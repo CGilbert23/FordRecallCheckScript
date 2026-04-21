@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scheduled Checks - Ford Recall Checker</title>
+    <title>Commercial Scheduled Checks - Fred Beans Ford Recall Checker</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
-        .container { max-width: 1000px; margin: 60px auto; padding: 0 20px; }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        .container { max-width: 1100px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
         h2 { font-size: 1.1rem; margin: 24px 0 10px; color: #374151; }
-        .subtitle { color: #666; margin-bottom: 30px; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
         .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -42,8 +46,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Scheduled Checks</h1>
-        <p class="subtitle">Recurring recall checks for commercial accounts. <a href="/" class="nav-link">New one-time check</a> &middot; <a href="/dashboard" class="nav-link">Job dashboard</a></p>
+        <h1>Fred Beans Ford - Recall Checker</h1>
+        <div class="page-nav">
+            <a href="/" class="nav-tab">Vin List: One Time Check</a>
+            <a href="/dashboard" class="nav-tab">View Run Log</a>
+            <a href="/schedules" class="nav-tab active">Commercial Account: Scheduled Checks</a>
+        </div>
+        <p class="subtitle">Recurring recall checks for commercial accounts.</p>
 
         <div class="actions">
             <a href="/schedules/new" class="btn">+ New Schedule</a>
