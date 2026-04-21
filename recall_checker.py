@@ -1,5 +1,5 @@
 import openpyxl
-from openpyxl.styles import Border, Side
+from openpyxl.styles import Border, Side, PatternFill, Font, Alignment
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -361,7 +361,7 @@ def check_ford_recall(driver, vin, log_file=None):
         }
 
 
-def process_recalls(vins, output_file, progress_callback=None, vin_companies=None):
+def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     """
     Process a list of VINs and create Excel results file.
     progress_callback: optional function that receives a dict with status updates.
@@ -442,11 +442,11 @@ def process_recalls(vins, output_file, progress_callback=None, vin_companies=Non
             log_file.close()
 
     # Build final Excel
-    has_companies = vin_companies is not None
+    has_units = vin_units is not None
 
     final_headers = []
-    if has_companies:
-        final_headers.append('Company')
+    if has_units:
+        final_headers.append('Unit #')
     final_headers.extend(['VIN', 'Has Recall'])
     for i in range(1, max_recalls_found + 1):
         final_headers.append(f'Recall #{i}: Number')
@@ -458,8 +458,8 @@ def process_recalls(vins, output_file, progress_callback=None, vin_companies=Non
 
     for result in temp_results:
         row_data = []
-        if has_companies:
-            row_data.append(vin_companies.get(result['vin'], ''))
+        if has_units:
+            row_data.append(vin_units.get(result['vin'], ''))
         row_data.extend([result['vin'], 'Yes'])
         for recall in result['recalls']:
             row_data.append(recall['number'])
@@ -475,15 +475,28 @@ def process_recalls(vins, output_file, progress_callback=None, vin_companies=Non
         results_sheet.append(row_data)
 
     left_border = Border(left=Side(style='thin', color='000000'))
-    base_cols = 3 if has_companies else 2
+    base_cols = 3 if has_units else 2
     for row_idx in range(1, results_sheet.max_row + 1):
         for recall_num in range(1, max_recalls_found + 1):
             col_idx = base_cols + (recall_num - 1) * 3 + 1
             cell = results_sheet.cell(row=row_idx, column=col_idx)
             cell.border = left_border
 
+    header_fill = PatternFill(start_color='1F3864', end_color='1F3864', fill_type='solid')
+    header_font = Font(color='FFFFFF', bold=True)
+    header_alignment = Alignment(horizontal='center', vertical='center')
     for col in range(1, results_sheet.max_column + 1):
-        results_sheet.column_dimensions[results_sheet.cell(row=1, column=col).column_letter].width = 25
+        cell = results_sheet.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    results_sheet.auto_filter.ref = results_sheet.dimensions
+
+    wide_cols = {'D', 'G', 'J', 'N'}
+    for col in range(1, results_sheet.max_column + 1):
+        letter = results_sheet.cell(row=1, column=col).column_letter
+        results_sheet.column_dimensions[letter].width = 35 if letter in wide_cols else 25
 
     wb.save(output_file)
 
