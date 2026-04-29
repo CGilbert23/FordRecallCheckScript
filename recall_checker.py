@@ -122,6 +122,30 @@ def debug_log(log_file, vin, message):
         log_file.flush()
 
 
+_diag_dump_count = 0
+_DIAG_DUMP_LIMIT = 5
+
+
+def diag_dump(driver, vin, reason, log_file):
+    """Save page HTML + screenshot when scraping silently returns no recalls,
+    so we can see what Ford actually returned. Capped at _DIAG_DUMP_LIMIT per run."""
+    global _diag_dump_count
+    if _diag_dump_count >= _DIAG_DUMP_LIMIT or not log_file:
+        return
+    _diag_dump_count += 1
+    output_dir = os.path.dirname(log_file.name)
+    timestamp = datetime.now().strftime("%H%M%S")
+    base = os.path.join(output_dir, f"DIAG_{vin}_{timestamp}")
+    try:
+        with open(base + ".html", 'w', encoding='utf-8') as f:
+            f.write(f"<!-- VIN: {vin} | reason: {reason} | url: {driver.current_url} -->\n")
+            f.write(driver.page_source)
+        driver.save_screenshot(base + ".png")
+        debug_log(log_file, vin, f"DIAG dumped ({reason}): {base}.html + .png")
+    except Exception as e:
+        debug_log(log_file, vin, f"DIAG dump failed: {str(e)[:100]}")
+
+
 def check_ford_recall(driver, vin, log_file=None):
     """
     Check Ford recall status for a given VIN using Selenium
@@ -217,6 +241,7 @@ def check_ford_recall(driver, vin, log_file=None):
 
         if '/recalls-details/' not in driver.current_url:
             debug_log(log_file, vin, f"Redirect detected, navigating back...")
+            diag_dump(driver, vin, "redirect_after_submit", log_file)
             driver.get(url)
             time.sleep(3)
             debug_log(log_file, vin, f"URL after redirect: {driver.current_url}")
@@ -251,6 +276,7 @@ def check_ford_recall(driver, vin, log_file=None):
             safety_header = driver.find_elements(By.CSS_SELECTOR, '[data-testid="button-safety-recalls-section-header"]')
 
             if not safety_header:
+                diag_dump(driver, vin, "no_safety_header", log_file)
                 return {
                     'hasRecall': False,
                     'recalls': []
@@ -264,6 +290,7 @@ def check_ford_recall(driver, vin, log_file=None):
                 recall_buttons = []
 
             if not recall_buttons:
+                diag_dump(driver, vin, "no_recall_buttons", log_file)
                 return {
                     'hasRecall': False,
                     'recalls': []
@@ -369,6 +396,9 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     """
     if not vins:
         return {'error': 'No VINs provided'}
+
+    global _diag_dump_count
+    _diag_dump_count = 0
 
     output_dir = os.path.dirname(output_file)
     os.makedirs(output_dir, exist_ok=True)
