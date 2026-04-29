@@ -11,46 +11,13 @@ import time
 from datetime import datetime
 import re
 import os
-import json
-import zipfile
-import tempfile
-
-
-def _build_proxy_auth_extension(host, port, user, password):
-    """Build an in-memory Chrome extension that handles proxy auth.
-    Chrome doesn't accept user:pass in --proxy-server, so we use the
-    webRequest.onAuthRequired API to inject credentials at request time."""
-    manifest = {
-        "version": "1.0.0",
-        "manifest_version": 2,
-        "name": "Proxy Auth",
-        "permissions": [
-            "proxy", "tabs", "unlimitedStorage", "storage",
-            "webRequest", "webRequestBlocking", "<all_urls>"
-        ],
-        "background": {"scripts": ["background.js"]},
-        "minimum_chrome_version": "22.0.0"
-    }
-    background_js = (
-        'var config = {mode:"fixed_servers",rules:{singleProxy:{scheme:"http",'
-        'host:%s,port:parseInt(%s)},bypassList:["localhost"]}};'
-        'chrome.proxy.settings.set({value:config,scope:"regular"},function(){});'
-        'chrome.webRequest.onAuthRequired.addListener('
-        'function(details){return {authCredentials:{username:%s,password:%s}};},'
-        '{urls:["<all_urls>"]},["blocking"]);'
-    ) % (json.dumps(host), json.dumps(str(port)),
-         json.dumps(user), json.dumps(password))
-
-    fd, path = tempfile.mkstemp(suffix='.zip', prefix='proxy_auth_')
-    os.close(fd)
-    with zipfile.ZipFile(path, 'w') as zf:
-        zf.writestr('manifest.json', json.dumps(manifest))
-        zf.writestr('background.js', background_js)
-    return path
 
 
 def setup_driver():
-    """Setup headless Chrome driver with anti-detection options"""
+    """Setup headless Chrome driver with anti-detection options.
+    When PROXY_* env vars are set, routes through selenium-wire so the
+    upstream residential proxy auth is handled at the request level
+    (Chrome's extension-based auth doesn't reliably work in --headless=new)."""
     from selenium.webdriver.chrome.service import Service
     import shutil
     import logging
@@ -70,16 +37,22 @@ def setup_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_argument('--log-level=3')
-    if not use_proxy:
-        chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--disable-software-rasterizer')
     chrome_options.add_argument('--remote-debugging-port=9222')
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
+    seleniumwire_options = None
     if use_proxy:
-        ext_path = _build_proxy_auth_extension(proxy_host, proxy_port, proxy_user, proxy_pass)
-        chrome_options.add_extension(ext_path)
-        print(f"[SCRAPER] proxy enabled: {proxy_host}:{proxy_port} (user={proxy_user[:4]}***)", flush=True)
+        proxy_url = f'http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}'
+        seleniumwire_options = {
+            'proxy': {
+                'http': proxy_url,
+                'https': proxy_url,
+                'no_proxy': 'localhost,127.0.0.1',
+            }
+        }
+        print(f"[SCRAPER] proxy enabled (selenium-wire): {proxy_host}:{proxy_port} (user={proxy_user[:4]}***)", flush=True)
     else:
         print("[SCRAPER] no PROXY_* env vars set — direct connection (Ford will block from datacenter IPs)", flush=True)
 
@@ -89,15 +62,23 @@ def setup_driver():
         chrome_options.binary_location = chrome_bin
         logger.info(f"Using Chrome binary: {chrome_bin}")
 
-    # Find chromedriver
+    # Pick selenium-wire when proxy is in use, plain selenium otherwise.
+    if use_proxy:
+        from seleniumwire import webdriver as wire_webdriver
+        driver_cls = wire_webdriver.Chrome
+        driver_kwargs = {'options': chrome_options, 'seleniumwire_options': seleniumwire_options}
+    else:
+        driver_cls = webdriver.Chrome
+        driver_kwargs = {'options': chrome_options}
+
     chromedriver_path = shutil.which('chromedriver')
     if chromedriver_path:
         logger.info(f"Using chromedriver: {chromedriver_path}")
-        service = Service(executable_path=chromedriver_path)
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver_kwargs['service'] = Service(executable_path=chromedriver_path)
     else:
         logger.info("Using default chromedriver detection")
-        driver = webdriver.Chrome(options=chrome_options)
+
+    driver = driver_cls(**driver_kwargs)
 
     # Hide navigator.webdriver flag
     try:
