@@ -15,9 +15,9 @@ import os
 
 def setup_driver():
     """Setup headless Chrome driver with anti-detection options.
-    When PROXY_* env vars are set, routes through selenium-wire so the
-    upstream residential proxy auth is handled at the request level
-    (Chrome's extension-based auth doesn't reliably work in --headless=new)."""
+    Routes through PROXY_HOST:PROXY_PORT when both are set. Auth is via
+    IP-whitelist on the proxy provider (the VPS's outbound IP is allowed
+    in the IPRoyal dashboard) so no user/pass handshake is needed."""
     from selenium.webdriver.chrome.service import Service
     import shutil
     import logging
@@ -25,9 +25,7 @@ def setup_driver():
 
     proxy_host = os.environ.get('PROXY_HOST')
     proxy_port = os.environ.get('PROXY_PORT')
-    proxy_user = os.environ.get('PROXY_USER')
-    proxy_pass = os.environ.get('PROXY_PASS')
-    use_proxy = all([proxy_host, proxy_port, proxy_user, proxy_pass])
+    use_proxy = bool(proxy_host and proxy_port)
 
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
@@ -42,19 +40,11 @@ def setup_driver():
     chrome_options.add_argument('--remote-debugging-port=9222')
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
-    seleniumwire_options = None
     if use_proxy:
-        proxy_url = f'http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}'
-        seleniumwire_options = {
-            'proxy': {
-                'http': proxy_url,
-                'https': proxy_url,
-                'no_proxy': 'localhost,127.0.0.1',
-            }
-        }
-        print(f"[SCRAPER] proxy enabled (selenium-wire): {proxy_host}:{proxy_port} (user={proxy_user[:4]}***)", flush=True)
+        chrome_options.add_argument(f'--proxy-server=http://{proxy_host}:{proxy_port}')
+        print(f"[SCRAPER] proxy enabled: {proxy_host}:{proxy_port} (IP-whitelist auth)", flush=True)
     else:
-        print("[SCRAPER] no PROXY_* env vars set — direct connection (Ford will block from datacenter IPs)", flush=True)
+        print("[SCRAPER] no PROXY_HOST/PROXY_PORT set — direct connection (Ford will block from datacenter IPs)", flush=True)
 
     # Support custom Chrome binary (e.g. in Docker with Chromium)
     chrome_bin = os.environ.get('CHROME_BIN')
@@ -62,23 +52,14 @@ def setup_driver():
         chrome_options.binary_location = chrome_bin
         logger.info(f"Using Chrome binary: {chrome_bin}")
 
-    # Pick selenium-wire when proxy is in use, plain selenium otherwise.
-    if use_proxy:
-        from seleniumwire import webdriver as wire_webdriver
-        driver_cls = wire_webdriver.Chrome
-        driver_kwargs = {'options': chrome_options, 'seleniumwire_options': seleniumwire_options}
-    else:
-        driver_cls = webdriver.Chrome
-        driver_kwargs = {'options': chrome_options}
-
     chromedriver_path = shutil.which('chromedriver')
     if chromedriver_path:
         logger.info(f"Using chromedriver: {chromedriver_path}")
-        driver_kwargs['service'] = Service(executable_path=chromedriver_path)
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
     else:
         logger.info("Using default chromedriver detection")
-
-    driver = driver_cls(**driver_kwargs)
+        driver = webdriver.Chrome(options=chrome_options)
 
     # Hide navigator.webdriver flag
     try:
