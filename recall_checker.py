@@ -163,7 +163,25 @@ def check_ford_recall(driver, vin, log_file=None):
         wait = WebDriverWait(driver, 15)
 
         driver.get(url)
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="vin-search-text-field"]')))
+        _live(f"VIN {vin}: page loaded — title='{driver.title}' url={driver.current_url}")
+        try:
+            initial_body = driver.find_element(By.TAG_NAME, "body").text
+            _live(f"VIN {vin}: body[0:400]={initial_body[:400]!r}")
+        except Exception as e:
+            _live(f"VIN {vin}: could not read body: {str(e)[:100]}")
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="vin-search-text-field"]')))
+        except Exception:
+            _live(f"VIN {vin}: VIN INPUT NOT FOUND within 15s — selector '[data-testid=\"vin-search-text-field\"]' missing on page")
+            try:
+                inputs = driver.find_elements(By.TAG_NAME, "input")
+                _live(f"VIN {vin}: page has {len(inputs)} <input> elements")
+                for i, el in enumerate(inputs[:8]):
+                    _live(f"VIN {vin}:   input[{i}] testid={el.get_attribute('data-testid')} name={el.get_attribute('name')} placeholder={el.get_attribute('placeholder')!r}")
+            except Exception as e:
+                _live(f"VIN {vin}: could not enumerate inputs: {str(e)[:100]}")
+            diag_dump(driver, vin, "vin_input_not_found", log_file)
+            raise
         debug_log(log_file, vin, f"URL after load: {driver.current_url}")
 
         wait_for_overlays_to_clear(driver)
