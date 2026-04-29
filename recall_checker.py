@@ -146,12 +146,18 @@ def diag_dump(driver, vin, reason, log_file):
         debug_log(log_file, vin, f"DIAG dump failed: {str(e)[:100]}")
 
 
+def _live(msg):
+    """Print to stdout so it shows up in `docker logs -f ford-checker`."""
+    print(f"[SCRAPER] {msg}", flush=True)
+
+
 def check_ford_recall(driver, vin, log_file=None):
     """
     Check Ford recall status for a given VIN using Selenium
     Returns: dict with hasRecall and recalls list
     """
     url = "https://www.ford.com/support/recalls-details/"
+    _live(f"VIN {vin}: starting")
 
     try:
         wait = WebDriverWait(driver, 15)
@@ -240,6 +246,7 @@ def check_ford_recall(driver, vin, log_file=None):
         debug_log(log_file, vin, f"URL after submit: {driver.current_url}")
 
         if '/recalls-details/' not in driver.current_url:
+            _live(f"VIN {vin}: REDIRECT after submit -> {driver.current_url}")
             debug_log(log_file, vin, f"Redirect detected, navigating back...")
             diag_dump(driver, vin, "redirect_after_submit", log_file)
             driver.get(url)
@@ -260,8 +267,11 @@ def check_ford_recall(driver, vin, log_file=None):
 
         body_text = driver.find_element(By.TAG_NAME, "body").text
         debug_log(log_file, vin, f"Page title: {driver.title}")
+        _live(f"VIN {vin}: page title='{driver.title}' url={driver.current_url}")
+        _live(f"VIN {vin}: body[0:300]={body_text[:300]!r}")
 
         if 'no recalls' in body_text.lower() or 'there are no recalls' in body_text.lower():
+            _live(f"VIN {vin}: RESULT = no recalls (text match)")
             return {
                 'hasRecall': False,
                 'recalls': []
@@ -276,6 +286,7 @@ def check_ford_recall(driver, vin, log_file=None):
             safety_header = driver.find_elements(By.CSS_SELECTOR, '[data-testid="button-safety-recalls-section-header"]')
 
             if not safety_header:
+                _live(f"VIN {vin}: RESULT = no recalls (safety_header selector NOT FOUND — likely Ford changed markup)")
                 diag_dump(driver, vin, "no_safety_header", log_file)
                 return {
                     'hasRecall': False,
@@ -290,11 +301,13 @@ def check_ford_recall(driver, vin, log_file=None):
                 recall_buttons = []
 
             if not recall_buttons:
+                _live(f"VIN {vin}: RESULT = no recalls (safety_header found but no recall_buttons in tablist)")
                 diag_dump(driver, vin, "no_recall_buttons", log_file)
                 return {
                     'hasRecall': False,
                     'recalls': []
                 }
+            _live(f"VIN {vin}: found {len(recall_buttons)} recall button(s) — extracting")
 
             for idx in range(len(recall_buttons)):
                 try:
@@ -369,6 +382,7 @@ def check_ford_recall(driver, vin, log_file=None):
 
             if recall_info['recalls']:
                 recall_info['hasRecall'] = True
+                _live(f"VIN {vin}: RESULT = {len(recall_info['recalls'])} recall(s) extracted")
 
         except Exception as e:
             if 'no recalls' in body_text.lower() or 'there are no recalls' in body_text.lower():
@@ -382,6 +396,7 @@ def check_ford_recall(driver, vin, log_file=None):
         return recall_info
 
     except Exception as e:
+        _live(f"VIN {vin}: EXCEPTION {type(e).__name__}: {str(e)[:200]}")
         return {
             'hasRecall': None,
             'recalls': [{'number': 'ERROR', 'description': f'Error: {str(e)[:150]}', 'remedy_available': None}]
