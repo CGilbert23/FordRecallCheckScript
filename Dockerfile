@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 # Install Chromium and ChromeDriver
 RUN apt-get update && \
