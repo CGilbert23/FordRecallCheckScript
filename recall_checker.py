@@ -14,11 +14,10 @@ import os
 
 
 def setup_driver():
-    """Setup headless Chrome driver with anti-detection options.
-    Routes through PROXY_HOST:PROXY_PORT when both are set. Auth is via
-    IP-whitelist on the proxy provider (the VPS's outbound IP is allowed
-    in the IPRoyal dashboard) so no user/pass handshake is needed."""
-    from selenium.webdriver.chrome.service import Service
+    """Setup undetected-chromedriver — patches Chrome to bypass Akamai/PerimeterX
+    bot detection that catches plain Selenium. Routes through PROXY_HOST:PROXY_PORT
+    when both are set; auth is IP-whitelist on the proxy side (no user/pass)."""
+    import undetected_chromedriver as uc
     import shutil
     import logging
     logger = logging.getLogger(__name__)
@@ -27,47 +26,34 @@ def setup_driver():
     proxy_port = os.environ.get('PROXY_PORT')
     use_proxy = bool(proxy_host and proxy_port)
 
-    chrome_options = Options()
-    chrome_options.add_argument('--headless=new')
-    chrome_options.add_argument('--window-size=1920,1080')
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-    chrome_options.add_argument('--log-level=3')
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--disable-software-rasterizer')
-    chrome_options.add_argument('--remote-debugging-port=9222')
-    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    options = uc.ChromeOptions()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--disable-software-rasterizer')
 
     if use_proxy:
-        chrome_options.add_argument(f'--proxy-server=http://{proxy_host}:{proxy_port}')
+        options.add_argument(f'--proxy-server=http://{proxy_host}:{proxy_port}')
         print(f"[SCRAPER] proxy enabled: {proxy_host}:{proxy_port} (IP-whitelist auth)", flush=True)
     else:
         print("[SCRAPER] no PROXY_HOST/PROXY_PORT set — direct connection (Ford will block from datacenter IPs)", flush=True)
 
-    # Support custom Chrome binary (e.g. in Docker with Chromium)
     chrome_bin = os.environ.get('CHROME_BIN')
     if chrome_bin:
-        chrome_options.binary_location = chrome_bin
+        options.binary_location = chrome_bin
         logger.info(f"Using Chrome binary: {chrome_bin}")
 
     chromedriver_path = shutil.which('chromedriver')
-    if chromedriver_path:
-        logger.info(f"Using chromedriver: {chromedriver_path}")
-        service = Service(executable_path=chromedriver_path)
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-    else:
-        logger.info("Using default chromedriver detection")
-        driver = webdriver.Chrome(options=chrome_options)
 
-    # Hide navigator.webdriver flag
-    try:
-        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-            'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
-        })
-    except Exception as e:
-        logger.warning(f"Could not set CDP command: {e}")
+    # uc.Chrome's headless=True triggers UC's stealth-aware headless setup,
+    # which is more effective than passing --headless=new directly.
+    driver = uc.Chrome(
+        options=options,
+        headless=True,
+        use_subprocess=False,
+        driver_executable_path=chromedriver_path,
+    )
 
     return driver
 
