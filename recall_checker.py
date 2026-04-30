@@ -457,6 +457,15 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     driver = setup_driver()
     log_file = setup_debug_log(output_dir)
 
+    # One-shot proxy verification: have Chrome (via the proxy) report its
+    # outbound IP so we know whether --proxy-server is actually in effect.
+    try:
+        driver.get('https://ipv4.icanhazip.com')
+        observed_ip = driver.find_element(By.TAG_NAME, 'body').text.strip()
+        print(f"[SCRAPER] Chrome's outbound IP via proxy = {observed_ip!r}", flush=True)
+    except Exception as e:
+        print(f"[SCRAPER] proxy IP check failed: {type(e).__name__}: {str(e)[:200]}", flush=True)
+
     max_recalls_found = 0
     temp_results = []
 

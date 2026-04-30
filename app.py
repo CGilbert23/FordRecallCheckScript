@@ -95,7 +95,7 @@ worker_thread = threading.Thread(target=queue_worker, daemon=True)
 worker_thread.start()
 
 
-ALWAYS_CC_EMAIL = 'mobileservice@fredbeans.com'
+ALWAYS_CC_EMAIL = None  # Was 'mobileservice@fredbeans.com'; disabled — re-enable by restoring the address.
 
 
 def enqueue_scheduled_run(schedule_id, triggered_by='scheduled'):
@@ -187,6 +187,8 @@ def parse_recipients_text(text):
 
 def _ensure_always_cc(recipients):
     """Return recipients with ALWAYS_CC_EMAIL appended if not already present."""
+    if not ALWAYS_CC_EMAIL:
+        return list(recipients)
     lowered = {r.lower() for r in recipients}
     if ALWAYS_CC_EMAIL.lower() not in lowered:
         return list(recipients) + [ALWAYS_CC_EMAIL]
