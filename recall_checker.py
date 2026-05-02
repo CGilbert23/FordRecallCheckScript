@@ -14,46 +14,48 @@ import os
 
 
 def setup_driver():
-    """Setup undetected-chromedriver — patches Chrome to bypass Akamai/PerimeterX
-    bot detection that catches plain Selenium. Routes through PROXY_HOST:PROXY_PORT
-    when both are set; auth is IP-whitelist on the proxy side (no user/pass)."""
-    import undetected_chromedriver as uc
+    """Setup headless Chrome driver with anti-detection options"""
+    from selenium.webdriver.chrome.service import Service
     import shutil
     import logging
     logger = logging.getLogger(__name__)
 
-    proxy_host = os.environ.get('PROXY_HOST')
-    proxy_port = os.environ.get('PROXY_PORT')
-    use_proxy = bool(proxy_host and proxy_port)
+    chrome_options = Options()
+    chrome_options.add_argument('--headless=new')
+    chrome_options.add_argument('--window-size=1920,1080')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+    chrome_options.add_argument('--log-level=3')
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--disable-software-rasterizer')
+    chrome_options.add_argument('--remote-debugging-port=9222')
+    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
-    options = uc.ChromeOptions()
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--window-size=1920,1080')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--disable-software-rasterizer')
-
-    if use_proxy:
-        options.add_argument(f'--proxy-server=http://{proxy_host}:{proxy_port}')
-        print(f"[SCRAPER] proxy enabled: {proxy_host}:{proxy_port} (IP-whitelist auth)", flush=True)
-    else:
-        print("[SCRAPER] no PROXY_HOST/PROXY_PORT set — direct connection (Ford will block from datacenter IPs)", flush=True)
-
+    # Support custom Chrome binary (e.g. in Docker with Chromium)
     chrome_bin = os.environ.get('CHROME_BIN')
     if chrome_bin:
-        options.binary_location = chrome_bin
+        chrome_options.binary_location = chrome_bin
         logger.info(f"Using Chrome binary: {chrome_bin}")
 
+    # Find chromedriver
     chromedriver_path = shutil.which('chromedriver')
+    if chromedriver_path:
+        logger.info(f"Using chromedriver: {chromedriver_path}")
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    else:
+        logger.info("Using default chromedriver detection")
+        driver = webdriver.Chrome(options=chrome_options)
 
-    # uc.Chrome's headless=True triggers UC's stealth-aware headless setup,
-    # which is more effective than passing --headless=new directly.
-    driver = uc.Chrome(
-        options=options,
-        headless=True,
-        use_subprocess=False,
-        driver_executable_path=chromedriver_path,
-    )
+    # Hide navigator.webdriver flag
+    try:
+        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
+        })
+    except Exception as e:
+        logger.warning(f"Could not set CDP command: {e}")
 
     return driver
 
@@ -120,66 +122,18 @@ def debug_log(log_file, vin, message):
         log_file.flush()
 
 
-_diag_dump_count = 0
-_DIAG_DUMP_LIMIT = 5
-
-
-def diag_dump(driver, vin, reason, log_file):
-    """Save page HTML + screenshot when scraping silently returns no recalls,
-    so we can see what Ford actually returned. Capped at _DIAG_DUMP_LIMIT per run."""
-    global _diag_dump_count
-    if _diag_dump_count >= _DIAG_DUMP_LIMIT or not log_file:
-        return
-    _diag_dump_count += 1
-    output_dir = os.path.dirname(log_file.name)
-    timestamp = datetime.now().strftime("%H%M%S")
-    base = os.path.join(output_dir, f"DIAG_{vin}_{timestamp}")
-    try:
-        with open(base + ".html", 'w', encoding='utf-8') as f:
-            f.write(f"<!-- VIN: {vin} | reason: {reason} | url: {driver.current_url} -->\n")
-            f.write(driver.page_source)
-        driver.save_screenshot(base + ".png")
-        debug_log(log_file, vin, f"DIAG dumped ({reason}): {base}.html + .png")
-    except Exception as e:
-        debug_log(log_file, vin, f"DIAG dump failed: {str(e)[:100]}")
-
-
-def _live(msg):
-    """Print to stdout so it shows up in `docker logs -f ford-checker`."""
-    print(f"[SCRAPER] {msg}", flush=True)
-
-
 def check_ford_recall(driver, vin, log_file=None):
     """
     Check Ford recall status for a given VIN using Selenium
     Returns: dict with hasRecall and recalls list
     """
     url = "https://www.ford.com/support/recalls-details/"
-    _live(f"VIN {vin}: starting")
 
     try:
         wait = WebDriverWait(driver, 15)
 
         driver.get(url)
-        _live(f"VIN {vin}: page loaded — title='{driver.title}' url={driver.current_url}")
-        try:
-            initial_body = driver.find_element(By.TAG_NAME, "body").text
-            _live(f"VIN {vin}: body[0:400]={initial_body[:400]!r}")
-        except Exception as e:
-            _live(f"VIN {vin}: could not read body: {str(e)[:100]}")
-        try:
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="vin-search-text-field"]')))
-        except Exception:
-            _live(f"VIN {vin}: VIN INPUT NOT FOUND within 15s — selector '[data-testid=\"vin-search-text-field\"]' missing on page")
-            try:
-                inputs = driver.find_elements(By.TAG_NAME, "input")
-                _live(f"VIN {vin}: page has {len(inputs)} <input> elements")
-                for i, el in enumerate(inputs[:8]):
-                    _live(f"VIN {vin}:   input[{i}] testid={el.get_attribute('data-testid')} name={el.get_attribute('name')} placeholder={el.get_attribute('placeholder')!r}")
-            except Exception as e:
-                _live(f"VIN {vin}: could not enumerate inputs: {str(e)[:100]}")
-            diag_dump(driver, vin, "vin_input_not_found", log_file)
-            raise
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="vin-search-text-field"]')))
         debug_log(log_file, vin, f"URL after load: {driver.current_url}")
 
         wait_for_overlays_to_clear(driver)
@@ -262,9 +216,7 @@ def check_ford_recall(driver, vin, log_file=None):
         debug_log(log_file, vin, f"URL after submit: {driver.current_url}")
 
         if '/recalls-details/' not in driver.current_url:
-            _live(f"VIN {vin}: REDIRECT after submit -> {driver.current_url}")
             debug_log(log_file, vin, f"Redirect detected, navigating back...")
-            diag_dump(driver, vin, "redirect_after_submit", log_file)
             driver.get(url)
             time.sleep(3)
             debug_log(log_file, vin, f"URL after redirect: {driver.current_url}")
@@ -283,11 +235,8 @@ def check_ford_recall(driver, vin, log_file=None):
 
         body_text = driver.find_element(By.TAG_NAME, "body").text
         debug_log(log_file, vin, f"Page title: {driver.title}")
-        _live(f"VIN {vin}: page title='{driver.title}' url={driver.current_url}")
-        _live(f"VIN {vin}: body[0:300]={body_text[:300]!r}")
 
         if 'no recalls' in body_text.lower() or 'there are no recalls' in body_text.lower():
-            _live(f"VIN {vin}: RESULT = no recalls (text match)")
             return {
                 'hasRecall': False,
                 'recalls': []
@@ -302,8 +251,6 @@ def check_ford_recall(driver, vin, log_file=None):
             safety_header = driver.find_elements(By.CSS_SELECTOR, '[data-testid="button-safety-recalls-section-header"]')
 
             if not safety_header:
-                _live(f"VIN {vin}: RESULT = no recalls (safety_header selector NOT FOUND — likely Ford changed markup)")
-                diag_dump(driver, vin, "no_safety_header", log_file)
                 return {
                     'hasRecall': False,
                     'recalls': []
@@ -317,13 +264,10 @@ def check_ford_recall(driver, vin, log_file=None):
                 recall_buttons = []
 
             if not recall_buttons:
-                _live(f"VIN {vin}: RESULT = no recalls (safety_header found but no recall_buttons in tablist)")
-                diag_dump(driver, vin, "no_recall_buttons", log_file)
                 return {
                     'hasRecall': False,
                     'recalls': []
                 }
-            _live(f"VIN {vin}: found {len(recall_buttons)} recall button(s) — extracting")
 
             for idx in range(len(recall_buttons)):
                 try:
@@ -398,7 +342,6 @@ def check_ford_recall(driver, vin, log_file=None):
 
             if recall_info['recalls']:
                 recall_info['hasRecall'] = True
-                _live(f"VIN {vin}: RESULT = {len(recall_info['recalls'])} recall(s) extracted")
 
         except Exception as e:
             if 'no recalls' in body_text.lower() or 'there are no recalls' in body_text.lower():
@@ -412,7 +355,6 @@ def check_ford_recall(driver, vin, log_file=None):
         return recall_info
 
     except Exception as e:
-        _live(f"VIN {vin}: EXCEPTION {type(e).__name__}: {str(e)[:200]}")
         return {
             'hasRecall': None,
             'recalls': [{'number': 'ERROR', 'description': f'Error: {str(e)[:150]}', 'remedy_available': None}]
@@ -428,9 +370,6 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     if not vins:
         return {'error': 'No VINs provided'}
 
-    global _diag_dump_count
-    _diag_dump_count = 0
-
     output_dir = os.path.dirname(output_file)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -442,15 +381,6 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
 
     driver = setup_driver()
     log_file = setup_debug_log(output_dir)
-
-    # One-shot proxy verification: have Chrome (via the proxy) report its
-    # outbound IP so we know whether --proxy-server is actually in effect.
-    try:
-        driver.get('https://ipv4.icanhazip.com')
-        observed_ip = driver.find_element(By.TAG_NAME, 'body').text.strip()
-        print(f"[SCRAPER] Chrome's outbound IP via proxy = {observed_ip!r}", flush=True)
-    except Exception as e:
-        print(f"[SCRAPER] proxy IP check failed: {type(e).__name__}: {str(e)[:200]}", flush=True)
 
     max_recalls_found = 0
     temp_results = []
