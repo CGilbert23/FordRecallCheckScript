@@ -1,0 +1,62 @@
+name: Recall Check On-Demand
+run-name: "Recall check ${{ inputs.job_id }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: 'Unique job ID (caller-generated, used to correlate run + artifact)'
+        required: true
+        type: string
+      vins:
+        description: 'Newline-separated list of VINs'
+        required: true
+        type: string
+      vin_units_json:
+        description: 'JSON object {VIN: UnitNumber}; pass "{}" if not used'
+        required: false
+        type: string
+        default: '{}'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run recall check
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          JOB_VINS: ${{ inputs.vins }}
+          JOB_VIN_UNITS: ${{ inputs.vin_units_json }}
+        run: python -X utf8 run_on_demand.py
+
+      - name: Upload result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recall-result-${{ inputs.job_id }}
+          path: recall_output/*
+          retention-days: 7

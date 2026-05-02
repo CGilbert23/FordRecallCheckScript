@@ -33,6 +33,11 @@ def setup_driver():
     chrome_options.add_argument('--remote-debugging-port=9222')
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
+    # Stealth bits matched to the working headless scraper
+    # (UsedCarScrapers/MasterScraper/headless/ford_recall_checker_headless.py)
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+
     # Support custom Chrome binary (e.g. in Docker with Chromium)
     chrome_bin = os.environ.get('CHROME_BIN')
     if chrome_bin:
@@ -49,7 +54,13 @@ def setup_driver():
         logger.info("Using default chromedriver detection")
         driver = webdriver.Chrome(options=chrome_options)
 
-    # Hide navigator.webdriver flag
+    # Hide navigator.webdriver flag + override UA at the CDP level (matches working scraper)
+    try:
+        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+            'userAgent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
+        })
+    except Exception as e:
+        logger.warning(f"Could not set UA override via CDP: {e}")
     try:
         driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
             'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
@@ -367,6 +378,20 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     progress_callback: optional function that receives a dict with status updates.
     Returns a summary dict.
     """
+    # Ford's Akamai blocks DigitalOcean (and Fly/GCP) egress. When this flag
+    # is set, delegate to a workflow_dispatch on the headless scraper repo
+    # which runs on Azure IPs that Akamai allows. Local dev (residential IP)
+    # falls through to the direct Selenium path below.
+    if os.environ.get('USE_GH_ACTIONS_FOR_RECALLS') == '1':
+        from gh_actions_client import run_recall_check_via_actions
+        output_dir = os.path.dirname(output_file)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        return run_recall_check_via_actions(
+            vins, output_file,
+            progress_callback=progress_callback, vin_units=vin_units,
+        )
+
     if not vins:
         return {'error': 'No VINs provided'}
 

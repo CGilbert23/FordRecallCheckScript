@@ -28,6 +28,16 @@ python app.py
 ## Environment Variables
 - `RESEND_API_KEY` — API key for Resend email service
 - `RESEND_FROM_EMAIL` — From address for email (default: fordrecalls@voxapp.co)
+- `USE_GH_ACTIONS_FOR_RECALLS` — set to `1` on hosts whose egress IP is blocked
+  by Ford's Akamai (DigitalOcean prod, Fly, etc.). Routes recall checks through
+  the `recall_check_on_demand` workflow in this same repo (which runs on
+  GitHub-hosted Azure IPs that Akamai allows). Leave unset for local dev —
+  residential IPs aren't blocked.
+- `GH_ACTIONS_TOKEN` — GitHub PAT (`actions:write` + `actions:read` on
+  `CGilbert23/FordRecallCheckScript`); required when the flag above is set.
+- `GH_ACTIONS_REPO` — target repo, e.g. `CGilbert23/FordRecallCheckScript`.
+- `GH_ACTIONS_WORKFLOW` — workflow filename, default `recall_check_on_demand.yml`.
+- `GH_ACTIONS_REF` — branch to dispatch against, default `main`.
 
 ## Making Changes - Recall Checker
 SSH into your VPS, then run these one at a time:
