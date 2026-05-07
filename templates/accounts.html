@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Existing Accounts - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1200px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
+        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
+        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-secondary { background: #6b7280; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-light { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+        .btn-light:hover { background: #e5e7eb; color: #1f2937; }
+        .actions { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        .filter { margin-left: auto; }
+        .filter select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; background: #fff; }
+        .empty { text-align: center; color: #888; padding: 40px; }
+        .empty-row { color: #888; font-style: italic; padding: 12px 4px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: #eff6ff; color: #1e40af; }
+        .badge-success { background: #ecfdf5; color: #065f46; }
+        .badge-amber { background: #fef3c7; color: #92400e; }
+        .badge-gray { background: #f3f4f6; color: #374151; }
+        .inline-actions { display: flex; gap: 6px; }
+        .inline-actions form { display: inline; }
+        .rep-section { margin-bottom: 10px; }
+        .rep-title { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid #0068d6; display: flex; justify-content: space-between; align-items: center; }
+        .rep-count { font-weight: 500; color: #6b7280; font-size: 0.85rem; }
+        .muted { color: #888; font-size: 0.85rem; }
+        .notes-preview { max-width: 280px; color: #555; font-size: 0.85rem; }
+        .contact-popover { position: relative; display: inline-block; margin-left: 6px; vertical-align: middle; }
+        .contact-btn { border: 1px solid #cfd8e3; background: #fff; color: #0068d6; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 700; cursor: pointer; padding: 0; line-height: 18px; font-family: serif; }
+        .contact-btn:hover, .contact-popover.open .contact-btn { background: #eff6ff; }
+        .contact-info { position: absolute; left: -4px; top: 26px; background: #1f2937; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; white-space: nowrap; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.18); display: none; }
+        .contact-info::before { content: ''; position: absolute; top: -5px; left: 8px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 5px solid #1f2937; }
+        .contact-info div + div { margin-top: 4px; }
+        .contact-popover:hover .contact-info, .contact-popover.open .contact-info { display: block; }
+        .schedule-link { color: #0068d6; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .schedule-link:hover { text-decoration: underline; }
+        .schedule-add { color: #0068d6; text-decoration: none; font-size: 0.8rem; }
+        .schedule-add:hover { text-decoration: underline; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Existing customer accounts, organized by Account Representative.</p>
+
+        <div class="actions">
+            <a href="/accounts/new" class="btn">+ New Account</a>
+            <div class="filter">
+                <label for="repFilter" class="muted">Filter:</label>
+                <select id="repFilter">
+                    <option value="">All representatives</option>
+                    {% for rep in reps %}
+                    <option value="{{ rep }}">{{ rep }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% set total_accounts = grouped.values() | map('length') | sum %}
+        {% if total_accounts == 0 %}
+        <div class="card">
+            <p class="empty">No accounts yet. <a href="/accounts/new" class="nav-link">Create your first account.</a></p>
+        </div>
+        {% else %}
+        {% for rep in reps %}
+            {% set rep_accounts = grouped.get(rep, []) %}
+            <div class="card rep-section" data-rep="{{ rep }}">
+                <div class="rep-title">
+                    <span>{{ rep }}</span>
+                    <span class="rep-count">{{ rep_accounts | length }} account{{ '' if rep_accounts | length == 1 else 's' }}</span>
+                </div>
+                {% if not rep_accounts %}
+                    <div class="empty-row">No accounts assigned.</div>
+                {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Market</th>
+                            <th>Fleet Manager</th>
+                            <th>Service</th>
+                            <th>VINs</th>
+                            <th>Notes</th>
+                            <th>Recall Check</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for a in rep_accounts %}
+                        <tr>
+                            <td><strong>{{ a.company_name }}</strong></td>
+                            <td>{{ a.market }}</td>
+                            <td>
+                                {% if a.fleet_manager %}{{ a.fleet_manager }}{% else %}<span class="muted">—</span>{% endif %}
+                                {% if a.fleet_manager_email or a.fleet_manager_phone %}
+                                <span class="contact-popover">
+                                    <button type="button" class="contact-btn" aria-label="Show contact info">i</button>
+                                    <span class="contact-info">
+                                        {% if a.fleet_manager_email %}<div>&#9993; {{ a.fleet_manager_email }}</div>{% endif %}
+                                        {% if a.fleet_manager_phone %}<div>&#9742; {{ a.fleet_manager_phone }}</div>{% endif %}
+                                    </span>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if a.service_type == 'Full Service' %}
+                                    <span class="badge badge-success">Full Service</span>
+                                {% else %}
+                                    <span class="badge badge-amber">Recall Only</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if a.vin_count %}
+                                    <span class="badge badge-gray">VINs attached ({{ a.vin_count }})</span>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="notes-preview">{{ a.notes if a.notes else '' }}</td>
+                            <td>
+                                {% set sched_list = schedules_by_account.get(a.id) %}
+                                {% if sched_list %}
+                                    <a href="/schedules/{{ sched_list[0].id }}/edit" class="btn btn-sm btn-light">View Schedule</a>
+                                {% else %}
+                                    <a href="/schedules/new?account_id={{ a.id }}" class="schedule-add">+ Add Schedule</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="inline-actions">
+                                    <a href="/accounts/{{ a.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                                    <form method="POST" action="/accounts/{{ a.id }}/delete" onsubmit="return confirm('Delete this account? This cannot be undone. Any linked schedule will also be deleted.');">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById('repFilter').addEventListener('change', function() {
+            var selected = this.value;
+            document.querySelectorAll('.rep-section').forEach(function(section) {
+                if (!selected || section.dataset.rep === selected) {
+                    section.style.display = '';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+
+        // Contact info popover: hover shows it (CSS); click pins it open until
+        // the user clicks elsewhere. Lets touch devices reach the info too.
+        document.querySelectorAll('.contact-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var popover = this.parentElement;
+                var wasOpen = popover.classList.contains('open');
+                document.querySelectorAll('.contact-popover.open').forEach(function(p) {
+                    p.classList.remove('open');
+                });
+                if (!wasOpen) popover.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.contact-popover.open').forEach(function(p) {
+                p.classList.remove('open');
+            });
+        });
+    </script>
+</body>
+</html>

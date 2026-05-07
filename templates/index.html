@@ -10,10 +10,14 @@
         .container { max-width: 820px; margin: 60px auto; padding: 0 20px; }
         h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
         .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
-        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
         .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
         .nav-tab:hover { color: #0068d6; }
         .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
+        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
+        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
         .card { background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
         .hint { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
@@ -36,12 +40,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Fred Beans Ford - Recall Checker</h1>
-        <div class="page-nav">
-            <a href="/" class="nav-tab active">Vin List: One Time Check</a>
-            <a href="/dashboard" class="nav-tab">View Run Log</a>
-            <a href="/schedules" class="nav-tab">Commercial Account: Scheduled Checks</a>
-        </div>
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
         <p class="subtitle">Paste VINs to check for open recalls.</p>
 
         <div class="card">
@@ -50,7 +50,7 @@
             {% endif %}
 
             {% if active_jobs %}
-            <div class="running-notice">{{ active_jobs }} job{{ 's' if active_jobs > 1 else '' }} currently in the queue. Please submit your job, it will run as soon as there is availability. You will be notified by email when complete. <a href="/dashboard" style="color: #854d0e; font-weight: 600;">View Dashboard for status</a></div>
+            <div class="running-notice">{{ active_jobs }} job{{ 's' if active_jobs > 1 else '' }} currently in the queue. Please submit your job, it will run as soon as there is availability. You will be notified by email when complete. <a href="/recall/run-log" style="color: #854d0e; font-weight: 600;">View Run Log for status</a></div>
             {% endif %}
 
             <form method="POST" action="/submit" id="vinForm" enctype="multipart/form-data">

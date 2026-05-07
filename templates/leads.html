@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Account Leads - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1240px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
+        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
+        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-secondary { background: #6b7280; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-success { background: #059669; }
+        .btn-success:hover { background: #047857; }
+        .actions { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        .filter { margin-left: auto; display: flex; gap: 12px; }
+        .filter select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; background: #fff; }
+        .empty { text-align: center; color: #888; padding: 40px; }
+        .inline-actions { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+        .inline-actions form { display: inline; margin: 0; }
+        .inline-actions .btn { white-space: nowrap; }
+        .muted { color: #888; font-size: 0.85rem; }
+        .notes-cell { max-width: 240px; color: #555; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .notes-cell:hover { white-space: normal; overflow: visible; }
+        .col-actions { white-space: nowrap; width: 1%; }
+        .col-convert { width: 1%; white-space: nowrap; }
+        .col-source { max-width: 200px; }
+        .col-source .muted { white-space: normal; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Prospects to follow up on. Convert to an account once they sign on.</p>
+
+        <div class="actions">
+            <a href="/leads/new" class="btn">+ New Lead</a>
+            <div class="filter">
+                <select id="repFilter">
+                    <option value="">All representatives</option>
+                    {% for rep in reps %}
+                    <option value="{{ rep }}">{{ rep }}</option>
+                    {% endfor %}
+                </select>
+                <select id="marketFilter">
+                    <option value="">All markets</option>
+                    {% for m in markets %}
+                    <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if not leads %}
+        <div class="card">
+            <p class="empty">No leads yet. <a href="/leads/new" class="nav-link">Create your first lead.</a></p>
+        </div>
+        {% else %}
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Market</th>
+                        <th>Account Rep</th>
+                        <th>Phone</th>
+                        <th>Source</th>
+                        <th>Notes</th>
+                        <th class="col-convert">Convert</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTbody">
+                {% for l in leads %}
+                    <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}">
+                        <td><strong>{{ l.company_name }}</strong></td>
+                        <td>{{ l.market }}</td>
+                        <td>{{ l.account_rep }}</td>
+                        <td>{% if l.phone %}{{ l.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                        <td class="col-source">
+                            {% if l.lead_source == 'Other' and l.lead_source_other %}
+                                Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
+                            {% elif l.lead_source %}
+                                {{ l.lead_source }}
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="notes-cell" title="{{ l.notes or '' }}">{{ l.notes if l.notes else '' }}</td>
+                        <td class="col-convert">
+                            <a href="/leads/{{ l.id }}/convert" class="btn btn-sm btn-success">Convert</a>
+                        </td>
+                        <td class="col-actions">
+                            <div class="inline-actions">
+                                <a href="/leads/{{ l.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                                <form method="POST" action="/leads/{{ l.id }}/delete" onsubmit="return confirm('Delete this lead? This cannot be undone.');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function applyFilters() {
+            var rep = document.getElementById('repFilter').value;
+            var market = document.getElementById('marketFilter').value;
+            document.querySelectorAll('#leadsTbody tr').forEach(function(row) {
+                var matchRep = !rep || row.dataset.rep === rep;
+                var matchMarket = !market || row.dataset.market === market;
+                row.style.display = (matchRep && matchMarket) ? '' : 'none';
+            });
+        }
+        var repEl = document.getElementById('repFilter');
+        var marketEl = document.getElementById('marketFilter');
+        if (repEl) repEl.addEventListener('change', applyFilters);
+        if (marketEl) marketEl.addEventListener('change', applyFilters);
+    </script>
+</body>
+</html>

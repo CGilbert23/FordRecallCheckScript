@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit' if lead else 'New' }} Lead - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
+        .container { max-width: 760px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
+        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
+        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
+        .card { background: #fff; border-radius: 8px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+        input[type="text"], input[type="tel"], select, textarea {
+            width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px;
+            font-size: 0.95rem; font-family: inherit;
+        }
+        textarea.other-source { font-family: inherit; height: 70px; resize: vertical; }
+        .hidden { display: none; }
+        textarea.notes { font-family: inherit; height: 140px; resize: vertical; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .row { display: flex; gap: 16px; margin-bottom: 18px; }
+        .row > div { flex: 1; }
+        .field { margin-bottom: 18px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 12px 28px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-secondary { background: #6b7280; padding: 12px 20px; }
+        .btn-secondary:hover { background: #4b5563; }
+        .actions { display: flex; gap: 10px; margin-top: 24px; }
+        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">{{ 'Edit Lead' if lead else 'New Lead' }} &middot; <a href="/leads" class="nav-link">&larr; Back to leads</a></p>
+
+        <div class="card">
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ '/leads/' ~ lead.id ~ '/edit' if lead else '/leads/new' }}">
+                <div class="field">
+                    <label for="company_name">Company Name</label>
+                    <input type="text" name="company_name" id="company_name" required value="{{ form.company_name or '' }}">
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="market">Market</label>
+                        <select name="market" id="market" required>
+                            <option value="" disabled {% if not form.market %}selected{% endif %}>Select...</option>
+                            {% for m in markets %}
+                            <option value="{{ m }}" {% if form.market == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="account_rep">Account Representative</label>
+                        <select name="account_rep" id="account_rep" required>
+                            <option value="" disabled {% if not form.account_rep %}selected{% endif %}>Select...</option>
+                            {% for r in reps %}
+                            <option value="{{ r }}" {% if form.account_rep == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="phone">Phone</label>
+                        <input type="tel" name="phone" id="phone" value="{{ form.phone or '' }}">
+                    </div>
+                    <div>
+                        <label for="lead_source">Lead Source</label>
+                        <select name="lead_source" id="lead_source">
+                            <option value="" {% if not form.lead_source %}selected{% endif %}>Select...</option>
+                            {% for s in lead_sources %}
+                            <option value="{{ s }}" {% if form.lead_source == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field {% if form.lead_source != 'Other' %}hidden{% endif %}" id="otherSourceField">
+                    <label for="lead_source_other">Describe the source</label>
+                    <textarea name="lead_source_other" id="lead_source_other" class="other-source" placeholder="Where did this lead come from?">{{ form.lead_source_other or '' }}</textarea>
+                </div>
+
+                <div class="field">
+                    <label for="notes">Notes</label>
+                    <textarea name="notes" id="notes" class="notes">{{ form.notes or '' }}</textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn">{{ 'Save Changes' if lead else 'Create Lead' }}</button>
+                    <a href="/leads" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var sourceSel = document.getElementById('lead_source');
+        var otherField = document.getElementById('otherSourceField');
+        if (sourceSel && otherField) {
+            sourceSel.addEventListener('change', function() {
+                if (this.value === 'Other') {
+                    otherField.classList.remove('hidden');
+                } else {
+                    otherField.classList.add('hidden');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

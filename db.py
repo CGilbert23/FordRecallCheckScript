@@ -4,10 +4,33 @@ from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
 
-LOCATIONS = [
-    'Doylestown', 'Boyertown', 'Newtown', 'Washington',
-    'Exton', 'Langhorne', 'West Chester', 'Mechanicsburg', 'GroupWide',
+MARKETS = [
+    'Boyertown', 'Doylestown', 'Exton', 'Langhorne', 'Newtown',
+    'Washington', 'West Chester', 'Mechanicsburg', 'Company-Wide',
 ]
+LOCATIONS = MARKETS  # back-compat alias for existing callers
+
+ACCOUNT_REPS = [
+    'Steven Nawalany', 'Chris Gilbert', 'Erica Stewart',
+    'Shelbi Good', 'Cliff Allen', 'Scott Voyzey', 'Frank Smith',
+]
+
+# Default recipient email per rep. Used to prefill the recipients textarea on
+# new schedules. mobileservice@fredbeans.com is auto-CC'd elsewhere, so it's
+# intentionally not duplicated here.
+ACCOUNT_REP_EMAILS = {
+    'Steven Nawalany': 'SNawalany@fredbeans.com',
+    'Chris Gilbert': 'chris.gilbert@fredbeans.com',
+    'Erica Stewart': 'estewart@fredbeans.com',
+    'Shelbi Good': 'sgood@fredbeans.com',
+    'Cliff Allen': 'callen@fredbeans.com',
+    'Scott Voyzey': 'svoyzey@fredbeans.com',
+    'Frank Smith': 'fsmith@fredbeans.com',
+}
+
+SERVICE_TYPES = ['Full Service', 'Recall Only']
+
+LEAD_SOURCES = ['Sales', 'Service', 'Visual', 'Other']
 
 CADENCES = ['daily', 'weekly', 'monthly', 'quarterly']
 
@@ -115,3 +138,106 @@ def finish_run(run_id, recalls_found=None, email_sent=False, error=None):
         'email_sent': email_sent,
         'error': error,
     }).eq('id', run_id).execute()
+
+
+# ---------------------------------------------------------------------------
+# Accounts
+# ---------------------------------------------------------------------------
+
+def list_accounts():
+    client = get_client()
+    res = client.table('accounts').select('*').order('account_rep').order('company_name').execute()
+    return res.data or []
+
+
+def list_accounts_grouped_by_rep():
+    """Return an ordered dict of {rep: [accounts]} with all reps present (empty buckets included)."""
+    grouped = {rep: [] for rep in ACCOUNT_REPS}
+    for acct in list_accounts():
+        rep = acct.get('account_rep')
+        grouped.setdefault(rep, []).append(acct)
+    return grouped
+
+
+def get_account(account_id):
+    client = get_client()
+    res = client.table('accounts').select('*').eq('id', account_id).limit(1).execute()
+    return res.data[0] if res.data else None
+
+
+def create_account(data):
+    client = get_client()
+    res = client.table('accounts').insert(data).execute()
+    return res.data[0] if res.data else None
+
+
+def update_account(account_id, data):
+    client = get_client()
+    res = client.table('accounts').update(data).eq('id', account_id).execute()
+    return res.data[0] if res.data else None
+
+
+def delete_account(account_id):
+    client = get_client()
+    client.table('accounts').delete().eq('id', account_id).execute()
+
+
+def list_schedules_for_account(account_id):
+    client = get_client()
+    res = client.table('schedules').select('*').eq('account_id', account_id).execute()
+    return res.data or []
+
+
+# ---------------------------------------------------------------------------
+# Account leads
+# ---------------------------------------------------------------------------
+
+def list_leads(include_converted=False):
+    client = get_client()
+    query = client.table('account_leads').select('*').order('account_rep').order('company_name')
+    if not include_converted:
+        query = query.is_('converted_at', 'null')
+    res = query.execute()
+    return res.data or []
+
+
+def get_lead(lead_id):
+    client = get_client()
+    res = client.table('account_leads').select('*').eq('id', lead_id).limit(1).execute()
+    return res.data[0] if res.data else None
+
+
+def create_lead(data):
+    client = get_client()
+    res = client.table('account_leads').insert(data).execute()
+    return res.data[0] if res.data else None
+
+
+def update_lead(lead_id, data):
+    client = get_client()
+    res = client.table('account_leads').update(data).eq('id', lead_id).execute()
+    return res.data[0] if res.data else None
+
+
+def delete_lead(lead_id):
+    client = get_client()
+    client.table('account_leads').delete().eq('id', lead_id).execute()
+
+
+def convert_lead_to_account(lead_id, account_data):
+    """Create an account from lead data, then mark the lead converted.
+
+    The account insert happens first; only on success do we update the lead. If
+    the account insert fails, the lead is left untouched so the caller can
+    surface a validation error and let the user retry.
+    """
+    from datetime import datetime, timezone
+    account = create_account(account_data)
+    if not account:
+        return None
+    client = get_client()
+    client.table('account_leads').update({
+        'converted_at': datetime.now(timezone.utc).isoformat(),
+        'converted_account_id': account['id'],
+    }).eq('id', lead_id).execute()
+    return account

@@ -89,6 +89,18 @@ def unregister(schedule_id: str):
         pass  # Job wasn't registered — fine.
 
 
+def next_run_time(schedule_id: str):
+    """Return the next firing datetime (tz-aware, ET) for an active schedule,
+    or None if it isn't registered (paused/inactive or scheduler not started)."""
+    if _scheduler is None:
+        return None
+    try:
+        job = _scheduler.get_job(str(schedule_id))
+    except Exception:
+        return None
+    return job.next_run_time if job else None
+
+
 def _fire(schedule_id: str):
     """Called by APScheduler when a cron trigger fires."""
     if _fire_callback is None:

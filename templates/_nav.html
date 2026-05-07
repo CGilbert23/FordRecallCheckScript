@@ -1,0 +1,33 @@
+{# Two-level CRM nav. Primary tabs select section; secondary tabs swap based on
+   which section is active. Hidden entirely on the home page (/). #}
+{% set path = request.path %}
+{% set in_account_mgmt = path.startswith('/accounts')
+    or path.startswith('/leads')
+    or path.startswith('/schedules') %}
+{% set in_recall_checker = path.startswith('/recall')
+    or path.startswith('/dashboard')
+    or path.startswith('/submit')
+    or path.startswith('/job')
+    or path.startswith('/status')
+    or path.startswith('/download') %}
+
+{% if path != '/' %}
+<div class="page-nav">
+    <a href="/" class="nav-tab">&larr; Home</a>
+    <a href="/accounts" class="nav-tab {% if in_account_mgmt %}active{% endif %}">Account Management</a>
+    <a href="/recall/one-time" class="nav-tab {% if in_recall_checker %}active{% endif %}">Recall Checker</a>
+</div>
+
+{% if in_account_mgmt %}
+<div class="page-subnav">
+    <a href="/accounts" class="subnav-tab {% if path.startswith('/accounts') %}active{% endif %}">Existing Accounts</a>
+    <a href="/leads" class="subnav-tab {% if path.startswith('/leads') %}active{% endif %}">New Account Leads</a>
+    <a href="/schedules" class="subnav-tab {% if path.startswith('/schedules') %}active{% endif %}">Scheduled Recall Checks</a>
+</div>
+{% elif in_recall_checker %}
+<div class="page-subnav">
+    <a href="/recall/one-time" class="subnav-tab {% if path.startswith('/recall/one-time') or path.startswith('/submit') or path.startswith('/job') or path.startswith('/status') or path.startswith('/download') %}active{% endif %}">One Time Check</a>
+    <a href="/recall/run-log" class="subnav-tab {% if path.startswith('/recall/run-log') or path.startswith('/dashboard') %}active{% endif %}">Run Log</a>
+</div>
+{% endif %}
+{% endif %}

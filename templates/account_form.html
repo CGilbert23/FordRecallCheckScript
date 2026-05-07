@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit' if account else ('Convert Lead' if from_lead_id else 'New') }} Account - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
+        .container { max-width: 880px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
+        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
+        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
+        .card { background: #fff; border-radius: 8px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+        .hint { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
+        input[type="text"], input[type="email"], input[type="tel"], select, textarea {
+            width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px;
+            font-size: 0.95rem; font-family: inherit;
+        }
+        textarea { font-family: monospace; font-size: 0.9rem; resize: vertical; }
+        textarea.notes { font-family: inherit; height: 100px; }
+        textarea.vins { height: 200px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .row { display: flex; gap: 16px; margin-bottom: 18px; }
+        .row > div { flex: 1; }
+        .field { margin-bottom: 18px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 12px 28px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-secondary { background: #6b7280; padding: 12px 20px; }
+        .btn-secondary:hover { background: #4b5563; }
+        .actions { display: flex; gap: 10px; margin-top: 24px; }
+        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+        .convert-banner { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px 14px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 20px; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">{{ 'Edit Account' if account else ('Convert Lead to Account' if from_lead_id else 'New Account') }} &middot; <a href="/accounts" class="nav-link">&larr; Back to accounts</a></p>
+
+        <div class="card">
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            {% if from_lead_id %}
+            <div class="convert-banner">
+                Filling this in will create a new account and mark the lead as converted.
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ '/accounts/' ~ account.id ~ '/edit' if account else '/accounts/new' }}">
+                {% if from_lead_id %}
+                <input type="hidden" name="from_lead_id" value="{{ from_lead_id }}">
+                {% endif %}
+
+                <div class="row">
+                    <div>
+                        <label for="company_name">Company Name</label>
+                        <input type="text" name="company_name" id="company_name" required value="{{ form.company_name or '' }}">
+                    </div>
+                    <div>
+                        <label for="market">Market</label>
+                        <select name="market" id="market" required>
+                            <option value="" disabled {% if not form.market %}selected{% endif %}>Select...</option>
+                            {% for m in markets %}
+                            <option value="{{ m }}" {% if form.market == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="account_rep">Account Representative</label>
+                        <select name="account_rep" id="account_rep" required>
+                            <option value="" disabled {% if not form.account_rep %}selected{% endif %}>Select...</option>
+                            {% for r in reps %}
+                            <option value="{{ r }}" {% if form.account_rep == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="service_type">Service Type</label>
+                        <select name="service_type" id="service_type" required>
+                            <option value="" disabled {% if not form.service_type %}selected{% endif %}>Select...</option>
+                            {% for st in service_types %}
+                            <option value="{{ st }}" {% if form.service_type == st %}selected{% endif %}>{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="fleet_manager">Fleet Manager</label>
+                    <input type="text" name="fleet_manager" id="fleet_manager" value="{{ form.fleet_manager or '' }}">
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="fleet_manager_email">Fleet Manager Email</label>
+                        <input type="email" name="fleet_manager_email" id="fleet_manager_email" value="{{ form.fleet_manager_email or '' }}">
+                    </div>
+                    <div>
+                        <label for="fleet_manager_phone">Fleet Manager Phone</label>
+                        <input type="tel" name="fleet_manager_phone" id="fleet_manager_phone" value="{{ form.fleet_manager_phone or '' }}">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="vins">VIN List</label>
+                    <p class="hint">Paste one VIN per line (17 alphanumeric characters). Stored on the account record.</p>
+                    <textarea name="vins" id="vins" class="vins" placeholder="1FTBR1Y8XPKA12345&#10;1FAHP2KK4LG12345">{{ form.vins or '' }}</textarea>
+                </div>
+
+                <div class="field">
+                    <label for="notes">Special Notes</label>
+                    <textarea name="notes" id="notes" class="notes">{{ form.notes or '' }}</textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn">{{ 'Save Changes' if account else ('Create Account from Lead' if from_lead_id else 'Create Account') }}</button>
+                    <a href="/accounts" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

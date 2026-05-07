@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; min-height: 100vh; }
+        .container { max-width: 980px; margin: 80px auto; padding: 0 20px; }
+        h1 { font-size: 2.4rem; margin-bottom: 12px; text-align: center; color: #0a1f44; }
+        .subtitle { color: #666; margin-bottom: 48px; text-align: center; font-size: 1.05rem; }
+        .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+        @media (max-width: 720px) {
+            .tiles { grid-template-columns: 1fr; }
+        }
+        .tile {
+            background: #fff; border-radius: 12px; padding: 40px 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            text-decoration: none; color: inherit;
+            border: 2px solid transparent;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .tile:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.12); border-color: #0068d6; }
+        .tile-icon { font-size: 3rem; margin-bottom: 16px; }
+        .tile-title { font-size: 1.4rem; font-weight: 700; color: #0a1f44; margin-bottom: 10px; }
+        .tile-desc { color: #666; font-size: 0.95rem; line-height: 1.5; }
+        .tile-links { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e5e7eb; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+        .tile-links span { color: #0068d6; font-size: 0.9rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        <p class="subtitle">Pick a section to get started.</p>
+
+        <div class="tiles">
+            <a href="/accounts" class="tile">
+                <div class="tile-icon">&#128188;</div>
+                <div class="tile-title">Account Management</div>
+                <div class="tile-desc">Manage existing customer accounts, track new leads, and run scheduled recall checks for the team.</div>
+                <div class="tile-links">
+                    <span>Existing Accounts</span>
+                    <span>New Account Leads</span>
+                    <span>Scheduled Recall Checks</span>
+                </div>
+            </a>
+
+            <a href="/recall/one-time" class="tile">
+                <div class="tile-icon">&#128737;&#65039;</div>
+                <div class="tile-title">Recall Checker</div>
+                <div class="tile-desc">Run one-time recall checks and review past runs.</div>
+                <div class="tile-links">
+                    <span>One Time Check</span>
+                    <span>Run Log</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

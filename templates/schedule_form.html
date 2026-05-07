@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ 'Edit' if schedule else 'New' }} Schedule - Fred Beans Ford Recall Checker</title>
+    <title>{{ 'Edit' if schedule else 'New' }} Schedule - Fred Beans Mobile Service</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
         .container { max-width: 820px; margin: 60px auto; padding: 0 20px; }
         h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
         .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
-        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
         .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
         .nav-tab:hover { color: #0068d6; }
         .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
+        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
+        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
+        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
         .card { background: #fff; border-radius: 8px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
         .hint { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
@@ -25,6 +29,7 @@
         textarea.vins { height: 200px; }
         textarea.recipients { height: 80px; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        input[readonly], textarea[readonly] { background: #f3f4f6; color: #4b5563; cursor: not-allowed; }
         .row { display: flex; gap: 16px; margin-bottom: 18px; }
         .row > div { flex: 1; }
         .field { margin-bottom: 18px; }
@@ -37,17 +42,16 @@
         .checkbox { display: flex; align-items: center; gap: 8px; }
         .checkbox input { width: auto; }
         .always-cc { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; margin-top: 8px; }
+        .linked-banner { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 12px 14px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 20px; }
+        .linked-banner strong { color: #064e3b; }
+        .linked-banner a { color: #047857; text-decoration: underline; }
         a.nav-link { color: #0068d6; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Fred Beans Ford - Recall Checker</h1>
-        <div class="page-nav">
-            <a href="/" class="nav-tab">Vin List: One Time Check</a>
-            <a href="/dashboard" class="nav-tab">View Run Log</a>
-            <a href="/schedules" class="nav-tab active">Commercial Account: Scheduled Checks</a>
-        </div>
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
         <p class="subtitle">{{ 'Edit Schedule' if schedule else 'New Schedule' }} &middot; <a href="/schedules" class="nav-link">&larr; Back to schedules</a></p>
 
         <div class="card">
@@ -55,20 +59,25 @@
             <div class="error">{{ error }}</div>
             {% endif %}
 
+            {% if account_locked %}
+            <div class="linked-banner">
+                Linked to <strong>{{ account_locked.company_name }}</strong> ({{ account_locked.market }}).
+                Company, Market, and VINs come from the account &mdash;
+                <a href="/accounts/{{ account_locked.id }}/edit">edit the account</a> to change them.
+            </div>
+            {% endif %}
+
             <form method="POST" action="{{ '/schedules/' ~ schedule.id ~ '/edit' if schedule else '/schedules/new' }}">
+                <input type="hidden" name="account_id" value="{{ form.account_id or (account_locked.id if account_locked else '') }}">
+
                 <div class="row">
                     <div>
                         <label for="company_name">Company Name</label>
-                        <input type="text" name="company_name" id="company_name" required placeholder="Allan Myers" value="{{ form.company_name or '' }}">
+                        <input type="text" name="company_name" id="company_name" value="{{ form.company_name or '' }}" readonly>
                     </div>
                     <div>
-                        <label for="location">Location</label>
-                        <select name="location" id="location" required>
-                            <option value="" disabled {% if not form.location %}selected{% endif %}>Select...</option>
-                            {% for loc in locations %}
-                            <option value="{{ loc }}" {% if form.location == loc %}selected{% endif %}>{{ loc }}</option>
-                            {% endfor %}
-                        </select>
+                        <label for="location">Market</label>
+                        <input type="text" name="location" id="location" value="{{ form.location or '' }}" readonly>
                     </div>
                 </div>
 
@@ -92,8 +101,8 @@
 
                 <div class="field">
                     <label for="vins">VIN List</label>
-                    <p class="hint">One VIN per line, 17 characters each. Paste a fresh list any time the fleet changes.</p>
-                    <textarea name="vins" id="vins" class="vins" required placeholder="1FM5K8AB3RGA28017&#10;1FM5K8AB7RGA27999">{{ form.vins or '' }}</textarea>
+                    <p class="hint">VINs come from the account. Edit them on the account to change what gets checked.</p>
+                    <textarea id="vins" class="vins" readonly>{{ form.vins or '' }}</textarea>
                 </div>
 
                 {% if schedule %}
@@ -105,7 +114,7 @@
 
                 <div class="actions">
                     <button type="submit" class="btn">{{ 'Save Changes' if schedule else 'Create Schedule' }}</button>
-                    <a href="/schedules" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ '/accounts' if not schedule else '/schedules' }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>

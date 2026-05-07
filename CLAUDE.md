@@ -1,22 +1,52 @@
-# Recall TXT Checker
+# Fred Beans Mobile Service
 
 ## Overview
-Flask web app that checks Ford vehicle recalls by VIN using Selenium scraping. Outputs results to Excel files and can email them via Resend.
+Internal Flask app for the mobile service team. Two top-level sections:
+- **Account Management** — existing customer accounts and new leads (CRM)
+- **Recall Checker** — Ford VIN recall lookups (one-time, scheduled, run log)
+
+Recall data is scraped via Selenium, results are written to Excel and emailed via Resend. Account/lead/schedule data lives in Supabase Postgres.
 
 ## Tech Stack
-- **Backend:** Python / Flask
-- **Scraping:** Selenium (headless browser)
+- **Backend:** Python / Flask (single-file app, no blueprints)
+- **DB:** Supabase Postgres (via `supabase-py`)
+- **Scraping:** Selenium (headless Chromium)
 - **Excel:** openpyxl
 - **Email:** Resend API
+- **Scheduler:** APScheduler (cron triggers, single-process)
 - **Hosting:** DigitalOcean (Docker, Gunicorn)
-- **Templates:** Jinja2 HTML (templates/)
+- **Templates:** Jinja2 HTML in `templates/` with inline CSS (no framework)
+
+## Routes (high-level)
+- `/` — home tile page (Account Management / Recall Checker)
+- `/accounts` and `/accounts/new`, `/accounts/<id>/edit`, `/accounts/<id>/delete`
+- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/convert` (lead → account)
+- `/recall/one-time` — one-time VIN check form (posts to `/submit`)
+- `/recall/run-log` — recent jobs (in-memory only, lost on restart)
+- `/schedules` and children — recurring recall checks
+- `/dashboard` — 302 redirect to `/recall/run-log` (back-compat)
+- `/test-supabase`, `/test-chrome` — health checks
 
 ## Key Files
-- `app.py` — Flask routes and job management (in-memory job store, background threads)
-- `recall_checker.py` — Core recall checking logic (Selenium scraping, Excel output)
-- `ford_recall_checker_txt.py` — Older/standalone version of the checker
-- `templates/` — HTML templates (index, dashboard, status pages)
-- `VINS.txt` — Sample VIN list for testing
+- `app.py` — Flask routes, in-memory job store, queue worker thread
+- `db.py` — Supabase client + CRUD for schedules/accounts/leads + constants (`MARKETS`, `ACCOUNT_REPS`, `SERVICE_TYPES`, `CADENCES`). `LOCATIONS` is an alias for `MARKETS`.
+- `scheduler.py` — APScheduler integration for recurring schedules
+- `recall_checker.py` — Selenium scraping + Excel output
+- `gh_actions_client.py` / `run_on_demand.py` — fallback path that runs the scrape via GitHub Actions (used when the host IP is blocked by Ford's Akamai)
+- `ford_recall_checker_txt.py` — older standalone version, not used by the web app
+- `templates/_nav.html` — shared two-level nav partial; included by all CRM pages
+- `templates/home.html`, `accounts.html`, `account_form.html`, `leads.html`, `lead_form.html` — CRM pages
+- `templates/index.html`, `status.html`, `dashboard.html`, `schedules.html`, `schedule_form.html` — recall checker pages
+- `supabase/schema.sql` — full base schema for setting up a NEW Supabase project
+- `supabase/<date>_*.sql` — one file per migration; run on existing projects in chronological order
+
+## Supabase tables
+- `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`.
+- `schedule_runs` — per-execution log (started_at, finished_at, recalls_found, email_sent, error)
+- `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes)
+- `account_leads` — prospects (company, market, account_rep, notes); `converted_at` + `converted_account_id` are set when a lead is converted
+
+`MARKETS` (and the `location`/`market` check constraints) use: Boyertown, Doylestown, Exton, Langhorne, Newtown, Washington, West Chester, Mechanicsburg, Company-Wide. The legacy value `GroupWide` was renamed to `Company-Wide` in the 2026-05-07 migration.
 
 ## Running Locally
 ```bash
@@ -26,8 +56,9 @@ python app.py
 ```
 
 ## Environment Variables
+- `SUPABASE_URL`, `SUPABASE_KEY` — required; the app fails fast on first DB call without them.
 - `RESEND_API_KEY` — API key for Resend email service
-- `RESEND_FROM_EMAIL` — From address for email (default: fordrecalls@voxapp.co)
+- `RESEND_FROM_EMAIL` — From address for email (default: `fordrecalls@voxapp.co`)
 - `USE_GH_ACTIONS_FOR_RECALLS` — set to `1` on hosts whose egress IP is blocked
   by Ford's Akamai (DigitalOcean prod, Fly, etc.). Routes recall checks through
   the `recall_check_on_demand` workflow in this same repo (which runs on
@@ -39,7 +70,12 @@ python app.py
 - `GH_ACTIONS_WORKFLOW` — workflow filename, default `recall_check_on_demand.yml`.
 - `GH_ACTIONS_REF` — branch to dispatch against, default `main`.
 
-## Making Changes - Recall Checker
+## Applying schema changes
+- **New project:** paste `supabase/schema.sql` into the Supabase SQL Editor. End state matches all migrations applied in order.
+- **Existing project:** run each `supabase/<date>_*.sql` file you haven't run yet, in chronological order. Each migration is self-contained — paste the whole file at once.
+- After adding a new migration, also update `supabase/schema.sql` so a fresh setup arrives at the same end state.
+
+## Deploying changes - Recall Checker
 SSH into your VPS, then run these one at a time:
 ```bash
 cd /root/FordRecallCheckScript
@@ -51,5 +87,7 @@ docker run -d --name ford-checker -p 5000:10000 --env-file .env ford-checker
 ```
 
 ## Notes
-- Jobs run in background threads and results are stored in `outputs/`
-- Selenium requires a compatible Chrome/Chromium + ChromeDriver setup
+- One-time recall jobs run in background threads and results are stored in `outputs/`. Job state is in-memory only — restart loses the run log (the Supabase `schedule_runs` table only logs scheduled/manual runs of `schedules`, not ad-hoc one-time checks).
+- Single Gunicorn worker (see `gunicorn.conf.py`) keeps APScheduler to one instance — don't bump worker count without revisiting that.
+- Selenium requires a compatible Chrome/Chromium + ChromeDriver setup (handled in the Dockerfile).
+- The mobileservice@fredbeans.com address is auto-CC'd on every scheduled email; no need to add it to recipient lists.
