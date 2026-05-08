@@ -20,17 +20,18 @@
         .tile {
             background: #fff; border-radius: 12px; padding: 40px 32px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            text-decoration: none; color: inherit;
             border: 2px solid transparent;
             transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
             display: flex; flex-direction: column; align-items: center; text-align: center;
         }
         .tile:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.12); border-color: #0068d6; }
+        .tile-head { text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
         .tile-icon { font-size: 3rem; margin-bottom: 16px; }
         .tile-title { font-size: 1.4rem; font-weight: 700; color: #0a1f44; margin-bottom: 10px; }
         .tile-desc { color: #666; font-size: 0.95rem; line-height: 1.5; }
         .tile-links { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e5e7eb; width: 100%; display: flex; flex-direction: column; gap: 8px; }
-        .tile-links span { color: #0068d6; font-size: 0.9rem; font-weight: 500; }
+        .tile-links a { color: #0068d6; font-size: 0.9rem; font-weight: 500; text-decoration: none; padding: 6px 8px; border-radius: 6px; transition: background 0.12s ease; }
+        .tile-links a:hover { background: #eaf3ff; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -39,35 +40,41 @@
         <p class="subtitle">Pick a section to get started.</p>
 
         <div class="tiles">
-            <a href="/accounts" class="tile">
-                <div class="tile-icon">&#128188;</div>
-                <div class="tile-title">Account Management</div>
-                <div class="tile-desc">Manage existing customer accounts, track new leads, and run scheduled recall checks for the team.</div>
+            <div class="tile">
+                <a href="/accounts" class="tile-head">
+                    <div class="tile-icon">&#128188;</div>
+                    <div class="tile-title">Account Management</div>
+                    <div class="tile-desc">Manage existing customer accounts, track new leads, and run scheduled recall checks for the team.</div>
+                </a>
                 <div class="tile-links">
-                    <span>Existing Accounts</span>
-                    <span>New Account Leads</span>
-                    <span>Scheduled Recall Checks</span>
+                    <a href="/accounts">Existing Accounts</a>
+                    <a href="/leads">Leads</a>
+                    <a href="/schedules">Scheduled Recall Checks</a>
                 </div>
-            </a>
+            </div>
 
-            <a href="/recall/one-time" class="tile">
-                <div class="tile-icon">&#128737;&#65039;</div>
-                <div class="tile-title">Recall Checker</div>
-                <div class="tile-desc">Run one-time recall checks and review past runs.</div>
+            <div class="tile">
+                <a href="/recall/one-time" class="tile-head">
+                    <div class="tile-icon">&#128737;&#65039;</div>
+                    <div class="tile-title">Recall Checker</div>
+                    <div class="tile-desc">Run one-time recall checks and review past runs.</div>
+                </a>
                 <div class="tile-links">
-                    <span>One Time Check</span>
-                    <span>Run Log</span>
+                    <a href="/recall/one-time">One Time Check</a>
+                    <a href="/recall/run-log">Run Log</a>
                 </div>
-            </a>
+            </div>
 
-            <a href="/used-car-tracker" class="tile">
-                <div class="tile-icon">&#128663;</div>
-                <div class="tile-title">Used Car Tracker</div>
-                <div class="tile-desc">Sweep used-car lot inventory for open recalls.</div>
+            <div class="tile">
+                <a href="/used-car-tracker" class="tile-head">
+                    <div class="tile-icon">&#128663;</div>
+                    <div class="tile-title">Used Car Tracker</div>
+                    <div class="tile-desc">Sweep used-car lot inventory for open recalls.</div>
+                </a>
                 <div class="tile-links">
-                    <span>Lot Recall Sweeper</span>
+                    <a href="/used-car-tracker">Lot Recall Sweeper</a>
                 </div>
-            </a>
+            </div>
         </div>
     </div>
 </body>

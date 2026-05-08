@@ -1,9 +1,10 @@
 # Fred Beans Mobile Service
 
 ## Overview
-Internal Flask app for the mobile service team. Two top-level sections:
+Internal Flask app for the mobile service team. Three top-level sections:
 - **Account Management** — existing customer accounts and new leads (CRM)
 - **Recall Checker** — Ford VIN recall lookups (one-time, scheduled, run log)
+- **Used Car Tracker** — iframes an external Vercel app (`used-car-lot-recall-sweeper.vercel.app`) that sweeps used-car lot inventory for open recalls
 
 Recall data is scraped via Selenium, results are written to Excel and emailed via Resend. Account/lead/schedule data lives in Supabase Postgres.
 

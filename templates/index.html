@@ -58,7 +58,7 @@
                 <div style="display: flex; gap: 12px; margin-bottom: 20px;">
                     <div style="flex: 1;">
                         <label for="name">File Name</label>
-                        <input type="text" name="name" id="name" placeholder="Q1 Fleet Check" required style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem;">
+                        <input type="text" name="name" id="name" placeholder="Q1 Fleet Check" required value="{{ prefill.name|default('') }}" style="width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; font-size: 0.95rem;">
                     </div>
                     <div style="flex: 1;">
                         <label for="emailSelect">Email</label>
@@ -89,7 +89,7 @@
                 <div id="tab-paste" class="tab-content active">
                     <label for="vins">Paste VINs (one per line)</label>
                     <p class="hint">Each VIN must be exactly 17 characters. Up to 1,000 VINs supported.</p>
-                    <textarea name="vins" id="vins" placeholder="1FM5K8AB3RGA28017&#10;1FM5K8AB7RGA27999&#10;1FAHP2MK9EG127940"></textarea>
+                    <textarea name="vins" id="vins" placeholder="1FM5K8AB3RGA28017&#10;1FM5K8AB7RGA27999&#10;1FAHP2MK9EG127940">{{ prefill.vins|default('') }}</textarea>
                 </div>
                 <div id="tab-upload" class="tab-content">
                     <label for="excel_file">Upload an Excel file (.xlsx)</label>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Account Leads - Fred Beans Mobile Service</title>
+    <title>Leads - Fred Beans Mobile Service</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
@@ -14,14 +14,13 @@
         .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
         .nav-tab:hover { color: #0068d6; }
         .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
-        .page-subnav { display: flex; gap: 4px; margin-bottom: 24px; justify-content: center; flex-wrap: wrap; }
-        .subnav-tab { padding: 6px 14px; color: #6b7280; text-decoration: none; font-size: 0.85rem; font-weight: 500; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; }
-        .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
-        .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
+        .section-title { display: flex; align-items: center; gap: 10px; margin: 24px 0 12px; font-size: 1.15rem; font-weight: 700; color: #0a1f44; }
+        .section-title .count { font-size: 0.8rem; font-weight: 500; color: #6b7280; background: #f3f4f6; padding: 2px 10px; border-radius: 999px; }
+        .section-warm .section-title { color: #b45309; }
         .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        th { text-align: center; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { text-align: center; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #0050a8; }
@@ -33,38 +32,70 @@
         .btn-danger:hover { background: #991b1b; }
         .btn-success { background: #059669; }
         .btn-success:hover { background: #047857; }
-        .actions { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
-        .filter { margin-left: auto; display: flex; gap: 12px; }
+        .btn-warm { background: #d97706; }
+        .btn-warm:hover { background: #b45309; }
+        .actions { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .filter { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; }
         .filter select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; background: #fff; }
-        .empty { text-align: center; color: #888; padding: 40px; }
-        .inline-actions { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+        .empty { text-align: center; color: #888; padding: 30px; }
+        .inline-actions { display: flex; gap: 6px; align-items: center; justify-content: center; white-space: nowrap; }
         .inline-actions form { display: inline; margin: 0; }
         .inline-actions .btn { white-space: nowrap; }
         .muted { color: #888; font-size: 0.85rem; }
-        .contact-popover { position: relative; display: inline-block; margin-left: 6px; vertical-align: middle; }
-        .contact-btn { border: 1px solid #cfd8e3; background: #fff; color: #0068d6; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 700; cursor: pointer; padding: 0; line-height: 18px; font-family: serif; }
-        .contact-btn:hover, .contact-popover.open .contact-btn { background: #eff6ff; }
-        .contact-info { position: absolute; left: -4px; top: 26px; background: #1f2937; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; white-space: nowrap; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.18); display: none; }
-        .contact-info::before { content: ''; position: absolute; top: -5px; left: 8px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 5px solid #1f2937; }
-        .contact-info-wide { white-space: pre-wrap; width: 480px; max-width: 480px; line-height: 1.4; }
-        .contact-popover:hover .contact-info, .contact-popover.open .contact-info { display: block; }
+        .interest { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; border: 1px solid rgba(0,0,0,0.12); }
+        .interest-R { background: #dc2626; }
+        .interest-Y { background: #f59e0b; }
+        .interest-G { background: #16a34a; }
+        .notes-popover { position: relative; display: inline-block; }
+        .notes-info {
+            position: absolute; right: 0; top: 26px;
+            background: #fffbea; color: #1f2937;
+            border: 1px solid #f3e0a4;
+            padding: 10px 12px; border-radius: 6px;
+            font-size: 0.82rem; line-height: 1.45;
+            white-space: pre-wrap; word-break: break-word; text-align: left;
+            width: 300px; max-width: 90vw;
+            z-index: 10;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            display: none;
+        }
+        .notes-info::before {
+            content: ''; position: absolute; top: -6px; right: 10px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #f3e0a4;
+        }
+        .notes-info::after {
+            content: ''; position: absolute; top: -5px; right: 11px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid #fffbea;
+        }
+        .notes-popover:hover .notes-info { display: block; }
         .col-actions { white-space: nowrap; width: 1%; }
         .col-convert { width: 1%; white-space: nowrap; }
         .col-source { max-width: 200px; }
         .col-source .muted { white-space: normal; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
+        .section.hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
-        <p class="subtitle">Prospects to follow up on. Convert to an account once they sign on.</p>
+        <p class="subtitle">Warm prospects up top, cold-call list below. Filter by rep, market, or type.</p>
 
         <div class="actions">
-            <a href="/leads/new" class="btn">+ New Lead</a>
+            <a href="/leads/new?type=warm" class="btn btn-warm">+ New Warm Prospect</a>
+            <a href="/leads/new?type=cold" class="btn">+ New Cold Lead</a>
             <div class="filter">
+                <select id="typeFilter">
+                    <option value="">All types</option>
+                    <option value="warm">Warm only</option>
+                    <option value="cold">Cold only</option>
+                </select>
                 <select id="repFilter">
                     <option value="">All representatives</option>
                     {% for rep in reps %}
@@ -80,97 +111,164 @@
             </div>
         </div>
 
-        {% if not leads %}
-        <div class="card">
-            <p class="empty">No leads yet. <a href="/leads/new" class="nav-link">Create your first lead.</a></p>
-        </div>
-        {% else %}
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Company</th>
-                        <th>Market</th>
-                        <th>Account Rep</th>
-                        <th>Phone</th>
-                        <th>Source</th>
-                        <th class="col-convert">Convert</th>
-                        <th class="col-actions"></th>
-                    </tr>
-                </thead>
-                <tbody id="leadsTbody">
-                {% for l in leads %}
-                    <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}">
-                        <td>
-                            <strong>{{ l.company_name }}</strong>
-                            {% if l.notes %}
-                            <span class="contact-popover">
-                                <button type="button" class="contact-btn" aria-label="Show notes">i</button>
-                                <span class="contact-info contact-info-wide">{{ l.notes }}</span>
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td>{{ l.market }}</td>
-                        <td>{{ l.account_rep }}</td>
-                        <td>{% if l.phone %}{{ l.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
-                        <td class="col-source">
-                            {% if l.lead_source == 'Other' and l.lead_source_other %}
-                                Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
-                            {% elif l.lead_source %}
-                                {{ l.lead_source }}
-                            {% else %}
-                                <span class="muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="col-convert">
-                            <a href="/leads/{{ l.id }}/convert" class="btn btn-sm btn-success">Convert</a>
-                        </td>
-                        <td class="col-actions">
-                            <div class="inline-actions">
-                                <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Edit</a>
-                                <form method="POST" action="/leads/{{ l.id }}/delete" onsubmit="return confirm('Delete this lead? This cannot be undone.');">
-                                    <button type="submit" class="btn btn-xs btn-danger">Delete</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
+        <section class="section section-warm" data-section-type="warm">
+            <div class="section-title">Warm Prospects <span class="count" id="warmCount">{{ warm_leads|length }}</span></div>
+            {% if not warm_leads %}
+            <div class="card">
+                <p class="empty">No warm prospects yet. <a href="/leads/new?type=warm" class="nav-link">Add one</a>, or promote a cold lead.</p>
+            </div>
+            {% else %}
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Market</th>
+                            <th>Account Rep</th>
+                            <th>Phone</th>
+                            <th>Source</th>
+                            <th>Interest</th>
+                            <th>Last Contacted</th>
+                            <th class="col-convert">Convert</th>
+                            <th class="col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="leadsTbody">
+                    {% for l in warm_leads %}
+                        <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}" data-type="warm">
+                            <td><strong>{{ l.company_name }}</strong></td>
+                            <td>{{ l.market }}</td>
+                            <td>{{ l.account_rep }}</td>
+                            <td>{% if l.phone %}{{ l.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td class="col-source">
+                                {% if l.lead_source == 'Other' and l.lead_source_other %}
+                                    Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
+                                {% elif l.lead_source %}
+                                    {{ l.lead_source }}
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set lvl = l.interest_level or 'Y' %}
+                                <span class="interest interest-{{ lvl }}" title="{{ {'R':'Red — low interest','Y':'Yellow — neutral','G':'Green — high interest'}[lvl] }}"></span>
+                            </td>
+                            <td>{% if l.last_contacted_at %}{{ l.last_contacted_at }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td class="col-convert">
+                                <a href="/leads/{{ l.id }}/convert" class="btn btn-sm btn-success">Convert</a>
+                            </td>
+                            <td class="col-actions">
+                                <div class="inline-actions">
+                                    <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Edit</a>
+                                    {% if l.notes %}
+                                    <span class="notes-popover">
+                                        <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
+                                        <span class="notes-info">{{ l.notes }}</span>
+                                    </span>
+                                    {% else %}
+                                    <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="section section-cold" data-section-type="cold">
+            <div class="section-title">Cold Call List <span class="count" id="coldCount">{{ cold_leads|length }}</span></div>
+            {% if not cold_leads %}
+            <div class="card">
+                <p class="empty">No cold leads yet. <a href="/leads/new?type=cold" class="nav-link">Create your first cold lead.</a></p>
+            </div>
+            {% else %}
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Market</th>
+                            <th>Account Rep</th>
+                            <th>Phone</th>
+                            <th>Source</th>
+                            <th class="col-convert">Promote / Convert</th>
+                            <th class="col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="leadsTbody">
+                    {% for l in cold_leads %}
+                        <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}" data-type="cold">
+                            <td><strong>{{ l.company_name }}</strong></td>
+                            <td>{{ l.market }}</td>
+                            <td>{{ l.account_rep }}</td>
+                            <td>{% if l.phone %}{{ l.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td class="col-source">
+                                {% if l.lead_source == 'Other' and l.lead_source_other %}
+                                    Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
+                                {% elif l.lead_source %}
+                                    {{ l.lead_source }}
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="col-convert">
+                                <div class="inline-actions">
+                                    <form method="POST" action="/leads/{{ l.id }}/promote">
+                                        <button type="submit" class="btn btn-sm btn-warm">Promote to Warm</button>
+                                    </form>
+                                    <a href="/leads/{{ l.id }}/convert" class="btn btn-sm btn-success">Convert</a>
+                                </div>
+                            </td>
+                            <td class="col-actions">
+                                <div class="inline-actions">
+                                    <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Edit</a>
+                                    {% if l.notes %}
+                                    <span class="notes-popover">
+                                        <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
+                                        <span class="notes-info">{{ l.notes }}</span>
+                                    </span>
+                                    {% else %}
+                                    <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </section>
     </div>
 
     <script>
         function applyFilters() {
+            var typeFilter = document.getElementById('typeFilter').value;
             var rep = document.getElementById('repFilter').value;
             var market = document.getElementById('marketFilter').value;
-            document.querySelectorAll('#leadsTbody tr').forEach(function(row) {
-                var matchRep = !rep || row.dataset.rep === rep;
-                var matchMarket = !market || row.dataset.market === market;
-                row.style.display = (matchRep && matchMarket) ? '' : 'none';
+
+            document.querySelectorAll('section.section').forEach(function(section) {
+                var sectionType = section.dataset.sectionType;
+                var typeMatch = !typeFilter || typeFilter === sectionType;
+                if (!typeMatch) {
+                    section.classList.add('hidden');
+                    return;
+                }
+                section.classList.remove('hidden');
+
+                section.querySelectorAll('tbody.leadsTbody tr').forEach(function(row) {
+                    var matchRep = !rep || row.dataset.rep === rep;
+                    var matchMarket = !market || row.dataset.market === market;
+                    row.style.display = (matchRep && matchMarket) ? '' : 'none';
+                });
             });
         }
-        var repEl = document.getElementById('repFilter');
-        var marketEl = document.getElementById('marketFilter');
-        if (repEl) repEl.addEventListener('change', applyFilters);
-        if (marketEl) marketEl.addEventListener('change', applyFilters);
-
-        document.querySelectorAll('.contact-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                var popover = this.parentElement;
-                var wasOpen = popover.classList.contains('open');
-                document.querySelectorAll('.contact-popover.open').forEach(function(p) {
-                    p.classList.remove('open');
-                });
-                if (!wasOpen) popover.classList.add('open');
-            });
-        });
-        document.addEventListener('click', function() {
-            document.querySelectorAll('.contact-popover.open').forEach(function(p) {
-                p.classList.remove('open');
-            });
+        ['typeFilter', 'repFilter', 'marketFilter'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('change', applyFilters);
         });
     </script>
 </body>

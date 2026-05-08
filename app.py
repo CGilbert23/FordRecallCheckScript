@@ -174,6 +174,19 @@ def parse_vin_text(text):
     ]
 
 
+def format_phone(text):
+    """Normalize a phone number to xxx-xxx-xxxx. Returns the original string
+    unchanged if it doesn't contain a recognizable 10-digit US number."""
+    if not text:
+        return text
+    digits = ''.join(c for c in text if c.isdigit())
+    if len(digits) == 11 and digits.startswith('1'):
+        digits = digits[1:]
+    if len(digits) == 10:
+        return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
+    return text
+
+
 def parse_recipients_text(text):
     """Parse recipients input (newline or comma separated) into a deduped list."""
     if not text:
@@ -330,7 +343,19 @@ def used_car_tracker():
 @app.route('/recall/one-time')
 def one_time_form():
     active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))
-    return render_template('index.html', active_jobs=active)
+    prefill = {}
+    account_id = (request.args.get('account_id') or '').strip()
+    if account_id:
+        try:
+            account = db.get_account(account_id)
+            if account:
+                prefill = {
+                    'vins': account.get('vins') or '',
+                    'name': account.get('company_name') or '',
+                }
+        except Exception as e:
+            logger.error(f"Failed to prefill one-time form from account {account_id}: {e}")
+    return render_template('index.html', active_jobs=active, prefill=prefill)
 
 
 @app.route('/submit', methods=['POST'])
@@ -355,12 +380,12 @@ def submit():
     name = request.form.get('name', '').strip()
 
     job_id = uuid.uuid4().hex[:12]
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    date_str = datetime.now().strftime("%m_%d_%Y")
     safe_name = ''.join(c for c in name if c.isalnum() or c in ' _-').strip().replace(' ', '_')
     if safe_name:
-        filename = f'{safe_name}_Ford_Recalls_{timestamp}.xlsx'
+        filename = f'{safe_name}_FordRecalls_{date_str}.xlsx'
     else:
-        filename = f'Ford_Recalls_{timestamp}.xlsx'
+        filename = f'FordRecalls_{date_str}.xlsx'
     output_file = os.path.join(OUTPUT_DIR, filename)
 
     # Check if another job is already running/queued
@@ -669,7 +694,10 @@ def _read_account_form(req):
     account_rep = req.form.get('account_rep', '').strip()
     fleet_manager = req.form.get('fleet_manager', '').strip()
     fleet_manager_email = req.form.get('fleet_manager_email', '').strip()
-    fleet_manager_phone = req.form.get('fleet_manager_phone', '').strip()
+    fleet_manager_phone = format_phone(req.form.get('fleet_manager_phone', '').strip())
+    fleet_manager_2 = req.form.get('fleet_manager_2', '').strip()
+    fleet_manager_2_email = req.form.get('fleet_manager_2_email', '').strip()
+    fleet_manager_2_phone = format_phone(req.form.get('fleet_manager_2_phone', '').strip())
     service_type = req.form.get('service_type', '').strip()
     vins_raw = req.form.get('vins', '').strip()
     notes = req.form.get('notes', '').strip()
@@ -684,6 +712,9 @@ def _read_account_form(req):
         'fleet_manager': fleet_manager,
         'fleet_manager_email': fleet_manager_email,
         'fleet_manager_phone': fleet_manager_phone,
+        'fleet_manager_2': fleet_manager_2,
+        'fleet_manager_2_email': fleet_manager_2_email,
+        'fleet_manager_2_phone': fleet_manager_2_phone,
         'service_type': service_type,
         'vins': vins_normalized,
         'vin_count': len(vin_list),
@@ -707,8 +738,11 @@ def _account_payload(form):
         'market': form['market'],
         'account_rep': form['account_rep'],
         'fleet_manager': form['fleet_manager'] or None,
-        'fleet_manager_email': form['fleet_manager_email'] or None,
-        'fleet_manager_phone': form['fleet_manager_phone'] or None,
+        'fleet_manager_email': form['fleet_manager_email'] or '--',
+        'fleet_manager_phone': form['fleet_manager_phone'] or '--',
+        'fleet_manager_2': form['fleet_manager_2'] or None,
+        'fleet_manager_2_email': form['fleet_manager_2_email'] or None,
+        'fleet_manager_2_phone': form['fleet_manager_2_phone'] or None,
         'service_type': form['service_type'],
         'vins': form['vins'] or None,
         'notes': form['notes'] or None,
@@ -834,8 +868,11 @@ def account_edit(account_id):
         'market': existing.get('market') or '',
         'account_rep': existing.get('account_rep') or '',
         'fleet_manager': existing.get('fleet_manager') or '',
-        'fleet_manager_email': existing.get('fleet_manager_email') or '',
-        'fleet_manager_phone': existing.get('fleet_manager_phone') or '',
+        'fleet_manager_email': (existing.get('fleet_manager_email') or '').replace('--', ''),
+        'fleet_manager_phone': (existing.get('fleet_manager_phone') or '').replace('--', ''),
+        'fleet_manager_2': existing.get('fleet_manager_2') or '',
+        'fleet_manager_2_email': existing.get('fleet_manager_2_email') or '',
+        'fleet_manager_2_phone': existing.get('fleet_manager_2_phone') or '',
         'service_type': existing.get('service_type') or '',
         'vins': existing.get('vins') or '',
         'vin_count': len(parse_vin_text(existing.get('vins') or '')),
@@ -886,10 +923,13 @@ def _read_lead_form(req):
     company_name = req.form.get('company_name', '').strip()
     market = req.form.get('market', '').strip()
     account_rep = req.form.get('account_rep', '').strip()
-    phone = req.form.get('phone', '').strip()
+    phone = format_phone(req.form.get('phone', '').strip())
     lead_source = req.form.get('lead_source', '').strip()
     lead_source_other = req.form.get('lead_source_other', '').strip()
     notes = req.form.get('notes', '').strip()
+    lead_type = req.form.get('lead_type', '').strip() or 'cold'
+    last_contacted_at = req.form.get('last_contacted_at', '').strip()
+    interest_level = req.form.get('interest_level', '').strip() or db.INTEREST_LEVEL_DEFAULT
 
     form = {
         'company_name': company_name,
@@ -899,6 +939,9 @@ def _read_lead_form(req):
         'lead_source': lead_source,
         'lead_source_other': lead_source_other,
         'notes': notes,
+        'lead_type': lead_type,
+        'last_contacted_at': last_contacted_at,
+        'interest_level': interest_level,
     }
     if not company_name:
         return form, 'Company name is required.'
@@ -910,10 +953,15 @@ def _read_lead_form(req):
         return form, 'Please pick a valid lead source.'
     if lead_source == 'Other' and not lead_source_other:
         return form, 'Please describe the lead source when "Other" is selected.'
+    if lead_type not in db.LEAD_TYPES:
+        return form, 'Please pick a valid lead type.'
+    if interest_level not in db.INTEREST_LEVELS:
+        return form, 'Please pick a valid interest level.'
     return form, None
 
 
 def _lead_payload(form):
+    is_warm = form['lead_type'] == 'warm'
     return {
         'company_name': form['company_name'],
         'market': form['market'],
@@ -924,19 +972,41 @@ def _lead_payload(form):
         # so the column doesn't carry stale data after the dropdown changes.
         'lead_source_other': form['lead_source_other'] if form['lead_source'] == 'Other' else None,
         'notes': form['notes'] or None,
+        'lead_type': form['lead_type'],
+        # Warm-only fields. For cold leads, last_contacted_at is cleared and
+        # interest_level falls back to the default ('Y') so it never carries
+        # stale state if the lead is later promoted.
+        'last_contacted_at': form['last_contacted_at'] if (is_warm and form['last_contacted_at']) else None,
+        'interest_level': form['interest_level'] if is_warm else db.INTEREST_LEVEL_DEFAULT,
     }
+
+
+def _lead_form_context(extra=None):
+    ctx = {
+        'markets': db.MARKETS,
+        'reps': db.ACCOUNT_REPS,
+        'lead_sources': db.LEAD_SOURCES,
+        'lead_types': db.LEAD_TYPES,
+        'interest_levels': db.INTEREST_LEVELS,
+    }
+    if extra:
+        ctx.update(extra)
+    return ctx
 
 
 @app.route('/leads')
 def leads_list():
     try:
-        leads = db.list_leads(include_converted=False)
+        all_leads = db.list_leads(include_converted=False)
     except Exception as e:
         logger.error(f"Failed to load leads: {e}")
-        leads = []
+        all_leads = []
+    warm_leads = [l for l in all_leads if (l.get('lead_type') or 'cold') == 'warm']
+    cold_leads = [l for l in all_leads if (l.get('lead_type') or 'cold') == 'cold']
     return render_template(
         'leads.html',
-        leads=leads,
+        warm_leads=warm_leads,
+        cold_leads=cold_leads,
         markets=db.MARKETS,
         reps=db.ACCOUNT_REPS,
     )
@@ -949,7 +1019,7 @@ def lead_new():
         if error:
             return render_template(
                 'lead_form.html', lead=None, form=form, error=error,
-                markets=db.MARKETS, reps=db.ACCOUNT_REPS, lead_sources=db.LEAD_SOURCES,
+                **_lead_form_context(),
             )
         try:
             db.create_lead(_lead_payload(form))
@@ -957,13 +1027,17 @@ def lead_new():
             logger.error(f"Create lead failed: {e}")
             return render_template(
                 'lead_form.html', lead=None, form=form, error=str(e),
-                markets=db.MARKETS, reps=db.ACCOUNT_REPS, lead_sources=db.LEAD_SOURCES,
+                **_lead_form_context(),
             )
         return redirect(url_for('leads_list'))
 
+    default_type = request.args.get('type', 'cold')
+    if default_type not in db.LEAD_TYPES:
+        default_type = 'cold'
     return render_template(
-        'lead_form.html', lead=None, form={},
-        markets=db.MARKETS, reps=db.ACCOUNT_REPS, lead_sources=db.LEAD_SOURCES,
+        'lead_form.html', lead=None,
+        form={'lead_type': default_type, 'interest_level': db.INTEREST_LEVEL_DEFAULT},
+        **_lead_form_context(),
     )
 
 
@@ -982,7 +1056,7 @@ def lead_edit(lead_id):
         if error:
             return render_template(
                 'lead_form.html', lead=existing, form=form, error=error,
-                markets=db.MARKETS, reps=db.ACCOUNT_REPS, lead_sources=db.LEAD_SOURCES,
+                **_lead_form_context(),
             )
         try:
             db.update_lead(lead_id, _lead_payload(form))
@@ -990,7 +1064,7 @@ def lead_edit(lead_id):
             logger.error(f"Update lead failed: {e}")
             return render_template(
                 'lead_form.html', lead=existing, form=form, error=str(e),
-                markets=db.MARKETS, reps=db.ACCOUNT_REPS, lead_sources=db.LEAD_SOURCES,
+                **_lead_form_context(),
             )
         return redirect(url_for('leads_list'))
 
@@ -1002,10 +1076,13 @@ def lead_edit(lead_id):
         'lead_source': existing.get('lead_source') or '',
         'lead_source_other': existing.get('lead_source_other') or '',
         'notes': existing.get('notes') or '',
+        'lead_type': existing.get('lead_type') or 'cold',
+        'last_contacted_at': existing.get('last_contacted_at') or '',
+        'interest_level': existing.get('interest_level') or db.INTEREST_LEVEL_DEFAULT,
     }
     return render_template(
         'lead_form.html', lead=existing, form=form,
-        markets=db.MARKETS, reps=db.ACCOUNT_REPS, lead_sources=db.LEAD_SOURCES,
+        **_lead_form_context(),
     )
 
 
@@ -1015,6 +1092,16 @@ def lead_delete(lead_id):
         db.delete_lead(lead_id)
     except Exception as e:
         logger.error(f"Delete lead failed: {e}")
+    return redirect(url_for('leads_list'))
+
+
+@app.route('/leads/<lead_id>/promote', methods=['POST'])
+def lead_promote(lead_id):
+    """Move a cold-call lead onto the warm-prospect list."""
+    try:
+        db.promote_lead_to_warm(lead_id)
+    except Exception as e:
+        logger.error(f"Promote lead failed: {e}")
     return redirect(url_for('leads_list'))
 
 

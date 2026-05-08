@@ -26,6 +26,30 @@
         }
         textarea.other-source { font-family: inherit; height: 70px; resize: vertical; }
         .hidden { display: none; }
+        .type-toggle { display: flex; gap: 8px; margin-bottom: 18px; }
+        .type-toggle label {
+            flex: 1; cursor: pointer; margin-bottom: 0; text-align: center;
+            padding: 14px 18px; border: 2px solid #e5e7eb; border-radius: 8px;
+            font-weight: 600; color: #6b7280; transition: all 0.12s ease;
+        }
+        .type-toggle label:hover { border-color: #cfd8e3; }
+        .type-toggle input[type="radio"] { display: none; }
+        .type-toggle input[type="radio"]:checked + .type-cold { background: #eff6ff; border-color: #0068d6; color: #0068d6; }
+        .type-toggle input[type="radio"]:checked + .type-warm { background: #fff7ed; border-color: #d97706; color: #b45309; }
+        .interest-toggle { display: flex; gap: 8px; }
+        .interest-toggle label {
+            flex: 1; cursor: pointer; margin-bottom: 0; text-align: center;
+            padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 8px;
+            font-weight: 600; color: #6b7280;
+        }
+        .interest-toggle input[type="radio"] { display: none; }
+        .interest-toggle input[type="radio"]:checked + .lvl-R { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
+        .interest-toggle input[type="radio"]:checked + .lvl-Y { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+        .interest-toggle input[type="radio"]:checked + .lvl-G { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+        .interest-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+        .dot-R { background: #dc2626; }
+        .dot-Y { background: #f59e0b; }
+        .dot-G { background: #16a34a; }
         textarea.notes { font-family: inherit; height: 140px; resize: vertical; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
         .row { display: flex; gap: 16px; margin-bottom: 18px; }
@@ -35,6 +59,9 @@
         .btn:hover { background: #0050a8; }
         .btn-secondary { background: #6b7280; padding: 12px 20px; }
         .btn-secondary:hover { background: #4b5563; }
+        .btn-danger { background: #dc2626; padding: 12px 20px; }
+        .btn-danger:hover { background: #991b1b; }
+        .delete-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
         .actions { display: flex; gap: 10px; margin-top: 24px; }
         .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
@@ -52,6 +79,17 @@
             {% endif %}
 
             <form method="POST" action="{{ '/leads/' ~ lead.id ~ '/edit' if lead else '/leads/new' }}">
+                {% set current_type = form.lead_type or 'cold' %}
+                <div class="field">
+                    <label>Lead Type</label>
+                    <div class="type-toggle">
+                        <input type="radio" name="lead_type" id="type_cold" value="cold" {% if current_type == 'cold' %}checked{% endif %}>
+                        <label for="type_cold" class="type-cold">Cold Call</label>
+                        <input type="radio" name="lead_type" id="type_warm" value="warm" {% if current_type == 'warm' %}checked{% endif %}>
+                        <label for="type_warm" class="type-warm">Warm Prospect</label>
+                    </div>
+                </div>
+
                 <div class="field">
                     <label for="company_name">Company Name</label>
                     <input type="text" name="company_name" id="company_name" required value="{{ form.company_name or '' }}">
@@ -99,6 +137,25 @@
                     <textarea name="lead_source_other" id="lead_source_other" class="other-source" placeholder="Where did this lead come from?">{{ form.lead_source_other or '' }}</textarea>
                 </div>
 
+                {% set current_interest = form.interest_level or 'Y' %}
+                <div class="row {% if current_type != 'warm' %}hidden{% endif %}" id="warmFields">
+                    <div>
+                        <label for="last_contacted_at">Last Contacted</label>
+                        <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
+                    </div>
+                    <div>
+                        <label>Interest Level</label>
+                        <div class="interest-toggle">
+                            <input type="radio" name="interest_level" id="lvl_R" value="R" {% if current_interest == 'R' %}checked{% endif %}>
+                            <label for="lvl_R" class="lvl-R"><span class="interest-dot dot-R"></span>Red</label>
+                            <input type="radio" name="interest_level" id="lvl_Y" value="Y" {% if current_interest == 'Y' %}checked{% endif %}>
+                            <label for="lvl_Y" class="lvl-Y"><span class="interest-dot dot-Y"></span>Yellow</label>
+                            <input type="radio" name="interest_level" id="lvl_G" value="G" {% if current_interest == 'G' %}checked{% endif %}>
+                            <label for="lvl_G" class="lvl-G"><span class="interest-dot dot-G"></span>Green</label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="field">
                     <label for="notes">Notes</label>
                     <textarea name="notes" id="notes" class="notes">{{ form.notes or '' }}</textarea>
@@ -109,6 +166,12 @@
                     <a href="/leads" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
+
+            {% if lead %}
+            <form method="POST" action="/leads/{{ lead.id }}/delete" class="delete-form" onsubmit="return confirm('Delete this lead? This cannot be undone.');">
+                <button type="submit" class="btn btn-danger">Delete Lead</button>
+            </form>
+            {% endif %}
         </div>
     </div>
 
@@ -124,6 +187,17 @@
                 }
             });
         }
+
+        var warmFields = document.getElementById('warmFields');
+        document.querySelectorAll('input[name="lead_type"]').forEach(function(r) {
+            r.addEventListener('change', function() {
+                if (this.value === 'warm' && this.checked) {
+                    warmFields.classList.remove('hidden');
+                } else if (this.value === 'cold' && this.checked) {
+                    warmFields.classList.add('hidden');
+                }
+            });
+        });
     </script>
 </body>
 </html>

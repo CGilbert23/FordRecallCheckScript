@@ -120,6 +120,28 @@
                     </div>
                 </div>
 
+                {% set has_fm2 = form.fleet_manager_2 or form.fleet_manager_2_email or form.fleet_manager_2_phone %}
+                <div id="fleetMgr2" style="{% if not has_fm2 %}display: none;{% endif %}">
+                    <div class="field">
+                        <label for="fleet_manager_2">Fleet Manager #2</label>
+                        <input type="text" name="fleet_manager_2" id="fleet_manager_2" value="{{ form.fleet_manager_2 or '' }}">
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label for="fleet_manager_2_email">Fleet Manager #2 Email</label>
+                            <input type="email" name="fleet_manager_2_email" id="fleet_manager_2_email" value="{{ form.fleet_manager_2_email or '' }}">
+                        </div>
+                        <div>
+                            <label for="fleet_manager_2_phone">Fleet Manager #2 Phone</label>
+                            <input type="tel" name="fleet_manager_2_phone" id="fleet_manager_2_phone" value="{{ form.fleet_manager_2_phone or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" id="addFleetMgr2Btn" style="{% if has_fm2 %}display: none;{% endif %} background: none; color: #0068d6; border: none; padding: 0; font-size: 0.9rem; cursor: pointer; text-decoration: underline; margin-bottom: 18px; font-weight: 600;">
+                    + Add Second Fleet Manager
+                </button>
+
                 <div class="field">
                     <label for="vins">VIN List</label>
                     <p class="hint">Paste one VIN per line (17 alphanumeric characters). Stored on the account record.</p>
@@ -144,5 +166,18 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        var addFm2Btn = document.getElementById('addFleetMgr2Btn');
+        var fm2Block = document.getElementById('fleetMgr2');
+        if (addFm2Btn && fm2Block) {
+            addFm2Btn.addEventListener('click', function() {
+                fm2Block.style.display = '';
+                addFm2Btn.style.display = 'none';
+                var firstInput = document.getElementById('fleet_manager_2');
+                if (firstInput) firstInput.focus();
+            });
+        }
+    </script>
 </body>
 </html>

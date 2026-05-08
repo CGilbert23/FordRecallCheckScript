@@ -62,6 +62,9 @@ create table accounts (
   fleet_manager text,
   fleet_manager_email text,
   fleet_manager_phone text,
+  fleet_manager_2 text,
+  fleet_manager_2_email text,
+  fleet_manager_2_phone text,
   service_type text not null check (service_type in ('Full Service', 'Recall Only')),
   vins text,
   notes text,
@@ -75,7 +78,10 @@ create trigger accounts_updated_at
   before update on accounts
   for each row execute function set_updated_at();
 
--- Account leads: pre-customer prospects.
+-- Account leads: pre-customer prospects. Two workflows on one table:
+--   lead_type = 'cold' — cold-call list (default for new rows)
+--   lead_type = 'warm' — actively engaged prospects; uses last_contacted_at
+--                        and interest_level (R/Y/G) for follow-up tracking.
 create table account_leads (
   id uuid primary key default gen_random_uuid(),
   company_name text not null,
@@ -85,12 +91,16 @@ create table account_leads (
   lead_source text check (lead_source is null or lead_source in ('Sales', 'Service', 'Visual', 'Other')),
   lead_source_other text,
   notes text,
+  lead_type text not null default 'cold' check (lead_type in ('cold', 'warm')),
+  last_contacted_at date,
+  interest_level text not null default 'Y' check (interest_level in ('R', 'Y', 'G')),
   converted_at timestamptz,
   converted_account_id uuid references accounts(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index account_leads_account_rep_idx on account_leads(account_rep);
+create index account_leads_lead_type_idx on account_leads(lead_type);
 create trigger account_leads_updated_at
   before update on account_leads
   for each row execute function set_updated_at();

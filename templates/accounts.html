@@ -19,9 +19,10 @@
         .subnav-tab:hover { color: #0068d6; border-color: #cfd8e3; }
         .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
         .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed; }
+        td, th { word-wrap: break-word; overflow-wrap: break-word; }
+        th { text-align: center; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { text-align: center; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #0050a8; }
@@ -48,7 +49,8 @@
         .check-in-no:hover { background: #fee2e2; }
         .check-in-form { display: inline; margin: 0; }
         .col-check-in { text-align: center; }
-        .inline-actions { display: flex; gap: 6px; }
+        .col-recall-check { text-align: center; }
+        .inline-actions { display: flex; gap: 6px; justify-content: center; }
         .inline-actions form { display: inline; }
         .rep-section { margin-bottom: 10px; }
         .rep-title { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid #0068d6; display: flex; justify-content: space-between; align-items: center; }
@@ -60,10 +62,40 @@
         .contact-info { position: absolute; left: -4px; top: 26px; background: #1f2937; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; white-space: nowrap; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.18); display: none; }
         .contact-info-wide { white-space: pre-wrap; width: 480px; max-width: 480px; line-height: 1.4; }
         .contact-info::before { content: ''; position: absolute; top: -5px; left: 8px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 5px solid #1f2937; }
+        .contact-info-right { left: auto; right: 0; }
+        .contact-info-right::before { left: auto; right: 8px; }
         .contact-info div + div { margin-top: 4px; }
         .contact-popover:hover .contact-info, .contact-popover.open .contact-info { display: block; }
+        .notes-popover { position: relative; display: inline-block; }
+        .notes-info {
+            position: absolute; right: 0; top: 26px;
+            background: #fffbea; color: #1f2937;
+            border: 1px solid #f3e0a4;
+            padding: 10px 12px; border-radius: 6px;
+            font-size: 0.82rem; line-height: 1.45;
+            white-space: pre-wrap; word-break: break-word; text-align: left;
+            width: 300px; max-width: 90vw;
+            z-index: 10;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            display: none;
+        }
+        .notes-info::before {
+            content: ''; position: absolute; top: -6px; right: 10px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #f3e0a4;
+        }
+        .notes-info::after {
+            content: ''; position: absolute; top: -5px; right: 11px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid #fffbea;
+        }
+        .notes-popover:hover .notes-info { display: block; }
         .schedule-link { color: #0068d6; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
         .schedule-link:hover { text-decoration: underline; }
+        .run-now-btn { display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 1px solid #cfd8e3; color: #0068d6; font-size: 0.6rem; text-decoration: none; vertical-align: middle; line-height: 1; }
+        .run-now-btn:hover { background: #eff6ff; color: #0050a8; }
         .schedule-add { color: #0068d6; text-decoration: none; font-size: 0.8rem; }
         .schedule-add:hover { text-decoration: underline; }
         a.nav-link { color: #0068d6; text-decoration: none; }
@@ -79,11 +111,18 @@
         <div class="actions">
             <a href="/accounts/new" class="btn">+ New Account</a>
             <div class="filter">
-                <label for="repFilter" class="muted">Filter:</label>
+                <label for="repFilter" class="muted">Rep:</label>
                 <select id="repFilter">
                     <option value="">All representatives</option>
                     {% for rep in reps %}
                     <option value="{{ rep }}">{{ rep }}</option>
+                    {% endfor %}
+                </select>
+                <label for="marketFilter" class="muted" style="margin-left: 12px;">Market:</label>
+                <select id="marketFilter">
+                    <option value="">All markets</option>
+                    {% for m in markets %}
+                    <option value="{{ m }}">{{ m }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -106,6 +145,16 @@
                     <div class="empty-row">No accounts assigned.</div>
                 {% else %}
                 <table>
+                    <colgroup>
+                        <col style="width: 18%">
+                        <col style="width: 10%">
+                        <col style="width: 16%">
+                        <col style="width: 10%">
+                        <col style="width: 14%">
+                        <col style="width: 10%">
+                        <col style="width: 11%">
+                        <col style="width: 11%">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>Company</th>
@@ -114,38 +163,44 @@
                             <th>Service</th>
                             <th>VINs</th>
                             <th class="col-check-in">Recent Check In</th>
-                            <th>Recall Check</th>
-                            <th></th>
+                            <th class="col-recall-check">Recall Check</th>
+                            <th>Other</th>
                         </tr>
                     </thead>
                     <tbody>
                     {% for a in rep_accounts %}
-                        <tr>
+                        <tr data-market="{{ a.market }}">
                             <td>
                                 <strong>{{ a.company_name }}</strong>
-                                {% if a.notes %}
-                                <span class="contact-popover">
-                                    <button type="button" class="contact-btn" aria-label="Show notes">i</button>
-                                    <span class="contact-info contact-info-wide">{{ a.notes }}</span>
-                                </span>
-                                {% endif %}
                             </td>
                             <td>{{ a.market }}</td>
                             <td>
                                 {% if a.fleet_manager %}{{ a.fleet_manager }}{% else %}<span class="muted">—</span>{% endif %}
-                                {% if a.fleet_manager_email or a.fleet_manager_phone %}
+                                {% if a.fleet_manager_2 %} / {{ a.fleet_manager_2 }}{% endif %}
+                                {% set has_email = a.fleet_manager_email and a.fleet_manager_email != '--' %}
+                                {% set has_phone = a.fleet_manager_phone and a.fleet_manager_phone != '--' %}
+                                {% set has_fm2 = a.fleet_manager_2 or a.fleet_manager_2_email or a.fleet_manager_2_phone %}
+                                {% if has_email or has_phone or has_fm2 %}
                                 <span class="contact-popover">
                                     <button type="button" class="contact-btn" aria-label="Show contact info">i</button>
                                     <span class="contact-info">
-                                        {% if a.fleet_manager_email %}<div>&#9993; {{ a.fleet_manager_email }}</div>{% endif %}
-                                        {% if a.fleet_manager_phone %}<div>&#9742; {{ a.fleet_manager_phone }}</div>{% endif %}
+                                        {% if a.fleet_manager %}<div><strong>{{ a.fleet_manager }}</strong></div>{% endif %}
+                                        {% if has_email %}<div>&#9993; {{ a.fleet_manager_email }}</div>{% endif %}
+                                        {% if has_phone %}<div>&#9742; {{ a.fleet_manager_phone }}</div>{% endif %}
+                                        {% if has_fm2 %}
+                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #4b5563;">
+                                            {% if a.fleet_manager_2 %}<div><strong>{{ a.fleet_manager_2 }}</strong></div>{% endif %}
+                                            {% if a.fleet_manager_2_email %}<div>&#9993; {{ a.fleet_manager_2_email }}</div>{% endif %}
+                                            {% if a.fleet_manager_2_phone %}<div>&#9742; {{ a.fleet_manager_2_phone }}</div>{% endif %}
+                                        </div>
+                                        {% endif %}
                                     </span>
                                 </span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if a.service_type == 'Full Service' %}
-                                    <span class="badge badge-success">Full Service</span>
+                                    <span class="badge">Full Service</span>
                                 {% else %}
                                     <span class="badge badge-amber">Recall Only</span>
                                 {% endif %}
@@ -153,6 +208,7 @@
                             <td>
                                 {% if a.vin_count %}
                                     <span class="badge badge-gray">VINs attached ({{ a.vin_count }})</span>
+                                    <a href="/recall/one-time?account_id={{ a.id }}" class="run-now-btn" title="Run a recall check now with these VINs">&#9654;</a>
                                 {% else %}
                                     <span class="muted">—</span>
                                 {% endif %}
@@ -166,7 +222,7 @@
                                     </form>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td class="col-recall-check">
                                 {% set sched_list = schedules_by_account.get(a.id) %}
                                 {% if sched_list %}
                                     <a href="/schedules/{{ sched_list[0].id }}/edit" class="btn btn-sm btn-light">View Schedule</a>
@@ -175,7 +231,17 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Edit</a>
+                                <div class="inline-actions">
+                                    <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Edit</a>
+                                    {% if a.notes %}
+                                    <span class="notes-popover">
+                                        <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
+                                        <span class="notes-info">{{ a.notes }}</span>
+                                    </span>
+                                    {% else %}
+                                    <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -188,16 +254,32 @@
     </div>
 
     <script>
-        document.getElementById('repFilter').addEventListener('change', function() {
-            var selected = this.value;
+        var repFilter = document.getElementById('repFilter');
+        var marketFilter = document.getElementById('marketFilter');
+
+        function applyFilters() {
+            var rep = repFilter.value;
+            var market = marketFilter.value;
             document.querySelectorAll('.rep-section').forEach(function(section) {
-                if (!selected || section.dataset.rep === selected) {
-                    section.style.display = '';
-                } else {
+                var repMatches = !rep || section.dataset.rep === rep;
+                if (!repMatches) {
                     section.style.display = 'none';
+                    return;
                 }
+                var rows = section.querySelectorAll('tbody tr');
+                var visibleRows = 0;
+                rows.forEach(function(row) {
+                    var rowMatches = !market || row.dataset.market === market;
+                    row.style.display = rowMatches ? '' : 'none';
+                    if (rowMatches) visibleRows++;
+                });
+                // Hide whole rep section when market filter knocks out every row
+                section.style.display = (market && visibleRows === 0) ? 'none' : '';
             });
-        });
+        }
+
+        repFilter.addEventListener('change', applyFilters);
+        marketFilter.addEventListener('change', applyFilters);
 
         // Contact info popover: hover shows it (CSS); click pins it open until
         // the user clicks elsewhere. Lets touch devices reach the info too.

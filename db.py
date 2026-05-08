@@ -32,6 +32,10 @@ SERVICE_TYPES = ['Full Service', 'Recall Only']
 
 LEAD_SOURCES = ['Sales', 'Service', 'Visual', 'Other']
 
+LEAD_TYPES = ['cold', 'warm']
+INTEREST_LEVELS = ['R', 'Y', 'G']
+INTEREST_LEVEL_DEFAULT = 'Y'
+
 CADENCES = ['daily', 'weekly', 'monthly', 'quarterly']
 
 ACCOUNT_CHECK_IN_DAYS = 25
@@ -203,13 +207,23 @@ def list_schedules_for_account(account_id):
 # Account leads
 # ---------------------------------------------------------------------------
 
-def list_leads(include_converted=False):
+def list_leads(include_converted=False, lead_type=None):
     client = get_client()
     query = client.table('account_leads').select('*').order('account_rep').order('company_name')
     if not include_converted:
         query = query.is_('converted_at', 'null')
+    if lead_type:
+        query = query.eq('lead_type', lead_type)
     res = query.execute()
     return res.data or []
+
+
+def promote_lead_to_warm(lead_id):
+    client = get_client()
+    res = client.table('account_leads').update({
+        'lead_type': 'warm',
+    }).eq('id', lead_id).execute()
+    return res.data[0] if res.data else None
 
 
 def get_lead(lead_id):
