@@ -30,11 +30,19 @@ ACCOUNT_REP_EMAILS = {
 
 SERVICE_TYPES = ['Full Service', 'Recall Only']
 
-LEAD_SOURCES = ['Sales', 'Service', 'Visual', 'Other']
+LEAD_SOURCES = ['Sales', 'Service', 'Parts', 'Visual', 'Other']
+# Sources that capture a free-text contact name (salesperson, service advisor,
+# parts rep) on the lead form. Source-contact is hidden + cleared for any
+# source not in this set, so the column never holds stale data after the
+# dropdown changes.
+LEAD_SOURCES_WITH_CONTACT = {'Sales', 'Service', 'Parts'}
 
 LEAD_TYPES = ['cold', 'warm']
 INTEREST_LEVELS = ['R', 'Y', 'G']
 INTEREST_LEVEL_DEFAULT = 'Y'
+
+LEAD_ATTEMPT_OUTCOMES = ['made_contact', 'left_voicemail']
+LEAD_CLOSE_REASONS = ['not_interested']
 
 CADENCES = ['daily', 'weekly', 'monthly', 'quarterly']
 
@@ -211,7 +219,9 @@ def list_leads(include_converted=False, lead_type=None):
     client = get_client()
     query = client.table('account_leads').select('*').order('account_rep').order('company_name')
     if not include_converted:
-        query = query.is_('converted_at', 'null')
+        # `include_converted=False` also hides leads we've soft-closed via
+        # the Not Interested action — same idea: keep the active list clean.
+        query = query.is_('converted_at', 'null').is_('closed_at', 'null')
     if lead_type:
         query = query.eq('lead_type', lead_type)
     res = query.execute()
@@ -222,6 +232,33 @@ def promote_lead_to_warm(lead_id):
     client = get_client()
     res = client.table('account_leads').update({
         'lead_type': 'warm',
+    }).eq('id', lead_id).execute()
+    return res.data[0] if res.data else None
+
+
+def record_lead_attempt(lead_id, attempt_at, outcome, note=None):
+    """Stamp the lead row with the latest contact attempt date + outcome.
+
+    `note` is required by the UI for made_contact outcomes and ignored
+    (stored as null) for voicemail outcomes. Always written so the column
+    clears when the latest attempt has no note.
+    """
+    client = get_client()
+    res = client.table('account_leads').update({
+        'last_attempt_at': attempt_at,
+        'last_attempt_outcome': outcome,
+        'last_attempt_note': note,
+    }).eq('id', lead_id).execute()
+    return res.data[0] if res.data else None
+
+
+def close_lead(lead_id, reason='not_interested'):
+    """Soft-close a lead so it disappears from the active cold list."""
+    from datetime import datetime, timezone
+    client = get_client()
+    res = client.table('account_leads').update({
+        'closed_at': datetime.now(timezone.utc).isoformat(),
+        'closed_reason': reason,
     }).eq('id', lead_id).execute()
     return res.data[0] if res.data else None
 

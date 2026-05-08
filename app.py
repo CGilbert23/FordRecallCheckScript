@@ -926,10 +926,13 @@ def _read_lead_form(req):
     phone = format_phone(req.form.get('phone', '').strip())
     lead_source = req.form.get('lead_source', '').strip()
     lead_source_other = req.form.get('lead_source_other', '').strip()
+    source_contact = req.form.get('source_contact', '').strip()
     notes = req.form.get('notes', '').strip()
     lead_type = req.form.get('lead_type', '').strip() or 'cold'
     last_contacted_at = req.form.get('last_contacted_at', '').strip()
     interest_level = req.form.get('interest_level', '').strip() or db.INTEREST_LEVEL_DEFAULT
+    fleet_manager = req.form.get('fleet_manager', '').strip()
+    fleet_manager_email = req.form.get('fleet_manager_email', '').strip()
 
     form = {
         'company_name': company_name,
@@ -938,10 +941,13 @@ def _read_lead_form(req):
         'phone': phone,
         'lead_source': lead_source,
         'lead_source_other': lead_source_other,
+        'source_contact': source_contact,
         'notes': notes,
         'lead_type': lead_type,
         'last_contacted_at': last_contacted_at,
         'interest_level': interest_level,
+        'fleet_manager': fleet_manager,
+        'fleet_manager_email': fleet_manager_email,
     }
     if not company_name:
         return form, 'Company name is required.'
@@ -962,6 +968,7 @@ def _read_lead_form(req):
 
 def _lead_payload(form):
     is_warm = form['lead_type'] == 'warm'
+    has_contact_source = form['lead_source'] in db.LEAD_SOURCES_WITH_CONTACT
     return {
         'company_name': form['company_name'],
         'market': form['market'],
@@ -971,6 +978,9 @@ def _lead_payload(form):
         # Free-text only meaningful when source is Other; clear it otherwise
         # so the column doesn't carry stale data after the dropdown changes.
         'lead_source_other': form['lead_source_other'] if form['lead_source'] == 'Other' else None,
+        # Source contact (salesperson / parts rep) only applies to Sales/Parts;
+        # cleared otherwise so the column doesn't carry stale data.
+        'source_contact': form['source_contact'] if (has_contact_source and form['source_contact']) else None,
         'notes': form['notes'] or None,
         'lead_type': form['lead_type'],
         # Warm-only fields. For cold leads, last_contacted_at is cleared and
@@ -978,6 +988,8 @@ def _lead_payload(form):
         # stale state if the lead is later promoted.
         'last_contacted_at': form['last_contacted_at'] if (is_warm and form['last_contacted_at']) else None,
         'interest_level': form['interest_level'] if is_warm else db.INTEREST_LEVEL_DEFAULT,
+        'fleet_manager': form['fleet_manager'] if (is_warm and form['fleet_manager']) else None,
+        'fleet_manager_email': form['fleet_manager_email'] if (is_warm and form['fleet_manager_email']) else None,
     }
 
 
@@ -1075,10 +1087,13 @@ def lead_edit(lead_id):
         'phone': existing.get('phone') or '',
         'lead_source': existing.get('lead_source') or '',
         'lead_source_other': existing.get('lead_source_other') or '',
+        'source_contact': existing.get('source_contact') or '',
         'notes': existing.get('notes') or '',
         'lead_type': existing.get('lead_type') or 'cold',
         'last_contacted_at': existing.get('last_contacted_at') or '',
         'interest_level': existing.get('interest_level') or db.INTEREST_LEVEL_DEFAULT,
+        'fleet_manager': existing.get('fleet_manager') or '',
+        'fleet_manager_email': existing.get('fleet_manager_email') or '',
     }
     return render_template(
         'lead_form.html', lead=existing, form=form,
@@ -1095,14 +1110,81 @@ def lead_delete(lead_id):
     return redirect(url_for('leads_list'))
 
 
-@app.route('/leads/<lead_id>/promote', methods=['POST'])
-def lead_promote(lead_id):
-    """Move a cold-call lead onto the warm-prospect list."""
+@app.route('/leads/<lead_id>/last-contacted', methods=['POST'])
+def lead_last_contacted(lead_id):
+    """Update only the last_contacted_at field. Powers the inline date
+    picker in the warm-prospect table so reps can bump the date without
+    opening the full edit form."""
+    new_date = request.form.get('last_contacted_at', '').strip() or None
     try:
-        db.promote_lead_to_warm(lead_id)
+        db.update_lead(lead_id, {'last_contacted_at': new_date})
     except Exception as e:
-        logger.error(f"Promote lead failed: {e}")
+        logger.error(f"Update last_contacted_at failed: {e}")
     return redirect(url_for('leads_list'))
+
+
+@app.route('/leads/<lead_id>/attempt', methods=['POST'])
+def lead_attempt(lead_id):
+    """Record a contact attempt on a lead (cold or warm).
+
+    Outcome is required ('made_contact' or 'left_voicemail'). A note is
+    required when the outcome is 'made_contact'; the UI marks the field
+    `required` and we re-validate server-side so a tampered POST can't
+    bypass the rule. Voicemail attempts ignore the note field.
+    """
+    from datetime import date
+    outcome = request.form.get('outcome', '').strip()
+    attempt_at = request.form.get('attempt_at', '').strip() or date.today().isoformat()
+    note = request.form.get('note', '').strip() or None
+
+    if outcome not in db.LEAD_ATTEMPT_OUTCOMES:
+        return redirect(url_for('leads_list'))
+    if outcome == 'made_contact' and not note:
+        return redirect(url_for('leads_list'))
+    if outcome == 'left_voicemail':
+        note = None
+
+    try:
+        db.record_lead_attempt(lead_id, attempt_at, outcome, note=note)
+    except Exception as e:
+        logger.error(f"Record lead attempt failed: {e}")
+
+    return redirect(url_for('leads_list'))
+
+
+@app.route('/leads/<lead_id>/promote', methods=['GET'])
+def lead_promote(lead_id):
+    """Render the lead form pre-filled and forced to lead_type=warm so the
+    rep can fill in warm-prospect-only fields (interest level, last
+    contacted, fleet manager) before confirming the promotion. The form
+    posts to /leads/<id>/edit, which performs the actual save."""
+    try:
+        existing = db.get_lead(lead_id)
+    except Exception as e:
+        logger.error(f"Failed to load lead {lead_id}: {e}")
+        existing = None
+    if not existing:
+        return 'Lead not found', 404
+
+    form = {
+        'company_name': existing.get('company_name') or '',
+        'market': existing.get('market') or '',
+        'account_rep': existing.get('account_rep') or '',
+        'phone': existing.get('phone') or '',
+        'lead_source': existing.get('lead_source') or '',
+        'lead_source_other': existing.get('lead_source_other') or '',
+        'source_contact': existing.get('source_contact') or '',
+        'notes': existing.get('notes') or '',
+        'lead_type': 'warm',
+        'last_contacted_at': existing.get('last_contacted_at') or '',
+        'interest_level': existing.get('interest_level') or db.INTEREST_LEVEL_DEFAULT,
+        'fleet_manager': existing.get('fleet_manager') or '',
+        'fleet_manager_email': existing.get('fleet_manager_email') or '',
+    }
+    return render_template(
+        'lead_form.html', lead=existing, form=form, promote=True,
+        **_lead_form_context(),
+    )
 
 
 @app.route('/leads/<lead_id>/convert')
@@ -1125,6 +1207,8 @@ def lead_convert(lead_id):
         'company_name': lead.get('company_name') or '',
         'market': lead.get('market') or '',
         'account_rep': lead.get('account_rep') or '',
+        'fleet_manager': lead.get('fleet_manager') or '',
+        'fleet_manager_email': lead.get('fleet_manager_email') or '',
         'fleet_manager_phone': lead.get('phone') or '',
         'notes': lead.get('notes') or '',
     }

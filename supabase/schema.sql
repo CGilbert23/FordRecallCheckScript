@@ -88,12 +88,20 @@ create table account_leads (
   market text not null,
   account_rep text not null,
   phone text,
-  lead_source text check (lead_source is null or lead_source in ('Sales', 'Service', 'Visual', 'Other')),
+  lead_source text check (lead_source is null or lead_source in ('Sales', 'Service', 'Parts', 'Visual', 'Other')),
   lead_source_other text,
+  source_contact text,
   notes text,
   lead_type text not null default 'cold' check (lead_type in ('cold', 'warm')),
   last_contacted_at date,
   interest_level text not null default 'Y' check (interest_level in ('R', 'Y', 'G')),
+  fleet_manager text,
+  fleet_manager_email text,
+  last_attempt_at date,
+  last_attempt_outcome text check (last_attempt_outcome is null or last_attempt_outcome in ('made_contact', 'left_voicemail')),
+  last_attempt_note text,
+  closed_at timestamptz,
+  closed_reason text,
   converted_at timestamptz,
   converted_account_id uuid references accounts(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -101,6 +109,7 @@ create table account_leads (
 );
 create index account_leads_account_rep_idx on account_leads(account_rep);
 create index account_leads_lead_type_idx on account_leads(lead_type);
+create index account_leads_closed_at_idx on account_leads(closed_at);
 create trigger account_leads_updated_at
   before update on account_leads
   for each row execute function set_updated_at();

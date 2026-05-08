@@ -21,8 +21,8 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 ## Routes (high-level)
 - `/` — home tile page (Account Management / Recall Checker)
 - `/accounts` and `/accounts/new`, `/accounts/<id>/edit`, `/accounts/<id>/delete`
-- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/convert` (lead → account)
-- `/recall/one-time` — one-time VIN check form (posts to `/submit`)
+- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/promote` (cold → warm), `/leads/<id>/convert` (lead → account). `/leads/new?type=warm` defaults the form to warm.
+- `/recall/one-time` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
 - `/recall/run-log` — recent jobs (in-memory only, lost on restart)
 - `/schedules` and children — recurring recall checks
 - `/dashboard` — 302 redirect to `/recall/run-log` (back-compat)
@@ -30,7 +30,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 
 ## Key Files
 - `app.py` — Flask routes, in-memory job store, queue worker thread
-- `db.py` — Supabase client + CRUD for schedules/accounts/leads + constants (`MARKETS`, `ACCOUNT_REPS`, `SERVICE_TYPES`, `CADENCES`). `LOCATIONS` is an alias for `MARKETS`.
+- `db.py` — Supabase client + CRUD for schedules/accounts/leads + constants (`MARKETS`, `ACCOUNT_REPS`, `SERVICE_TYPES`, `LEAD_SOURCES`, `LEAD_TYPES`, `INTEREST_LEVELS`, `INTEREST_LEVEL_DEFAULT`, `CADENCES`). `LOCATIONS` is an alias for `MARKETS`.
 - `scheduler.py` — APScheduler integration for recurring schedules
 - `recall_checker.py` — Selenium scraping + Excel output
 - `gh_actions_client.py` / `run_on_demand.py` — fallback path that runs the scrape via GitHub Actions (used when the host IP is blocked by Ford's Akamai)
@@ -44,8 +44,8 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 ## Supabase tables
 - `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`.
 - `schedule_runs` — per-execution log (started_at, finished_at, recalls_found, email_sent, error)
-- `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes)
-- `account_leads` — prospects (company, market, account_rep, notes); `converted_at` + `converted_account_id` are set when a lead is converted
+- `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes). Supports an optional second fleet manager (`fleet_manager_2`, `fleet_manager_2_email`, `fleet_manager_2_phone`).
+- `account_leads` — prospects (company, market, account_rep, notes). Split into two workflows via `lead_type` (`cold` or `warm`); warm prospects also use `last_contacted_at` and `interest_level` (R/Y/G, default Y). `converted_at` + `converted_account_id` are set when a lead is converted.
 
 `MARKETS` (and the `location`/`market` check constraints) use: Boyertown, Doylestown, Exton, Langhorne, Newtown, Washington, West Chester, Mechanicsburg, Company-Wide. The legacy value `GroupWide` was renamed to `Company-Wide` in the 2026-05-07 migration.
 

@@ -42,6 +42,13 @@
         .inline-actions form { display: inline; margin: 0; }
         .inline-actions .btn { white-space: nowrap; }
         .muted { color: #888; font-size: 0.85rem; }
+        .contact-popover { position: relative; display: inline-block; margin-left: 6px; vertical-align: middle; }
+        .contact-btn { border: 1px solid #cfd8e3; background: #fff; color: #0068d6; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 700; cursor: pointer; padding: 0; line-height: 18px; font-family: serif; }
+        .contact-btn:hover, .contact-popover.open .contact-btn { background: #eff6ff; }
+        .contact-info { position: absolute; left: -4px; top: 26px; background: #1f2937; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; white-space: nowrap; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.18); display: none; text-align: left; }
+        .contact-info::before { content: ''; position: absolute; top: -5px; left: 8px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 5px solid #1f2937; }
+        .contact-info div + div { margin-top: 4px; }
+        .contact-popover:hover .contact-info, .contact-popover.open .contact-info { display: block; }
         .interest { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; border: 1px solid rgba(0,0,0,0.12); }
         .interest-R { background: #dc2626; }
         .interest-Y { background: #f59e0b; }
@@ -74,8 +81,43 @@
         .notes-popover:hover .notes-info { display: block; }
         .col-actions { white-space: nowrap; width: 1%; }
         .col-convert { width: 1%; white-space: nowrap; }
+        .col-contact { width: 1%; white-space: nowrap; }
+        .contact-cell { display: flex; gap: 10px; align-items: center; justify-content: center; }
+        .attempt-link { background: none; border: none; padding: 0; color: #0068d6; font-size: 0.8rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+        .attempt-link:hover { text-decoration: underline; }
+        .inline-date-form { display: inline; margin: 0; }
+        .inline-date { border: 1px solid transparent; background: transparent; padding: 4px 6px; border-radius: 4px; font-family: inherit; font-size: 0.9rem; cursor: pointer; color: inherit; }
+        .inline-date:hover { border-color: #cfd8e3; background: #f9fafb; }
+        .inline-date:focus { border-color: #0068d6; background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
         .col-source { max-width: 200px; }
         .col-source .muted { white-space: normal; }
+        .attempt-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+        .attempt-vm { background: #fef3c7; color: #92400e; }
+        .attempt-contact { background: #ecfdf5; color: #065f46; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .modal.hidden { display: none; }
+        .modal-card .actions.hidden { display: none; }
+        .modal-card { background: #fff; border-radius: 8px; padding: 28px; width: 480px; max-width: 90vw; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+        .modal-card h3 { margin-bottom: 4px; font-size: 1.2rem; }
+        .modal-close { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; line-height: 1; }
+        .modal-sub { color: #6b7280; margin-bottom: 18px; font-size: 0.9rem; }
+        .modal-card .field { margin-bottom: 16px; }
+        .modal-card label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+        .modal-card input[type="date"] { width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 9px 11px; font-size: 0.95rem; font-family: inherit; }
+        .modal-card textarea { width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 9px 11px; font-size: 0.95rem; font-family: inherit; resize: vertical; min-height: 64px; }
+        .modal-card .field.hidden { display: none; }
+        .modal-card .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; margin-bottom: 0; align-items: stretch; }
+        .modal-card .actions .btn { flex: 1 1 auto; text-align: center; }
+        .outcome-toggle { display: flex; gap: 8px; }
+        .outcome-toggle label {
+            flex: 1; cursor: pointer; margin-bottom: 0; text-align: center;
+            padding: 12px 14px; border: 2px solid #e5e7eb; border-radius: 8px;
+            font-weight: 600; color: #6b7280; transition: all 0.12s ease;
+        }
+        .outcome-toggle label:hover { border-color: #cfd8e3; }
+        .outcome-toggle input[type="radio"] { display: none; }
+        .outcome-toggle input[type="radio"]:checked + .out-vm { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+        .outcome-toggle input[type="radio"]:checked + .out-contact { background: #ecfdf5; border-color: #16a34a; color: #065f46; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
         .section.hidden { display: none; }
@@ -122,27 +164,31 @@
                 <table>
                     <thead>
                         <tr>
+                            <th class="col-convert">Actions</th>
                             <th>Company</th>
                             <th>Market</th>
                             <th>Account Rep</th>
-                            <th>Phone</th>
                             <th>Source</th>
+                            <th>Fleet Manager</th>
                             <th>Interest</th>
-                            <th>Last Contacted</th>
-                            <th class="col-convert">Convert</th>
-                            <th class="col-actions"></th>
+                            <th class="col-contact">Contact</th>
+                            <th class="col-actions">Other</th>
                         </tr>
                     </thead>
                     <tbody class="leadsTbody">
                     {% for l in warm_leads %}
                         <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}" data-type="warm">
+                            <td class="col-convert">
+                                <a href="/leads/{{ l.id }}/convert" class="btn btn-xs btn-success">Convert</a>
+                            </td>
                             <td><strong>{{ l.company_name }}</strong></td>
                             <td>{{ l.market }}</td>
                             <td>{{ l.account_rep }}</td>
-                            <td>{% if l.phone %}{{ l.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
                             <td class="col-source">
                                 {% if l.lead_source == 'Other' and l.lead_source_other %}
                                     Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
+                                {% elif l.lead_source in ['Sales', 'Service', 'Parts'] and l.source_contact %}
+                                    {{ l.lead_source }} &middot; <span class="muted">{{ l.source_contact }}</span>
                                 {% elif l.lead_source %}
                                     {{ l.lead_source }}
                                 {% else %}
@@ -150,12 +196,37 @@
                                 {% endif %}
                             </td>
                             <td>
+                                {% if l.fleet_manager %}{{ l.fleet_manager }}{% else %}<span class="muted">—</span>{% endif %}
+                                {% if l.fleet_manager_email or l.phone %}
+                                <span class="contact-popover">
+                                    <button type="button" class="contact-btn" aria-label="Show contact info">i</button>
+                                    <span class="contact-info">
+                                        {% if l.fleet_manager %}<div><strong>{{ l.fleet_manager }}</strong></div>{% endif %}
+                                        {% if l.fleet_manager_email %}<div>&#9993; {{ l.fleet_manager_email }}</div>{% endif %}
+                                        {% if l.phone %}<div>&#9742; {{ l.phone }}</div>{% endif %}
+                                    </span>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% set lvl = l.interest_level or 'Y' %}
                                 <span class="interest interest-{{ lvl }}" title="{{ {'R':'Red — low interest','Y':'Yellow — neutral','G':'Green — high interest'}[lvl] }}"></span>
                             </td>
-                            <td>{% if l.last_contacted_at %}{{ l.last_contacted_at }}{% else %}<span class="muted">—</span>{% endif %}</td>
-                            <td class="col-convert">
-                                <a href="/leads/{{ l.id }}/convert" class="btn btn-sm btn-success">Convert</a>
+                            <td class="col-contact">
+                                <div class="contact-cell">
+                                    {% if l.last_attempt_at %}
+                                        {% if l.last_attempt_outcome == 'left_voicemail' %}
+                                        <span class="attempt-badge attempt-vm">VM {{ l.last_attempt_at }}</span>
+                                        {% else %}
+                                        <span class="attempt-badge attempt-contact">Contacted {{ l.last_attempt_at }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                    <button type="button" class="attempt-link attempt-open"
+                                            data-lead-id="{{ l.id }}"
+                                            data-company="{{ l.company_name }}">
+                                        + Log Attempt
+                                    </button>
+                                </div>
                             </td>
                             <td class="col-actions">
                                 <div class="inline-actions">
@@ -189,18 +260,22 @@
                 <table>
                     <thead>
                         <tr>
+                            <th class="col-actions">Actions</th>
                             <th>Company</th>
                             <th>Market</th>
                             <th>Account Rep</th>
                             <th>Phone</th>
                             <th>Source</th>
-                            <th class="col-convert">Promote / Convert</th>
-                            <th class="col-actions"></th>
+                            <th class="col-contact">Contact</th>
+                            <th class="col-actions">Other</th>
                         </tr>
                     </thead>
                     <tbody class="leadsTbody">
                     {% for l in cold_leads %}
                         <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}" data-type="cold">
+                            <td class="col-actions">
+                                <a href="/leads/{{ l.id }}/promote" class="btn btn-xs btn-warm">Promote</a>
+                            </td>
                             <td><strong>{{ l.company_name }}</strong></td>
                             <td>{{ l.market }}</td>
                             <td>{{ l.account_rep }}</td>
@@ -208,18 +283,28 @@
                             <td class="col-source">
                                 {% if l.lead_source == 'Other' and l.lead_source_other %}
                                     Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
+                                {% elif l.lead_source in ['Sales', 'Service', 'Parts'] and l.source_contact %}
+                                    {{ l.lead_source }} &middot; <span class="muted">{{ l.source_contact }}</span>
                                 {% elif l.lead_source %}
                                     {{ l.lead_source }}
                                 {% else %}
                                     <span class="muted">—</span>
                                 {% endif %}
                             </td>
-                            <td class="col-convert">
-                                <div class="inline-actions">
-                                    <form method="POST" action="/leads/{{ l.id }}/promote">
-                                        <button type="submit" class="btn btn-sm btn-warm">Promote to Warm</button>
-                                    </form>
-                                    <a href="/leads/{{ l.id }}/convert" class="btn btn-sm btn-success">Convert</a>
+                            <td class="col-contact">
+                                <div class="contact-cell">
+                                    {% if l.last_attempt_at %}
+                                        {% if l.last_attempt_outcome == 'left_voicemail' %}
+                                        <span class="attempt-badge attempt-vm">VM {{ l.last_attempt_at }}</span>
+                                        {% else %}
+                                        <span class="attempt-badge attempt-contact">Contacted {{ l.last_attempt_at }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                    <button type="button" class="attempt-link attempt-open"
+                                            data-lead-id="{{ l.id }}"
+                                            data-company="{{ l.company_name }}">
+                                        + Log Attempt
+                                    </button>
                                 </div>
                             </td>
                             <td class="col-actions">
@@ -242,6 +327,42 @@
             </div>
             {% endif %}
         </section>
+    </div>
+
+    <div id="attemptModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="attemptTitle">
+        <div class="modal-card">
+            <button type="button" class="modal-close" id="attemptClose" aria-label="Close">&times;</button>
+            <h3 id="attemptTitle">Log Attempted Contact</h3>
+            <p class="modal-sub" id="attemptCompany"></p>
+
+            <form method="POST" id="attemptForm">
+                <div class="field">
+                    <label>Outcome</label>
+                    <div class="outcome-toggle">
+                        <input type="radio" name="outcome" id="out_vm" value="left_voicemail" checked>
+                        <label for="out_vm" class="out-vm">Left Voicemail</label>
+                        <input type="radio" name="outcome" id="out_contact" value="made_contact">
+                        <label for="out_contact" class="out-contact">Made Contact</label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="attempt_at">Date</label>
+                    <input type="date" name="attempt_at" id="attempt_at" required>
+                </div>
+
+                <div class="field hidden" id="noteField">
+                    <label for="attempt_note">Note</label>
+                    <textarea name="note" id="attempt_note" rows="3"
+                              placeholder="What did they say?"></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn">Save</button>
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -269,6 +390,70 @@
         ['typeFilter', 'repFilter', 'marketFilter'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener('change', applyFilters);
+        });
+
+        // Contact info popover: hover shows it (CSS); click pins it open until
+        // the user clicks elsewhere. Lets touch devices reach the info too.
+        document.querySelectorAll('.contact-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var popover = this.parentElement;
+                var wasOpen = popover.classList.contains('open');
+                document.querySelectorAll('.contact-popover.open').forEach(function(p) {
+                    p.classList.remove('open');
+                });
+                if (!wasOpen) popover.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.contact-popover.open').forEach(function(p) {
+                p.classList.remove('open');
+            });
+        });
+
+        // Attempted Contact modal: one shared modal at the page bottom; the
+        // Log Attempt buttons in each cold row carry the lead id + company
+        // name in dataset attrs, which we use to rewire the form action and
+        // header before showing the modal.
+        var attemptModal = document.getElementById('attemptModal');
+        var attemptForm = document.getElementById('attemptForm');
+        var attemptCompany = document.getElementById('attemptCompany');
+        var attemptDate = document.getElementById('attempt_at');
+        var attemptNoteField = document.getElementById('noteField');
+        var attemptNote = document.getElementById('attempt_note');
+
+        function closeAttemptModal() { attemptModal.classList.add('hidden'); }
+        function syncOutcomeBranches() {
+            var madeContact = document.getElementById('out_contact').checked;
+            attemptNoteField.classList.toggle('hidden', !madeContact);
+            if (madeContact) {
+                attemptNote.setAttribute('required', 'required');
+            } else {
+                attemptNote.removeAttribute('required');
+                attemptNote.value = '';
+            }
+        }
+
+        document.querySelectorAll('.attempt-open').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                attemptForm.action = '/leads/' + this.dataset.leadId + '/attempt';
+                attemptCompany.textContent = this.dataset.company;
+                attemptDate.value = new Date().toISOString().slice(0, 10);
+                attemptNote.value = '';
+                document.getElementById('out_vm').checked = true;
+                syncOutcomeBranches();
+                attemptModal.classList.remove('hidden');
+            });
+        });
+        document.querySelectorAll('input[name="outcome"]').forEach(function(r) {
+            r.addEventListener('change', syncOutcomeBranches);
+        });
+        document.getElementById('attemptClose').addEventListener('click', closeAttemptModal);
+        document.querySelectorAll('.modal-cancel').forEach(function(b) {
+            b.addEventListener('click', closeAttemptModal);
+        });
+        attemptModal.addEventListener('click', function(e) {
+            if (e.target === attemptModal) closeAttemptModal();
         });
     </script>
 </body>

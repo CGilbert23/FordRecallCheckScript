@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if promote %}
+    <title>Promote Lead to Warm - Fred Beans Mobile Service</title>
+    {% else %}
     <title>{{ 'Edit' if lead else 'New' }} Lead - Fred Beans Mobile Service</title>
+    {% endif %}
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
@@ -20,11 +24,12 @@
         .subnav-tab.active { color: #fff; background: #0068d6; border-color: #0068d6; }
         .card { background: #fff; border-radius: 8px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
-        input[type="text"], input[type="tel"], select, textarea {
+        input[type="text"], input[type="tel"], input[type="email"], select, textarea {
             width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px;
             font-size: 0.95rem; font-family: inherit;
         }
         textarea.other-source { font-family: inherit; height: 70px; resize: vertical; }
+        .muted-label { color: #888; font-weight: 500; font-size: 0.85rem; }
         .hidden { display: none; }
         .type-toggle { display: flex; gap: 8px; margin-bottom: 18px; }
         .type-toggle label {
@@ -71,7 +76,7 @@
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
-        <p class="subtitle">{{ 'Edit Lead' if lead else 'New Lead' }} &middot; <a href="/leads" class="nav-link">&larr; Back to leads</a></p>
+        <p class="subtitle">{% if promote %}Promote to Warm Prospect{% elif lead %}Edit Lead{% else %}New Lead{% endif %} &middot; <a href="/leads" class="nav-link">&larr; Back to leads</a></p>
 
         <div class="card">
             {% if error %}
@@ -137,21 +142,39 @@
                     <textarea name="lead_source_other" id="lead_source_other" class="other-source" placeholder="Where did this lead come from?">{{ form.lead_source_other or '' }}</textarea>
                 </div>
 
+                {% set _contact_labels = {'Sales': 'Salesperson', 'Service': 'Service Advisor', 'Parts': 'Parts Rep'} %}
+                <div class="field {% if form.lead_source not in _contact_labels %}hidden{% endif %}" id="sourceContactField">
+                    <label for="source_contact"><span id="sourceContactLabel">{{ _contact_labels.get(form.lead_source, 'Salesperson') }}</span> <span class="muted-label">(optional)</span></label>
+                    <input type="text" name="source_contact" id="source_contact" placeholder="e.g. George Wright" value="{{ form.source_contact or '' }}">
+                </div>
+
                 {% set current_interest = form.interest_level or 'Y' %}
-                <div class="row {% if current_type != 'warm' %}hidden{% endif %}" id="warmFields">
-                    <div>
-                        <label for="last_contacted_at">Last Contacted</label>
-                        <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
+                <div class="warm-block {% if current_type != 'warm' %}hidden{% endif %}" id="warmFields">
+                    <div class="row">
+                        <div>
+                            <label for="last_contacted_at">Last Contacted</label>
+                            <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
+                        </div>
+                        <div>
+                            <label>Interest Level</label>
+                            <div class="interest-toggle">
+                                <input type="radio" name="interest_level" id="lvl_R" value="R" {% if current_interest == 'R' %}checked{% endif %}>
+                                <label for="lvl_R" class="lvl-R"><span class="interest-dot dot-R"></span>Red</label>
+                                <input type="radio" name="interest_level" id="lvl_Y" value="Y" {% if current_interest == 'Y' %}checked{% endif %}>
+                                <label for="lvl_Y" class="lvl-Y"><span class="interest-dot dot-Y"></span>Yellow</label>
+                                <input type="radio" name="interest_level" id="lvl_G" value="G" {% if current_interest == 'G' %}checked{% endif %}>
+                                <label for="lvl_G" class="lvl-G"><span class="interest-dot dot-G"></span>Green</label>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label>Interest Level</label>
-                        <div class="interest-toggle">
-                            <input type="radio" name="interest_level" id="lvl_R" value="R" {% if current_interest == 'R' %}checked{% endif %}>
-                            <label for="lvl_R" class="lvl-R"><span class="interest-dot dot-R"></span>Red</label>
-                            <input type="radio" name="interest_level" id="lvl_Y" value="Y" {% if current_interest == 'Y' %}checked{% endif %}>
-                            <label for="lvl_Y" class="lvl-Y"><span class="interest-dot dot-Y"></span>Yellow</label>
-                            <input type="radio" name="interest_level" id="lvl_G" value="G" {% if current_interest == 'G' %}checked{% endif %}>
-                            <label for="lvl_G" class="lvl-G"><span class="interest-dot dot-G"></span>Green</label>
+                    <div class="row">
+                        <div>
+                            <label for="fleet_manager">Fleet Manager <span class="muted-label">(optional)</span></label>
+                            <input type="text" name="fleet_manager" id="fleet_manager" placeholder="Name, if known" value="{{ form.fleet_manager or '' }}">
+                        </div>
+                        <div>
+                            <label for="fleet_manager_email">Fleet Manager Email <span class="muted-label">(optional)</span></label>
+                            <input type="email" name="fleet_manager_email" id="fleet_manager_email" placeholder="email@example.com" value="{{ form.fleet_manager_email or '' }}">
                         </div>
                     </div>
                 </div>
@@ -162,7 +185,7 @@
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn">{{ 'Save Changes' if lead else 'Create Lead' }}</button>
+                    <button type="submit" class="btn">{% if promote %}Confirm &amp; Promote to Warm{% elif lead %}Save Changes{% else %}Create Lead{% endif %}</button>
                     <a href="/leads" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
@@ -178,12 +201,20 @@
     <script>
         var sourceSel = document.getElementById('lead_source');
         var otherField = document.getElementById('otherSourceField');
-        if (sourceSel && otherField) {
+        var contactField = document.getElementById('sourceContactField');
+        var contactLabel = document.getElementById('sourceContactLabel');
+        var CONTACT_LABELS = { 'Sales': 'Salesperson', 'Service': 'Service Advisor', 'Parts': 'Parts Rep' };
+        if (sourceSel) {
             sourceSel.addEventListener('change', function() {
-                if (this.value === 'Other') {
-                    otherField.classList.remove('hidden');
-                } else {
-                    otherField.classList.add('hidden');
+                var v = this.value;
+                if (otherField) {
+                    otherField.classList.toggle('hidden', v !== 'Other');
+                }
+                if (contactField) {
+                    contactField.classList.toggle('hidden', !CONTACT_LABELS[v]);
+                }
+                if (contactLabel && CONTACT_LABELS[v]) {
+                    contactLabel.textContent = CONTACT_LABELS[v];
                 }
             });
         }
