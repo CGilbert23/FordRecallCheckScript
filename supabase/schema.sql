@@ -65,6 +65,7 @@ create table accounts (
   service_type text not null check (service_type in ('Full Service', 'Recall Only')),
   vins text,
   notes text,
+  last_checked_in_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

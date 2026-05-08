@@ -7,10 +7,13 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; min-height: 100vh; }
-        .container { max-width: 980px; margin: 80px auto; padding: 0 20px; }
+        .container { max-width: 1200px; margin: 80px auto; padding: 0 20px; }
         h1 { font-size: 2.4rem; margin-bottom: 12px; text-align: center; color: #0a1f44; }
         .subtitle { color: #666; margin-bottom: 48px; text-align: center; font-size: 1.05rem; }
-        .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+        .tiles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+        @media (max-width: 980px) {
+            .tiles { grid-template-columns: 1fr 1fr; }
+        }
         @media (max-width: 720px) {
             .tiles { grid-template-columns: 1fr; }
         }
@@ -54,6 +57,15 @@
                 <div class="tile-links">
                     <span>One Time Check</span>
                     <span>Run Log</span>
+                </div>
+            </a>
+
+            <a href="/used-car-tracker" class="tile">
+                <div class="tile-icon">&#128663;</div>
+                <div class="tile-title">Used Car Tracker</div>
+                <div class="tile-desc">Sweep used-car lot inventory for open recalls.</div>
+                <div class="tile-links">
+                    <span>Lot Recall Sweeper</span>
                 </div>
             </a>
         </div>

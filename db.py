@@ -34,6 +34,8 @@ LEAD_SOURCES = ['Sales', 'Service', 'Visual', 'Other']
 
 CADENCES = ['daily', 'weekly', 'monthly', 'quarterly']
 
+ACCOUNT_CHECK_IN_DAYS = 25
+
 _client: Client | None = None
 
 
@@ -174,6 +176,15 @@ def create_account(data):
 def update_account(account_id, data):
     client = get_client()
     res = client.table('accounts').update(data).eq('id', account_id).execute()
+    return res.data[0] if res.data else None
+
+
+def mark_account_checked_in(account_id):
+    from datetime import datetime, timezone
+    client = get_client()
+    res = client.table('accounts').update({
+        'last_checked_in_at': datetime.now(timezone.utc).isoformat(),
+    }).eq('id', account_id).execute()
     return res.data[0] if res.data else None
 
 

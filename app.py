@@ -4,7 +4,7 @@ import uuid
 import queue
 import threading
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, request, render_template, jsonify, send_file, redirect, url_for
@@ -320,6 +320,11 @@ def test_supabase():
 @app.route('/')
 def home():
     return render_template('home.html')
+
+
+@app.route('/used-car-tracker')
+def used_car_tracker():
+    return render_template('used_car_tracker.html')
 
 
 @app.route('/recall/one-time')
@@ -727,9 +732,19 @@ def accounts_list():
     except Exception as e:
         logger.error(f"Failed to load schedules for accounts page: {e}")
 
+    threshold = datetime.now(timezone.utc) - timedelta(days=db.ACCOUNT_CHECK_IN_DAYS)
     for accounts in grouped.values():
         for acct in accounts:
             acct['vin_count'] = len(parse_vin_text(acct.get('vins') or ''))
+            ts = acct.get('last_checked_in_at')
+            parsed = None
+            if ts:
+                try:
+                    parsed = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                except ValueError:
+                    parsed = None
+            acct['is_checked_in'] = bool(parsed and parsed >= threshold)
+            acct['check_in_display'] = parsed.strftime('%b %d, %Y') if parsed else None
 
     return render_template(
         'accounts.html',
@@ -831,6 +846,15 @@ def account_edit(account_id):
         markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
         from_lead_id=None,
     )
+
+
+@app.route('/accounts/<account_id>/check-in', methods=['POST'])
+def account_check_in(account_id):
+    try:
+        db.mark_account_checked_in(account_id)
+    except Exception as e:
+        logger.error(f"Mark check-in failed for {account_id}: {e}")
+    return redirect(url_for('accounts_list'))
 
 
 @app.route('/accounts/<account_id>/delete', methods=['POST'])

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Used Car Tracker - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
+        .page-nav {
+            background: #0a1f44; padding: 0 24px; display: flex; gap: 4px;
+            border-bottom: 1px solid #07182f;
+        }
+        .nav-tab {
+            color: #cdd6e4; text-decoration: none; padding: 14px 20px;
+            font-size: 0.95rem; font-weight: 500;
+            border-bottom: 3px solid transparent;
+        }
+        .nav-tab:hover { color: #fff; }
+        .nav-tab.active { color: #fff; border-bottom-color: #0068d6; }
+        .embed-frame {
+            display: block; width: 100%;
+            height: calc(100vh - 51px);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    {% include '_nav.html' %}
+    <iframe class="embed-frame"
+            src="https://used-car-lot-recall-sweeper.vercel.app/"
+            title="Used Car Tracker"
+            allow="clipboard-read; clipboard-write"></iframe>
+</body>
+</html>

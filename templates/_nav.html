@@ -10,12 +10,14 @@
     or path.startswith('/job')
     or path.startswith('/status')
     or path.startswith('/download') %}
+{% set in_used_car_tracker = path.startswith('/used-car-tracker') %}
 
 {% if path != '/' %}
 <div class="page-nav">
     <a href="/" class="nav-tab">&larr; Home</a>
     <a href="/accounts" class="nav-tab {% if in_account_mgmt %}active{% endif %}">Account Management</a>
     <a href="/recall/one-time" class="nav-tab {% if in_recall_checker %}active{% endif %}">Recall Checker</a>
+    <a href="/used-car-tracker" class="nav-tab {% if in_used_car_tracker %}active{% endif %}">Used Car Tracker</a>
 </div>
 
 {% if in_account_mgmt %}
