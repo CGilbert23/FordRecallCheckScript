@@ -41,20 +41,6 @@
         .type-toggle input[type="radio"] { display: none; }
         .type-toggle input[type="radio"]:checked + .type-cold { background: #eff6ff; border-color: #0068d6; color: #0068d6; }
         .type-toggle input[type="radio"]:checked + .type-warm { background: #fff7ed; border-color: #d97706; color: #b45309; }
-        .interest-toggle { display: flex; gap: 8px; }
-        .interest-toggle label {
-            flex: 1; cursor: pointer; margin-bottom: 0; text-align: center;
-            padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 8px;
-            font-weight: 600; color: #6b7280;
-        }
-        .interest-toggle input[type="radio"] { display: none; }
-        .interest-toggle input[type="radio"]:checked + .lvl-R { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
-        .interest-toggle input[type="radio"]:checked + .lvl-Y { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
-        .interest-toggle input[type="radio"]:checked + .lvl-G { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
-        .interest-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-        .dot-R { background: #dc2626; }
-        .dot-Y { background: #f59e0b; }
-        .dot-G { background: #16a34a; }
         textarea.notes { font-family: inherit; height: 140px; resize: vertical; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
         .row { display: flex; gap: 16px; margin-bottom: 18px; }
@@ -69,6 +55,11 @@
         .delete-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
         .actions { display: flex; gap: 10px; margin-top: 24px; }
         .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+        .dup-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; padding: 14px 16px; border-radius: 6px; margin-bottom: 20px; }
+        .dup-warning h3 { margin: 0 0 8px; font-size: 1rem; }
+        .dup-warning ul { margin: 6px 0 0 18px; padding: 0; font-size: 0.9rem; }
+        .dup-warning li { margin-bottom: 4px; }
+        .dup-warning a { color: #92400e; text-decoration: underline; }
         a.nav-link { color: #0068d6; text-decoration: none; }
     </style>
 </head>
@@ -83,7 +74,30 @@
             <div class="error">{{ error }}</div>
             {% endif %}
 
+            {% if duplicates %}
+            <div class="dup-warning">
+                <h3>Possible duplicate{% if duplicates|length > 1 %}s{% endif %} — review before saving</h3>
+                <p>One or more existing records match what you entered:</p>
+                <ul>
+                    {% for d in duplicates %}
+                    <li>
+                        <strong>{{ d.company_name or '(no company)' }}</strong>
+                        {% if d.market %}({{ d.market }}){% endif %}
+                        — {{ 'Account' if d.table == 'accounts' else 'Lead' }} matches on
+                        {% if d.field == 'company_name' %}company name{% elif d.field == 'email' %}email <em>{{ d.value }}</em>{% elif d.field == 'phone' %}phone <em>{{ d.value }}</em>{% endif %}
+                        &middot;
+                        <a href="{{ ('/accounts/' ~ d.id ~ '/edit') if d.table == 'accounts' else ('/leads/' ~ d.id ~ '/edit') }}" target="_blank">open</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p style="margin-top: 10px; font-size: 0.9rem;">Click <strong>Save anyway</strong> to create this lead regardless, or edit the fields above and save again.</p>
+            </div>
+            {% endif %}
+
             <form method="POST" action="{{ '/leads/' ~ lead.id ~ '/edit' if lead else '/leads/new' }}">
+                {% if duplicates %}
+                <input type="hidden" name="confirm_duplicate" value="1">
+                {% endif %}
                 {% set current_type = form.lead_type or 'cold' %}
                 <div class="field">
                     <label>Lead Type</label>
@@ -121,20 +135,30 @@
                     </div>
                 </div>
 
+                <div class="field">
+                    <label for="fleet_manager">Fleet Manager <span class="muted-label">(optional)</span></label>
+                    <input type="text" name="fleet_manager" id="fleet_manager" placeholder="Name, if known" value="{{ form.fleet_manager or '' }}">
+                </div>
+
                 <div class="row">
                     <div>
-                        <label for="phone">Phone</label>
+                        <label for="phone">Fleet Manager Phone</label>
                         <input type="tel" name="phone" id="phone" value="{{ form.phone or '' }}">
                     </div>
                     <div>
-                        <label for="lead_source">Lead Source</label>
-                        <select name="lead_source" id="lead_source">
-                            <option value="" {% if not form.lead_source %}selected{% endif %}>Select...</option>
-                            {% for s in lead_sources %}
-                            <option value="{{ s }}" {% if form.lead_source == s %}selected{% endif %}>{{ s }}</option>
-                            {% endfor %}
-                        </select>
+                        <label for="fleet_manager_email">Fleet Manager Email <span class="muted-label">(optional)</span></label>
+                        <input type="email" name="fleet_manager_email" id="fleet_manager_email" placeholder="email@example.com" value="{{ form.fleet_manager_email or '' }}">
                     </div>
+                </div>
+
+                <div class="field">
+                    <label for="lead_source">Lead Source</label>
+                    <select name="lead_source" id="lead_source">
+                        <option value="" {% if not form.lead_source %}selected{% endif %}>Select...</option>
+                        {% for s in lead_sources %}
+                        <option value="{{ s }}" {% if form.lead_source == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="field {% if form.lead_source != 'Other' %}hidden{% endif %}" id="otherSourceField">
@@ -148,34 +172,10 @@
                     <input type="text" name="source_contact" id="source_contact" placeholder="e.g. George Wright" value="{{ form.source_contact or '' }}">
                 </div>
 
-                {% set current_interest = form.interest_level or 'Y' %}
                 <div class="warm-block {% if current_type != 'warm' %}hidden{% endif %}" id="warmFields">
-                    <div class="row">
-                        <div>
-                            <label for="last_contacted_at">Last Contacted</label>
-                            <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
-                        </div>
-                        <div>
-                            <label>Interest Level</label>
-                            <div class="interest-toggle">
-                                <input type="radio" name="interest_level" id="lvl_R" value="R" {% if current_interest == 'R' %}checked{% endif %}>
-                                <label for="lvl_R" class="lvl-R"><span class="interest-dot dot-R"></span>Red</label>
-                                <input type="radio" name="interest_level" id="lvl_Y" value="Y" {% if current_interest == 'Y' %}checked{% endif %}>
-                                <label for="lvl_Y" class="lvl-Y"><span class="interest-dot dot-Y"></span>Yellow</label>
-                                <input type="radio" name="interest_level" id="lvl_G" value="G" {% if current_interest == 'G' %}checked{% endif %}>
-                                <label for="lvl_G" class="lvl-G"><span class="interest-dot dot-G"></span>Green</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div>
-                            <label for="fleet_manager">Fleet Manager <span class="muted-label">(optional)</span></label>
-                            <input type="text" name="fleet_manager" id="fleet_manager" placeholder="Name, if known" value="{{ form.fleet_manager or '' }}">
-                        </div>
-                        <div>
-                            <label for="fleet_manager_email">Fleet Manager Email <span class="muted-label">(optional)</span></label>
-                            <input type="email" name="fleet_manager_email" id="fleet_manager_email" placeholder="email@example.com" value="{{ form.fleet_manager_email or '' }}">
-                        </div>
+                    <div class="field">
+                        <label for="last_contacted_at">Last Contacted</label>
+                        <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
                     </div>
                 </div>
 
@@ -185,7 +185,7 @@
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn">{% if promote %}Confirm &amp; Promote to Warm{% elif lead %}Save Changes{% else %}Create Lead{% endif %}</button>
+                    <button type="submit" class="btn">{% if duplicates %}Save anyway{% elif promote %}Confirm &amp; Promote to Warm{% elif lead %}Save Changes{% else %}Create Lead{% endif %}</button>
                     <a href="/leads" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

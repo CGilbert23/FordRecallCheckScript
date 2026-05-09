@@ -286,6 +286,71 @@ def delete_lead(lead_id):
     client.table('account_leads').delete().eq('id', lead_id).execute()
 
 
+def _digits_only(s):
+    return ''.join(c for c in (s or '') if c.isdigit())
+
+
+def find_duplicate_matches(company_name=None, emails=None, phones=None):
+    """Search accounts + active leads for soft-duplicate matches.
+
+    Match rules:
+      - company_name: case-insensitive exact match (whitespace stripped)
+      - emails: case-insensitive exact match (sentinel '--' ignored)
+      - phones: digits-only exact match
+
+    Returns a list of dicts: {table, id, company_name, market, field, value}.
+    Converted leads are skipped because the resulting account already matches.
+    """
+    name_lc = (company_name or '').strip().lower()
+    email_set = {e.strip().lower() for e in (emails or []) if e and e.strip() and e.strip() != '--'}
+    phone_set = {_digits_only(p) for p in (phones or []) if _digits_only(p)}
+
+    if not name_lc and not email_set and not phone_set:
+        return []
+
+    matches = []
+    seen_keys = set()  # de-dupe (table, id, field) so one row only appears once per field
+
+    def add(table, row, field, value):
+        key = (table, row.get('id'), field)
+        if key in seen_keys:
+            return
+        seen_keys.add(key)
+        matches.append({
+            'table': table,
+            'id': row.get('id'),
+            'company_name': row.get('company_name'),
+            'market': row.get('market') or row.get('location'),
+            'field': field,
+            'value': value,
+        })
+
+    for a in list_accounts():
+        if name_lc and (a.get('company_name') or '').strip().lower() == name_lc:
+            add('accounts', a, 'company_name', a.get('company_name'))
+        for fld in ('fleet_manager_email', 'fleet_manager_2_email'):
+            v = (a.get(fld) or '').strip().lower()
+            if v and v != '--' and v in email_set:
+                add('accounts', a, 'email', a.get(fld))
+        for fld in ('fleet_manager_phone', 'fleet_manager_2_phone'):
+            v = _digits_only(a.get(fld))
+            if v and v in phone_set:
+                add('accounts', a, 'phone', a.get(fld))
+
+    leads = [l for l in list_leads(include_converted=True) if not l.get('converted_at')]
+    for l in leads:
+        if name_lc and (l.get('company_name') or '').strip().lower() == name_lc:
+            add('leads', l, 'company_name', l.get('company_name'))
+        v = (l.get('fleet_manager_email') or '').strip().lower()
+        if v and v in email_set:
+            add('leads', l, 'email', l.get('fleet_manager_email'))
+        v = _digits_only(l.get('phone'))
+        if v and v in phone_set:
+            add('leads', l, 'phone', l.get('phone'))
+
+    return matches
+
+
 def convert_lead_to_account(lead_id, account_data):
     """Create an account from lead data, then mark the lead converted.
 

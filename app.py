@@ -794,12 +794,32 @@ def account_new():
     if request.method == 'POST':
         form, error = _read_account_form(request)
         from_lead_id = (request.form.get('from_lead_id') or '').strip() or None
+        confirm_duplicate = request.form.get('confirm_duplicate') == '1'
         if error:
             return render_template(
                 'account_form.html', account=None, form=form, error=error,
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
                 from_lead_id=from_lead_id,
             )
+        if not confirm_duplicate:
+            try:
+                duplicates = db.find_duplicate_matches(
+                    company_name=form['company_name'],
+                    emails=[form.get('fleet_manager_email'), form.get('fleet_manager_2_email')],
+                    phones=[form.get('fleet_manager_phone'), form.get('fleet_manager_2_phone')],
+                )
+            except Exception as e:
+                logger.error(f"Duplicate check failed (account create): {e}")
+                duplicates = []
+            # When converting a lead, the source lead itself isn't a duplicate.
+            if from_lead_id:
+                duplicates = [d for d in duplicates if not (d['table'] == 'leads' and d['id'] == from_lead_id)]
+            if duplicates:
+                return render_template(
+                    'account_form.html', account=None, form=form, error=None,
+                    markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+                    from_lead_id=from_lead_id, duplicates=duplicates,
+                )
         try:
             if from_lead_id:
                 created = db.convert_lead_to_account(from_lead_id, _account_payload(form))
@@ -983,13 +1003,13 @@ def _lead_payload(form):
         'source_contact': form['source_contact'] if (has_contact_source and form['source_contact']) else None,
         'notes': form['notes'] or None,
         'lead_type': form['lead_type'],
-        # Warm-only fields. For cold leads, last_contacted_at is cleared and
-        # interest_level falls back to the default ('Y') so it never carries
-        # stale state if the lead is later promoted.
+        # last_contacted_at is warm-only; cleared for cold leads so stale state
+        # doesn't carry over if a lead is promoted later. interest_level falls
+        # back to the default ('Y') since the form no longer collects it.
         'last_contacted_at': form['last_contacted_at'] if (is_warm and form['last_contacted_at']) else None,
         'interest_level': form['interest_level'] if is_warm else db.INTEREST_LEVEL_DEFAULT,
-        'fleet_manager': form['fleet_manager'] if (is_warm and form['fleet_manager']) else None,
-        'fleet_manager_email': form['fleet_manager_email'] if (is_warm and form['fleet_manager_email']) else None,
+        'fleet_manager': form['fleet_manager'] or None,
+        'fleet_manager_email': form['fleet_manager_email'] or None,
     }
 
 
@@ -1008,11 +1028,22 @@ def _lead_form_context(extra=None):
 
 @app.route('/leads')
 def leads_list():
+    from datetime import date
     try:
         all_leads = db.list_leads(include_converted=False)
     except Exception as e:
         logger.error(f"Failed to load leads: {e}")
         all_leads = []
+    today = date.today()
+    for l in all_leads:
+        last = l.get('last_attempt_at')
+        days = None
+        if last:
+            try:
+                days = (today - date.fromisoformat(str(last)[:10])).days
+            except (ValueError, TypeError):
+                days = None
+        l['days_since_contact'] = days
     warm_leads = [l for l in all_leads if (l.get('lead_type') or 'cold') == 'warm']
     cold_leads = [l for l in all_leads if (l.get('lead_type') or 'cold') == 'cold']
     return render_template(
@@ -1028,11 +1059,27 @@ def leads_list():
 def lead_new():
     if request.method == 'POST':
         form, error = _read_lead_form(request)
+        confirm_duplicate = request.form.get('confirm_duplicate') == '1'
         if error:
             return render_template(
                 'lead_form.html', lead=None, form=form, error=error,
                 **_lead_form_context(),
             )
+        if not confirm_duplicate:
+            try:
+                duplicates = db.find_duplicate_matches(
+                    company_name=form['company_name'],
+                    emails=[form.get('fleet_manager_email')],
+                    phones=[form.get('phone')],
+                )
+            except Exception as e:
+                logger.error(f"Duplicate check failed (lead create): {e}")
+                duplicates = []
+            if duplicates:
+                return render_template(
+                    'lead_form.html', lead=None, form=form, error=None,
+                    duplicates=duplicates, **_lead_form_context(),
+                )
         try:
             db.create_lead(_lead_payload(form))
         except Exception as e:

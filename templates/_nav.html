@@ -1,7 +1,15 @@
-{# Single-level nav: just a back-to-home link. Hidden on the home page (/). #}
+{# Top nav: back-to-home, plus a section-specific sub-nav for sections with multiple screens. Hidden on the home page (/). #}
 {% set path = request.path %}
 {% if path != '/' %}
 <div class="page-nav">
     <a href="/" class="nav-tab">&larr; Home</a>
+    {% if path.startswith('/accounts') or path.startswith('/leads') or path.startswith('/schedules') %}
+    <a href="/accounts" class="nav-tab {% if path.startswith('/accounts') %}active{% endif %}">Existing Accounts</a>
+    <a href="/leads" class="nav-tab {% if path.startswith('/leads') %}active{% endif %}">Leads</a>
+    <a href="/schedules" class="nav-tab {% if path.startswith('/schedules') %}active{% endif %}">Scheduled Recall Checks</a>
+    {% elif path.startswith('/recall') or path == '/dashboard' %}
+    <a href="/recall/one-time" class="nav-tab {% if path.startswith('/recall/one-time') %}active{% endif %}">One Time Check</a>
+    <a href="/recall/run-log" class="nav-tab {% if path.startswith('/recall/run-log') or path == '/dashboard' %}active{% endif %}">Run Log</a>
+    {% endif %}
 </div>
 {% endif %}

@@ -42,6 +42,11 @@
         .delete-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
         .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
         .convert-banner { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px 14px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 20px; }
+        .dup-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; padding: 14px 16px; border-radius: 6px; margin-bottom: 20px; }
+        .dup-warning h3 { margin: 0 0 8px; font-size: 1rem; }
+        .dup-warning ul { margin: 6px 0 0 18px; padding: 0; font-size: 0.9rem; }
+        .dup-warning li { margin-bottom: 4px; }
+        .dup-warning a { color: #92400e; text-decoration: underline; }
         a.nav-link { color: #0068d6; text-decoration: none; }
     </style>
 </head>
@@ -62,9 +67,32 @@
             </div>
             {% endif %}
 
+            {% if duplicates %}
+            <div class="dup-warning">
+                <h3>Possible duplicate{% if duplicates|length > 1 %}s{% endif %} — review before saving</h3>
+                <p>One or more existing records match what you entered:</p>
+                <ul>
+                    {% for d in duplicates %}
+                    <li>
+                        <strong>{{ d.company_name or '(no company)' }}</strong>
+                        {% if d.market %}({{ d.market }}){% endif %}
+                        — {{ 'Account' if d.table == 'accounts' else 'Lead' }} matches on
+                        {% if d.field == 'company_name' %}company name{% elif d.field == 'email' %}email <em>{{ d.value }}</em>{% elif d.field == 'phone' %}phone <em>{{ d.value }}</em>{% endif %}
+                        &middot;
+                        <a href="{{ ('/accounts/' ~ d.id ~ '/edit') if d.table == 'accounts' else ('/leads/' ~ d.id ~ '/edit') }}" target="_blank">open</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p style="margin-top: 10px; font-size: 0.9rem;">Click <strong>Save anyway</strong> to create this record regardless, or edit the fields above and save again.</p>
+            </div>
+            {% endif %}
+
             <form method="POST" action="{{ '/accounts/' ~ account.id ~ '/edit' if account else '/accounts/new' }}">
                 {% if from_lead_id %}
                 <input type="hidden" name="from_lead_id" value="{{ from_lead_id }}">
+                {% endif %}
+                {% if duplicates %}
+                <input type="hidden" name="confirm_duplicate" value="1">
                 {% endif %}
 
                 <div class="row">
@@ -154,7 +182,7 @@
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn">{{ 'Save Changes' if account else ('Create Account from Lead' if from_lead_id else 'Create Account') }}</button>
+                    <button type="submit" class="btn">{% if duplicates %}Save anyway{% else %}{{ 'Save Changes' if account else ('Create Account from Lead' if from_lead_id else 'Create Account') }}{% endif %}</button>
                     <a href="/accounts" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

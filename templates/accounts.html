@@ -34,9 +34,18 @@
         .btn-danger:hover { background: #991b1b; }
         .btn-light { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
         .btn-light:hover { background: #e5e7eb; color: #1f2937; }
-        .actions { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
+        .btn-outline:hover { background: #eff6ff; }
+        .btn-outline.btn-secondary { background: #fff; color: #6b7280; border-color: #6b7280; }
+        .btn-outline.btn-secondary:hover { background: #f3f4f6; }
+        .actions { margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
         .filter { margin-left: auto; }
         .filter select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; background: #fff; }
+        .rep-filter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 20px; }
+        .rep-filter .rep-label { color: #6b7280; font-size: 0.85rem; margin-right: 4px; }
+        .rep-btn { padding: 6px 14px; border: 1px solid #e5e7eb; background: #fff; color: #374151; border-radius: 999px; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+        .rep-btn:hover { border-color: #cfd8e3; color: #0068d6; }
+        .rep-btn.active { background: #0068d6; border-color: #0068d6; color: #fff; }
         .empty { text-align: center; color: #888; padding: 40px; }
         .empty-row { color: #888; font-style: italic; padding: 12px 4px; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: #eff6ff; color: #1e40af; }
@@ -66,9 +75,9 @@
         .contact-info-right::before { left: auto; right: 8px; }
         .contact-info div + div { margin-top: 4px; }
         .contact-popover:hover .contact-info, .contact-popover.open .contact-info { display: block; }
-        .notes-popover { position: relative; display: inline-block; }
+        .notes-popover { position: relative; display: inline-block; vertical-align: middle; }
         .notes-info {
-            position: absolute; right: 0; top: 26px;
+            position: absolute; left: 0; top: 26px;
             background: #fffbea; color: #1f2937;
             border: 1px solid #f3e0a4;
             padding: 10px 12px; border-radius: 6px;
@@ -80,18 +89,27 @@
             display: none;
         }
         .notes-info::before {
-            content: ''; position: absolute; top: -6px; right: 10px;
+            content: ''; position: absolute; top: -6px; left: 10px;
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
             border-bottom: 6px solid #f3e0a4;
         }
         .notes-info::after {
-            content: ''; position: absolute; top: -5px; right: 11px;
+            content: ''; position: absolute; top: -5px; left: 11px;
             border-left: 5px solid transparent;
             border-right: 5px solid transparent;
             border-bottom: 5px solid #fffbea;
         }
         .notes-popover:hover .notes-info { display: block; }
+        .notes-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; margin-left: 6px; padding: 0;
+            border: 1px solid #cfd8e3; background: #fff; color: #0068d6;
+            border-radius: 4px; text-decoration: none; vertical-align: middle;
+            cursor: pointer;
+        }
+        .notes-icon:hover { background: #eff6ff; }
+        .notes-icon svg { width: 12px; height: 14px; display: block; }
         .schedule-link { color: #0068d6; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
         .schedule-link:hover { text-decoration: underline; }
         .run-now-btn { display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 1px solid #cfd8e3; color: #0068d6; font-size: 0.6rem; text-decoration: none; vertical-align: middle; line-height: 1; }
@@ -106,19 +124,10 @@
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
-        <p class="subtitle">Existing customer accounts, organized by Account Representative.</p>
 
         <div class="actions">
-            <a href="/accounts/new" class="btn">+ New Account</a>
-            <div class="filter">
-                <label for="repFilter" class="muted">Rep:</label>
-                <select id="repFilter">
-                    <option value="">All representatives</option>
-                    {% for rep in reps %}
-                    <option value="{{ rep }}">{{ rep }}</option>
-                    {% endfor %}
-                </select>
-                <label for="marketFilter" class="muted" style="margin-left: 12px;">Market:</label>
+            <div class="filter" style="margin-left: 0;">
+                <label for="marketFilter" class="muted">Market:</label>
                 <select id="marketFilter">
                     <option value="">All markets</option>
                     {% for m in markets %}
@@ -126,6 +135,15 @@
                     {% endfor %}
                 </select>
             </div>
+            <a href="/accounts/new" class="btn" style="margin-left: auto;">+ New Account</a>
+        </div>
+
+        <div class="rep-filter" id="repFilter" role="tablist" aria-label="Filter by Account Rep">
+            <span class="rep-label">Rep:</span>
+            <button type="button" class="rep-btn active" data-rep="">All</button>
+            {% for rep in reps %}
+            <button type="button" class="rep-btn" data-rep="{{ rep }}">{{ rep }}</button>
+            {% endfor %}
         </div>
 
         {% set total_accounts = grouped.values() | map('length') | sum %}
@@ -172,6 +190,19 @@
                         <tr data-market="{{ a.market }}">
                             <td>
                                 <strong>{{ a.company_name }}</strong>
+                                {% if a.notes %}
+                                <span class="notes-popover">
+                                    <a href="/accounts/{{ a.id }}/edit" class="notes-icon" aria-label="View notes" title="View notes">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M19 4h-3.5l-1-1h-5l-1 1H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                                            <line x1="8" y1="10" x2="16" y2="10"/>
+                                            <line x1="8" y1="14" x2="16" y2="14"/>
+                                            <line x1="8" y1="18" x2="13" y2="18"/>
+                                        </svg>
+                                    </a>
+                                    <span class="notes-info">{{ a.notes }}</span>
+                                </span>
+                                {% endif %}
                             </td>
                             <td>{{ a.market }}</td>
                             <td>
@@ -232,15 +263,7 @@
                             </td>
                             <td>
                                 <div class="inline-actions">
-                                    <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Edit</a>
-                                    {% if a.notes %}
-                                    <span class="notes-popover">
-                                        <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
-                                        <span class="notes-info">{{ a.notes }}</span>
-                                    </span>
-                                    {% else %}
-                                    <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-secondary">Notes</a>
-                                    {% endif %}
+                                    <a href="/accounts/{{ a.id }}/edit" class="btn btn-xs btn-outline btn-secondary">Edit</a>
                                 </div>
                             </td>
                         </tr>
@@ -256,9 +279,10 @@
     <script>
         var repFilter = document.getElementById('repFilter');
         var marketFilter = document.getElementById('marketFilter');
+        var currentRep = '';
 
         function applyFilters() {
-            var rep = repFilter.value;
+            var rep = currentRep;
             var market = marketFilter.value;
             document.querySelectorAll('.rep-section').forEach(function(section) {
                 var repMatches = !rep || section.dataset.rep === rep;
@@ -278,7 +302,16 @@
             });
         }
 
-        repFilter.addEventListener('change', applyFilters);
+        repFilter.querySelectorAll('.rep-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                repFilter.querySelectorAll('.rep-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
+                currentRep = btn.dataset.rep;
+                applyFilters();
+            });
+        });
         marketFilter.addEventListener('change', applyFilters);
 
         // Contact info popover: hover shows it (CSS); click pins it open until

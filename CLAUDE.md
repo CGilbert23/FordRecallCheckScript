@@ -21,7 +21,10 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 ## Routes (high-level)
 - `/` — home tile page (Account Management / Recall Checker)
 - `/accounts` and `/accounts/new`, `/accounts/<id>/edit`, `/accounts/<id>/delete`
-- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/promote` (cold → warm), `/leads/<id>/convert` (lead → account). `/leads/new?type=warm` defaults the form to warm.
+- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/convert` (lead → account). `/leads/new?type=warm` defaults the form to warm.
+- `/leads/<id>/promote` (GET) — renders the lead form pre-filled with `lead_type=warm` so the rep can fill in warm-only fields before posting to `/leads/<id>/edit` to save.
+- `/leads/<id>/attempt` (POST) — record a contact attempt (`outcome` = `made_contact` or `left_voicemail`). A note is required server-side for `made_contact`; voicemail attempts always store a null note.
+- `/leads/<id>/last-contacted` (POST) — inline update of just `last_contacted_at` from the warm-prospect table (no full edit form).
 - `/recall/one-time` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
 - `/recall/run-log` — recent jobs (in-memory only, lost on restart)
 - `/schedules` and children — recurring recall checks
@@ -30,7 +33,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 
 ## Key Files
 - `app.py` — Flask routes, in-memory job store, queue worker thread
-- `db.py` — Supabase client + CRUD for schedules/accounts/leads + constants (`MARKETS`, `ACCOUNT_REPS`, `SERVICE_TYPES`, `LEAD_SOURCES`, `LEAD_TYPES`, `INTEREST_LEVELS`, `INTEREST_LEVEL_DEFAULT`, `CADENCES`). `LOCATIONS` is an alias for `MARKETS`.
+- `db.py` — Supabase client + CRUD for schedules/accounts/leads + constants (`MARKETS`, `ACCOUNT_REPS`, `SERVICE_TYPES`, `LEAD_SOURCES`, `LEAD_SOURCES_WITH_CONTACT`, `LEAD_TYPES`, `INTEREST_LEVELS`, `INTEREST_LEVEL_DEFAULT`, `LEAD_ATTEMPT_OUTCOMES`, `LEAD_CLOSE_REASONS`, `CADENCES`). `LOCATIONS` is an alias for `MARKETS`. `LEAD_SOURCES` includes `Sales`, `Service`, `Parts`, `Visual`, `Other`; `LEAD_SOURCES_WITH_CONTACT` is the subset that exposes the free-text `source_contact` field on the form.
 - `scheduler.py` — APScheduler integration for recurring schedules
 - `recall_checker.py` — Selenium scraping + Excel output
 - `gh_actions_client.py` / `run_on_demand.py` — fallback path that runs the scrape via GitHub Actions (used when the host IP is blocked by Ford's Akamai)
@@ -45,7 +48,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`.
 - `schedule_runs` — per-execution log (started_at, finished_at, recalls_found, email_sent, error)
 - `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes). Supports an optional second fleet manager (`fleet_manager_2`, `fleet_manager_2_email`, `fleet_manager_2_phone`).
-- `account_leads` — prospects (company, market, account_rep, notes). Split into two workflows via `lead_type` (`cold` or `warm`); warm prospects also use `last_contacted_at` and `interest_level` (R/Y/G, default Y). `converted_at` + `converted_account_id` are set when a lead is converted.
+- `account_leads` — prospects (company, market, account_rep, phone, notes). Split into two workflows via `lead_type` (`cold` or `warm`); warm prospects also use `last_contacted_at`, `interest_level` (R/Y/G, default Y), and optional `fleet_manager` / `fleet_manager_email`. `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other`; `source_contact` (free text) is only meaningful for Sales/Service/Parts and is cleared otherwise. Contact attempts are tracked on the row via `last_attempt_at` / `last_attempt_outcome` (`made_contact` or `left_voicemail`) / `last_attempt_note` — only the latest attempt is kept (no history table). `closed_at` + `closed_reason` soft-close a lead so it drops off the active list (mirrors how `converted_at` hides converted leads); `list_leads(include_converted=False)` filters out both converted and closed rows. `converted_at` + `converted_account_id` are set when a lead is converted.
 
 `MARKETS` (and the `location`/`market` check constraints) use: Boyertown, Doylestown, Exton, Langhorne, Newtown, Washington, West Chester, Mechanicsburg, Company-Wide. The legacy value `GroupWide` was renamed to `Company-Wide` in the 2026-05-07 migration.
 
