@@ -164,14 +164,15 @@
                 {% else %}
                 <table>
                     <colgroup>
-                        <col style="width: 18%">
-                        <col style="width: 10%">
                         <col style="width: 16%">
-                        <col style="width: 10%">
+                        <col style="width: 9%">
                         <col style="width: 14%">
+                        <col style="width: 9%">
+                        <col style="width: 11%">
+                        <col style="width: 12%">
+                        <col style="width: 9%">
                         <col style="width: 10%">
-                        <col style="width: 11%">
-                        <col style="width: 11%">
+                        <col style="width: 10%">
                     </colgroup>
                     <thead>
                         <tr>
@@ -179,6 +180,7 @@
                             <th>Market</th>
                             <th>Fleet Manager</th>
                             <th>Service</th>
+                            <th>Source</th>
                             <th>VINs</th>
                             <th class="col-check-in">Recent Check In</th>
                             <th class="col-recall-check">Recall Check</th>
@@ -237,9 +239,20 @@
                                 {% endif %}
                             </td>
                             <td>
+                                {% if a.lead_source == 'Other' and a.lead_source_other %}
+                                    Other &middot; <span class="muted">{{ a.lead_source_other }}</span>
+                                {% elif a.lead_source in ['Sales', 'Service', 'Parts'] and a.source_contact %}
+                                    {{ a.lead_source }} &middot; <span class="muted">{{ a.source_contact }}</span>
+                                {% elif a.lead_source %}
+                                    {{ a.lead_source }}
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if a.vin_count %}
                                     <span class="badge badge-gray">VINs attached ({{ a.vin_count }})</span>
-                                    <a href="/recall/one-time?account_id={{ a.id }}" class="run-now-btn" title="Run a recall check now with these VINs">&#9654;</a>
+                                    <a href="/recall-checker?account_id={{ a.id }}" class="run-now-btn" title="Run a recall check now with these VINs">&#9654;</a>
                                 {% else %}
                                     <span class="muted">—</span>
                                 {% endif %}

@@ -4,6 +4,7 @@ import uuid
 import queue
 import threading
 import logging
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
@@ -27,6 +28,47 @@ RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'fordrecalls@voxapp.co')
 # In-memory job store and queue
 jobs = {}
 job_queue = queue.Queue()
+
+# Rolling-window rate limit on /submit. A submission is accepted as long as the
+# 6-hour window had room when it arrived — but it's not capped by the limit, so
+# a single 400-VIN job goes through and locks the window until enough of its
+# VINs age past the 6-hour mark. Scheduled runs are exempt.
+RATE_LIMIT_MAX_VINS = 200
+RATE_LIMIT_WINDOW = timedelta(hours=6)
+_rate_limit_entries = deque()  # (datetime, vin_count)
+_rate_limit_lock = threading.Lock()
+
+
+def _rate_limit_check_and_record(vin_count):
+    """If the rolling window has room (current total < max), record this
+    submission and return (True, None). Otherwise return (False, message)."""
+    now = datetime.now()
+    cutoff = now - RATE_LIMIT_WINDOW
+    with _rate_limit_lock:
+        while _rate_limit_entries and _rate_limit_entries[0][0] < cutoff:
+            _rate_limit_entries.popleft()
+        current = sum(c for _, c in _rate_limit_entries)
+        if current >= RATE_LIMIT_MAX_VINS:
+            running = 0
+            unblock_at = None
+            for ts, c in _rate_limit_entries:
+                running += c
+                if current - running < RATE_LIMIT_MAX_VINS:
+                    unblock_at = ts + RATE_LIMIT_WINDOW
+                    break
+            # %-I is POSIX-only; fall back for Windows dev where it errors.
+            try:
+                when = unblock_at.strftime('%-I:%M %p') if unblock_at else 'soon'
+            except ValueError:
+                when = unblock_at.strftime('%I:%M %p').lstrip('0') if unblock_at else 'soon'
+            msg = (
+                f"Rate limit reached: {current} VINs submitted in the last "
+                f"{int(RATE_LIMIT_WINDOW.total_seconds() // 3600)} hours "
+                f"(limit {RATE_LIMIT_MAX_VINS}). Next slot opens at {when}."
+            )
+            return False, msg
+        _rate_limit_entries.append((now, vin_count))
+        return True, None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, 'outputs')
@@ -340,7 +382,7 @@ def used_car_tracker():
     return render_template('used_car_tracker.html')
 
 
-@app.route('/recall/one-time')
+@app.route('/recall-checker')
 def one_time_form():
     active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))
     prefill = {}
@@ -375,6 +417,12 @@ def submit():
     if not vins:
         active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))
         return render_template('index.html', active_jobs=active, error='No valid VINs found. Each VIN must be exactly 17 alphanumeric characters.')
+
+    allowed, rate_msg = _rate_limit_check_and_record(len(vins))
+    if not allowed:
+        active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))
+        logger.warning(f"Submit blocked by rate limit: {rate_msg}")
+        return render_template('index.html', active_jobs=active, error=rate_msg)
 
     email = request.form.get('email', '').strip()
     name = request.form.get('name', '').strip()
@@ -699,6 +747,9 @@ def _read_account_form(req):
     fleet_manager_2_email = req.form.get('fleet_manager_2_email', '').strip()
     fleet_manager_2_phone = format_phone(req.form.get('fleet_manager_2_phone', '').strip())
     service_type = req.form.get('service_type', '').strip()
+    lead_source = req.form.get('lead_source', '').strip()
+    lead_source_other = req.form.get('lead_source_other', '').strip()
+    source_contact = req.form.get('source_contact', '').strip()
     vins_raw = req.form.get('vins', '').strip()
     notes = req.form.get('notes', '').strip()
 
@@ -716,6 +767,9 @@ def _read_account_form(req):
         'fleet_manager_2_email': fleet_manager_2_email,
         'fleet_manager_2_phone': fleet_manager_2_phone,
         'service_type': service_type,
+        'lead_source': lead_source,
+        'lead_source_other': lead_source_other,
+        'source_contact': source_contact,
         'vins': vins_normalized,
         'vin_count': len(vin_list),
         'notes': notes,
@@ -729,10 +783,16 @@ def _read_account_form(req):
         return form, 'Please pick a valid account representative.'
     if service_type not in db.SERVICE_TYPES:
         return form, 'Please pick a service type.'
+    if lead_source and lead_source not in db.LEAD_SOURCES:
+        return form, 'Please pick a valid lead source.'
+    if lead_source == 'Other' and not lead_source_other:
+        return form, 'Please describe the lead source when "Other" is selected.'
     return form, None
 
 
 def _account_payload(form):
+    lead_source = form.get('lead_source') or None
+    has_contact_source = lead_source in db.LEAD_SOURCES_WITH_CONTACT
     return {
         'company_name': form['company_name'],
         'market': form['market'],
@@ -744,6 +804,9 @@ def _account_payload(form):
         'fleet_manager_2_email': form['fleet_manager_2_email'] or None,
         'fleet_manager_2_phone': form['fleet_manager_2_phone'] or None,
         'service_type': form['service_type'],
+        'lead_source': lead_source,
+        'lead_source_other': form.get('lead_source_other') if lead_source == 'Other' else None,
+        'source_contact': form.get('source_contact') if (has_contact_source and form.get('source_contact')) else None,
         'vins': form['vins'] or None,
         'notes': form['notes'] or None,
     }
@@ -799,6 +862,7 @@ def account_new():
             return render_template(
                 'account_form.html', account=None, form=form, error=error,
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=from_lead_id,
             )
         if not confirm_duplicate:
@@ -818,6 +882,7 @@ def account_new():
                 return render_template(
                     'account_form.html', account=None, form=form, error=None,
                     markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+                    lead_sources=db.LEAD_SOURCES,
                     from_lead_id=from_lead_id, duplicates=duplicates,
                 )
         try:
@@ -832,6 +897,7 @@ def account_new():
             return render_template(
                 'account_form.html', account=None, form=form, error=str(e),
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=from_lead_id,
             )
         return redirect(url_for('accounts_list'))
@@ -839,6 +905,7 @@ def account_new():
     return render_template(
         'account_form.html', account=None, form={},
         markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+        lead_sources=db.LEAD_SOURCES,
         from_lead_id=None,
     )
 
@@ -859,6 +926,7 @@ def account_edit(account_id):
             return render_template(
                 'account_form.html', account=existing, form=form, error=error,
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=None,
             )
         try:
@@ -879,6 +947,7 @@ def account_edit(account_id):
             return render_template(
                 'account_form.html', account=existing, form=form, error=str(e),
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=None,
             )
         return redirect(url_for('accounts_list'))
@@ -894,6 +963,9 @@ def account_edit(account_id):
         'fleet_manager_2_email': existing.get('fleet_manager_2_email') or '',
         'fleet_manager_2_phone': existing.get('fleet_manager_2_phone') or '',
         'service_type': existing.get('service_type') or '',
+        'lead_source': existing.get('lead_source') or '',
+        'lead_source_other': existing.get('lead_source_other') or '',
+        'source_contact': existing.get('source_contact') or '',
         'vins': existing.get('vins') or '',
         'vin_count': len(parse_vin_text(existing.get('vins') or '')),
         'notes': existing.get('notes') or '',
@@ -901,6 +973,7 @@ def account_edit(account_id):
     return render_template(
         'account_form.html', account=existing, form=form,
         markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+        lead_sources=db.LEAD_SOURCES,
         from_lead_id=None,
     )
 
@@ -1257,11 +1330,15 @@ def lead_convert(lead_id):
         'fleet_manager': lead.get('fleet_manager') or '',
         'fleet_manager_email': lead.get('fleet_manager_email') or '',
         'fleet_manager_phone': lead.get('phone') or '',
+        'lead_source': lead.get('lead_source') or '',
+        'lead_source_other': lead.get('lead_source_other') or '',
+        'source_contact': lead.get('source_contact') or '',
         'notes': lead.get('notes') or '',
     }
     return render_template(
         'account_form.html', account=None, form=form,
         markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
+        lead_sources=db.LEAD_SOURCES,
         from_lead_id=lead_id,
     )
 

@@ -27,7 +27,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `/leads/<id>/promote` (GET) — renders the lead form pre-filled with `lead_type=warm` so the rep can fill in warm-only fields before posting to `/leads/<id>/edit` to save.
 - `/leads/<id>/attempt` (POST) — record a contact attempt (`outcome` = `made_contact` or `left_voicemail`). A note is required server-side for `made_contact`; voicemail attempts always store a null note.
 - `/leads/<id>/last-contacted` (POST) — inline update of just `last_contacted_at` from the warm-prospect table (no full edit form).
-- `/recall/one-time` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
+- `/recall-checker` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
 - `/recall/run-log` — recent jobs (in-memory only, lost on restart)
 - `/schedules` and children — recurring recall checks
 - `/dashboard` — 302 redirect to `/recall/run-log` (back-compat)
@@ -49,7 +49,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 ## Supabase tables
 - `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`.
 - `schedule_runs` — per-execution log (started_at, finished_at, recalls_found, email_sent, error)
-- `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes). Supports an optional second fleet manager (`fleet_manager_2`, `fleet_manager_2_email`, `fleet_manager_2_phone`).
+- `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes). Supports an optional second fleet manager (`fleet_manager_2`, `fleet_manager_2_email`, `fleet_manager_2_phone`). Also stores origin context the same way leads do: `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other` (nullable), `lead_source_other` (only when source is Other), `source_contact` (only for Sales/Service/Parts). The lead→account convert flow carries these over from the source lead.
 - `account_leads` — prospects (company, market, account_rep, phone, notes, optional `fleet_manager` / `fleet_manager_email` — collected for both lead types). Split into two workflows via `lead_type` (`cold` or `warm`); warm prospects additionally use `last_contacted_at`. `interest_level` (R/Y/G, default Y) still exists on the row but the lead form no longer collects it — new/edited leads fall back to `INTEREST_LEVEL_DEFAULT`. `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other`; `source_contact` (free text) is only meaningful for Sales/Service/Parts and is cleared otherwise. Contact attempts are tracked on the row via `last_attempt_at` / `last_attempt_outcome` (`made_contact` or `left_voicemail`) / `last_attempt_note` — only the latest attempt is kept (no history table). `closed_at` + `closed_reason` soft-close a lead so it drops off the active list (mirrors how `converted_at` hides converted leads); `list_leads(include_converted=False)` filters out both converted and closed rows. `converted_at` + `converted_account_id` are set when a lead is converted.
 
 `MARKETS` (and the `location`/`market` check constraints) use: Boyertown, Doylestown, Exton, Langhorne, Newtown, Washington, West Chester, Mechanicsburg, Company-Wide. The legacy value `GroupWide` was renamed to `Company-Wide` in the 2026-05-07 migration.
@@ -94,6 +94,7 @@ docker run -d --name ford-checker -p 5000:10000 --env-file .env ford-checker
 
 ## Notes
 - One-time recall jobs run in background threads and results are stored in `outputs/`. Job state is in-memory only — restart loses the run log (the Supabase `schedule_runs` table only logs scheduled/manual runs of `schedules`, not ad-hoc one-time checks).
+- `/submit` is rate-limited to 200 VINs per rolling 6 hours (`RATE_LIMIT_MAX_VINS`/`RATE_LIMIT_WINDOW` in `app.py`). The check is "is the window already full?" — submissions aren't capped by size, so a 400-VIN job goes through if the window had room, then locks out further submits until enough of those 400 ages past 6 hours. State is in-memory only (lost on restart) and scheduled runs are exempt.
 - Single Gunicorn worker (see `gunicorn.conf.py`) keeps APScheduler to one instance — don't bump worker count without revisiting that.
 - Selenium requires a compatible Chrome/Chromium + ChromeDriver setup (handled in the Dockerfile).
 - The mobileservice@fredbeans.com address is auto-CC'd on every scheduled email; no need to add it to recipient lists.

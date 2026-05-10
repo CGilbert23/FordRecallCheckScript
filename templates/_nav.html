@@ -8,7 +8,7 @@
     <a href="/leads" class="nav-tab {% if path.startswith('/leads') %}active{% endif %}">Leads</a>
     <a href="/schedules" class="nav-tab {% if path.startswith('/schedules') %}active{% endif %}">Scheduled Recall Checks</a>
     {% elif path.startswith('/recall') or path == '/dashboard' %}
-    <a href="/recall/one-time" class="nav-tab {% if path.startswith('/recall/one-time') %}active{% endif %}">One Time Check</a>
+    <a href="/recall-checker" class="nav-tab {% if path.startswith('/recall-checker') %}active{% endif %}">One Time Check</a>
     <a href="/recall/run-log" class="nav-tab {% if path.startswith('/recall/run-log') or path == '/dashboard' %}active{% endif %}">Run Log</a>
     {% endif %}
 </div>

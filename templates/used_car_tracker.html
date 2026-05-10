@@ -6,7 +6,7 @@
     <title>Used Car Tracker - Fred Beans Mobile Service</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; min-height: 100vh; }
         .page-nav {
             background: #0a1f44; padding: 0 24px; display: flex; gap: 4px;
             border-bottom: 1px solid #07182f;
@@ -18,27 +18,35 @@
         }
         .nav-tab:hover { color: #fff; }
         .nav-tab.active { color: #fff; border-bottom-color: #0068d6; }
-        .embed-wrap {
-            width: 100%;
-            height: calc(100vh - 51px);
-            overflow: hidden;
+        .launcher {
+            max-width: 640px; margin: 80px auto; padding: 48px 32px;
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            text-align: center;
         }
-        .embed-frame {
-            display: block; border: 0;
-            width: 125%;
-            height: 125%;
-            transform: scale(0.8);
-            transform-origin: 0 0;
+        .launcher-icon { font-size: 3.5rem; margin-bottom: 16px; }
+        .launcher h1 { font-size: 1.8rem; color: #0a1f44; margin-bottom: 12px; }
+        .launcher p { color: #666; font-size: 1rem; line-height: 1.6; margin-bottom: 32px; }
+        .launch-btn {
+            display: inline-block; background: #0068d6; color: #fff;
+            text-decoration: none; padding: 16px 36px; border-radius: 8px;
+            font-size: 1.1rem; font-weight: 600;
+            transition: background 0.12s ease, transform 0.12s ease;
         }
+        .launch-btn:hover { background: #0052a8; transform: translateY(-1px); }
+        .launch-url { margin-top: 20px; font-size: 0.85rem; color: #888; word-break: break-all; }
     </style>
 </head>
 <body>
     {% include '_nav.html' %}
-    <div class="embed-wrap">
-        <iframe class="embed-frame"
-                src="https://used-car-lot-recall-sweeper.vercel.app/"
-                title="Used Car Tracker"
-                allow="clipboard-read; clipboard-write"></iframe>
+    <div class="launcher">
+        <div class="launcher-icon">&#128663;</div>
+        <h1>Used Car Tracker</h1>
+        <p>Sweep used-car lot inventory for open recalls. Opens in a new tab so you can copy VINs and update statuses without restrictions.</p>
+        <a class="launch-btn" href="https://used-car-lot-recall-sweeper.vercel.app/" target="_blank" rel="noopener noreferrer">
+            Open Used Car Tracker &#8599;
+        </a>
+        <div class="launch-url">used-car-lot-recall-sweeper.vercel.app</div>
     </div>
 </body>
 </html>
