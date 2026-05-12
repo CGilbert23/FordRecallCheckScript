@@ -52,11 +52,19 @@
         .badge-success { background: #ecfdf5; color: #065f46; }
         .badge-amber { background: #fef3c7; color: #92400e; }
         .badge-gray { background: #f3f4f6; color: #374151; }
-        .check-in { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 0.95rem; font-weight: 700; line-height: 1; }
-        .check-in-yes { background: #ecfdf5; color: #065f46; cursor: default; }
-        .check-in-no { background: #fef2f2; color: #b91c1c; border: none; cursor: pointer; padding: 0; }
+        .check-in { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 0.95rem; font-weight: 700; line-height: 1; border: none; padding: 0; cursor: pointer; font-family: inherit; }
+        .check-in-yes { background: #ecfdf5; color: #065f46; }
+        .check-in-yes:hover { background: #d1fae5; }
+        .check-in-no { background: #fef2f2; color: #b91c1c; }
         .check-in-no:hover { background: #fee2e2; }
-        .check-in-form { display: inline; margin: 0; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay.hidden { display: none; }
+        .modal-card { background: #fff; padding: 22px 24px; border-radius: 8px; min-width: 380px; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+        .modal-card h3 { font-size: 1.05rem; margin-bottom: 4px; }
+        .modal-state { color: #6b7280; font-size: 0.85rem; margin-bottom: 12px; }
+        .modal-card label { display: block; font-size: 0.85rem; color: #374151; margin-bottom: 4px; font-weight: 500; }
+        .modal-card textarea { width: 100%; padding: 8px 10px; border: 1px solid #cfd8e3; border-radius: 6px; font-size: 0.9rem; font-family: inherit; resize: vertical; box-sizing: border-box; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
         .col-check-in { text-align: center; }
         .col-recall-check { text-align: center; }
         .inline-actions { display: flex; gap: 6px; justify-content: center; }
@@ -258,13 +266,18 @@
                                 {% endif %}
                             </td>
                             <td class="col-check-in">
-                                {% if a.is_checked_in %}
-                                    <span class="check-in check-in-yes" title="Checked in {{ a.check_in_display }}">&#10003;</span>
-                                {% else %}
-                                    <form method="POST" action="/accounts/{{ a.id }}/check-in" class="check-in-form">
-                                        <button type="submit" class="check-in check-in-no" title="Click to mark checked in">&#10007;</button>
-                                    </form>
-                                {% endif %}
+                                {% set _tip = ('Checked in ' ~ a.check_in_display) if a.is_checked_in else 'Not checked in' %}
+                                {% if a.check_in_note %}{% set _tip = _tip ~ ' — ' ~ a.check_in_note %}{% endif %}
+                                <button type="button"
+                                        class="check-in {% if a.is_checked_in %}check-in-yes{% else %}check-in-no{% endif %} check-in-open"
+                                        data-account-id="{{ a.id }}"
+                                        data-company="{{ a.company_name }}"
+                                        data-checked-in="{{ '1' if a.is_checked_in else '' }}"
+                                        data-display="{{ a.check_in_display or '' }}"
+                                        data-note="{{ a.check_in_note or '' }}"
+                                        title="{{ _tip }}">
+                                    {% if a.is_checked_in %}&#10003;{% else %}&#10007;{% endif %}
+                                </button>
                             </td>
                             <td class="col-recall-check">
                                 {% set sched_list = schedules_by_account.get(a.id) %}
@@ -287,6 +300,22 @@
             </div>
         {% endfor %}
         {% endif %}
+    </div>
+
+    <div id="checkInModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="checkInTitle">
+        <div class="modal-card">
+            <h3 id="checkInTitle">Check in</h3>
+            <p id="checkInState" class="modal-state"></p>
+            <form method="POST" id="checkInForm">
+                <label for="check_in_note">Note (optional):</label>
+                <textarea name="note" id="check_in_note" rows="3" placeholder="What happened on this visit?"></textarea>
+                <div class="modal-actions">
+                    <button type="button" data-modal-close class="btn btn-sm btn-light">Cancel</button>
+                    <button type="submit" id="saveNoteBtn" class="btn btn-sm btn-outline">Save note</button>
+                    <button type="submit" id="checkInBtn" class="btn btn-sm">Check In</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -344,6 +373,62 @@
             document.querySelectorAll('.contact-popover.open').forEach(function(p) {
                 p.classList.remove('open');
             });
+        });
+
+        var checkInModal = document.getElementById('checkInModal');
+        var checkInForm = document.getElementById('checkInForm');
+        var checkInTitle = document.getElementById('checkInTitle');
+        var checkInState = document.getElementById('checkInState');
+        var checkInNote = document.getElementById('check_in_note');
+        var checkInBtn = document.getElementById('checkInBtn');
+        var saveNoteBtn = document.getElementById('saveNoteBtn');
+
+        function openCheckInModal(btn) {
+            var id = btn.dataset.accountId;
+            var company = btn.dataset.company || '';
+            var checked = btn.dataset.checkedIn === '1';
+            var display = btn.dataset.display || '';
+            var note = btn.dataset.note || '';
+
+            checkInTitle.textContent = 'Check in: ' + company;
+            checkInState.textContent = checked
+                ? ('Last checked in ' + display + ' — editing note only.')
+                : 'Not yet checked in. Save a note now, or check in (with or without a note).';
+            checkInNote.value = note;
+            // When already green, hide the Check In button — per design, the
+            // user waits for the 25-day auto-flip to re-check-in. They can
+            // still update the note in the meantime.
+            checkInBtn.style.display = checked ? 'none' : '';
+            saveNoteBtn.onclick = function() {
+                checkInForm.action = '/accounts/' + id + '/check-in-note';
+            };
+            checkInBtn.onclick = function() {
+                checkInForm.action = '/accounts/' + id + '/check-in';
+            };
+            checkInModal.classList.remove('hidden');
+            setTimeout(function() { checkInNote.focus(); }, 0);
+        }
+
+        document.querySelectorAll('.check-in-open').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openCheckInModal(btn);
+            });
+        });
+        document.querySelectorAll('[data-modal-close]').forEach(function(el) {
+            el.addEventListener('click', function() {
+                checkInModal.classList.add('hidden');
+            });
+        });
+        // Click outside the card closes the modal
+        checkInModal.addEventListener('click', function(e) {
+            if (e.target === checkInModal) checkInModal.classList.add('hidden');
+        });
+        // Esc closes the modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !checkInModal.classList.contains('hidden')) {
+                checkInModal.classList.add('hidden');
+            }
         });
     </script>
 </body>

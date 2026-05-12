@@ -1036,10 +1036,21 @@ def account_edit(account_id):
 
 @app.route('/accounts/<account_id>/check-in', methods=['POST'])
 def account_check_in(account_id):
+    note = (request.form.get('note') or '').strip() or None
     try:
-        db.mark_account_checked_in(account_id)
+        db.mark_account_checked_in(account_id, note=note)
     except Exception as e:
         logger.error(f"Mark check-in failed for {account_id}: {e}")
+    return redirect(url_for('accounts_list'))
+
+
+@app.route('/accounts/<account_id>/check-in-note', methods=['POST'])
+def account_check_in_note(account_id):
+    note = (request.form.get('note') or '').strip() or None
+    try:
+        db.update_account_check_in_note(account_id, note)
+    except Exception as e:
+        logger.error(f"Update check-in note failed for {account_id}: {e}")
     return redirect(url_for('accounts_list'))
 
 

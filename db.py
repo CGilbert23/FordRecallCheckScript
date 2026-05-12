@@ -191,11 +191,30 @@ def update_account(account_id, data):
     return res.data[0] if res.data else None
 
 
-def mark_account_checked_in(account_id):
+def mark_account_checked_in(account_id, note=None):
+    """Bump last_checked_in_at to now and save the optional note.
+
+    `note` is always written so passing None clears any prior note that
+    no longer applies to the latest check-in.
+    """
     from datetime import datetime, timezone
     client = get_client()
     res = client.table('accounts').update({
         'last_checked_in_at': datetime.now(timezone.utc).isoformat(),
+        'check_in_note': note,
+    }).eq('id', account_id).execute()
+    return res.data[0] if res.data else None
+
+
+def update_account_check_in_note(account_id, note):
+    """Update only the check_in_note column without touching the date.
+
+    Powers the 'Save note' action so reps can edit context for a check-in
+    that's already green, or attach a note while leaving the X red.
+    """
+    client = get_client()
+    res = client.table('accounts').update({
+        'check_in_note': note,
     }).eq('id', account_id).execute()
     return res.data[0] if res.data else None
 
