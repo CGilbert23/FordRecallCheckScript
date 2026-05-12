@@ -30,6 +30,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `/recall-checker` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
 - `/recall/run-log` — recent jobs (in-memory only, lost on restart)
 - `/schedules` and children — recurring recall checks
+- `/notes` (GET/POST) — shared scratchpad page under Account Management. Auto-saves a couple seconds after typing stops via JSON POST; falls back to a normal form POST if JS is off. `beforeunload` fires `navigator.sendBeacon` to save on tab close.
 - `/dashboard` — 302 redirect to `/recall/run-log` (back-compat)
 - `/test-supabase`, `/test-chrome` — health checks
 
@@ -43,12 +44,14 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `templates/_nav.html` — shared two-level nav partial; included by all CRM pages
 - `templates/home.html`, `accounts.html`, `account_form.html`, `leads.html`, `lead_form.html` — CRM pages
 - `templates/index.html`, `status.html`, `dashboard.html`, `schedules.html`, `schedule_form.html` — recall checker pages
+- `templates/notes.html` — shared scratchpad page (auto-save textarea bound to the `notepad` single-row table)
 - `supabase/schema.sql` — full base schema for setting up a NEW Supabase project
 - `supabase/<date>_*.sql` — one file per migration; run on existing projects in chronological order
 
 ## Supabase tables
-- `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`.
+- `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`. `cadence` is one of `daily`/`monthly`/`quarterly` (the legacy `weekly` was dropped in the 2026-05-11 migration). `anchor_at` (nullable timestamptz) is the first-fire timestamp for monthly/quarterly rows; the scheduler builds an `IntervalTrigger` of 30 or 90 days starting at that anchor. Null `anchor_at` falls back to the legacy cron behavior (1st of the month, or 1st of Jan/Apr/Jul/Oct).
 - `schedule_runs` — per-execution log (started_at, finished_at, recalls_found, email_sent, error)
+- `notepad` — shared scratchpad behind `/notes`. Single-row table — a CHECK constraint pins `id = 1`, so `db.get_notepad()` / `db.save_notepad()` always read/write that one row. No history kept.
 - `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes). Supports an optional second fleet manager (`fleet_manager_2`, `fleet_manager_2_email`, `fleet_manager_2_phone`). Also stores origin context the same way leads do: `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other` (nullable), `lead_source_other` (only when source is Other), `source_contact` (only for Sales/Service/Parts). The lead→account convert flow carries these over from the source lead.
 - `account_leads` — prospects (company, market, account_rep, phone, notes, optional `fleet_manager` / `fleet_manager_email` — collected for both lead types). Split into two workflows via `lead_type` (`cold` or `warm`); warm prospects additionally use `last_contacted_at`. `interest_level` (R/Y/G, default Y) still exists on the row but the lead form no longer collects it — new/edited leads fall back to `INTEREST_LEVEL_DEFAULT`. `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other`; `source_contact` (free text) is only meaningful for Sales/Service/Parts and is cleared otherwise. Contact attempts are tracked on the row via `last_attempt_at` / `last_attempt_outcome` (`made_contact` or `left_voicemail`) / `last_attempt_note` — only the latest attempt is kept (no history table). `closed_at` + `closed_reason` soft-close a lead so it drops off the active list (mirrors how `converted_at` hides converted leads); `list_leads(include_converted=False)` filters out both converted and closed rows. `converted_at` + `converted_account_id` are set when a lead is converted.
 
@@ -101,3 +104,5 @@ docker run -d --name ford-checker -p 5000:10000 --env-file .env ford-checker
 - Account and lead create forms run a soft-duplicate check (`db.find_duplicate_matches`) against existing accounts + active leads on company name (case-insensitive exact), email (case-insensitive exact, sentinel `--` ignored), and phone (digits-only exact). On a match the form re-renders with a yellow warning banner; the user must resubmit with the hidden `confirm_duplicate=1` flag (set automatically by the "Save anyway" button) to bypass. Lead-to-account conversion excludes the source lead from its own duplicate set.
 - The `/leads` page currently renders only warm prospects, grouped by account rep. The cold-call section is commented out in `templates/leads.html` (still present, just `{# ... #}`-wrapped) and the "+ New Lead" button defaults to `?type=warm`. Cold leads still exist in the DB and can be created via `/leads/new?type=cold` directly or by toggling the type radio on the form.
 - Warm-prospect contact badges are color-coded by recency: green ≤19 days, yellow 20–29 days, red ≥30 days since `last_attempt_at`. The age (`days_since_contact`) is computed in `leads_list()` and rendered via the `recency_class` macro in the template.
+- Schedule firing: daily uses a cron trigger at 6am ET; monthly/quarterly use `IntervalTrigger` (30/90 days) starting at `anchor_at`. On create, `_compute_anchor_at()` sets the anchor to today + 30 or 90 days at 6am ET. On edit, the anchor is only reset when the cadence itself changes — otherwise the existing anchor is preserved.
+- The `/schedules/<id>/run` POST route (`schedule_run_now`) still exists, but the "Run Now" button on the schedules list was removed in the 2026-05-11 commit — the endpoint is no longer reachable from the UI.
