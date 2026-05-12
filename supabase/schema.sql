@@ -11,12 +11,16 @@ create table schedules (
     'Boyertown', 'Doylestown', 'Exton', 'Langhorne', 'Newtown',
     'Washington', 'West Chester', 'Mechanicsburg', 'Company-Wide'
   )),
-  cadence text not null check (cadence in ('daily', 'weekly', 'monthly', 'quarterly')),
+  cadence text not null check (cadence in ('daily', 'monthly', 'quarterly')),
   vins text not null,
   vin_units jsonb,
   recipients text[] not null default '{}',
   active boolean not null default true,
   account_id uuid,  -- FK constraint added after `accounts` is created below
+  -- First fire for monthly/quarterly schedules. The scheduler uses this as the
+  -- start_date of an IntervalTrigger (every 30 or 90 days). NULL = legacy
+  -- behavior (fire on the 1st of the month via a cron trigger).
+  anchor_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

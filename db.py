@@ -44,7 +44,7 @@ INTEREST_LEVEL_DEFAULT = 'Y'
 LEAD_ATTEMPT_OUTCOMES = ['made_contact', 'left_voicemail']
 LEAD_CLOSE_REASONS = ['not_interested']
 
-CADENCES = ['daily', 'weekly', 'monthly', 'quarterly']
+CADENCES = ['daily', 'monthly', 'quarterly']
 
 ACCOUNT_CHECK_IN_DAYS = 25
 

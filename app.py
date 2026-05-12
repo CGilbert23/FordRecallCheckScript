@@ -529,6 +529,21 @@ def schedules_list():
     )
 
 
+_SCHEDULE_ANCHOR_OFFSET_DAYS = {'monthly': 30, 'quarterly': 90}
+
+
+def _compute_anchor_at(cadence):
+    """First-fire timestamp for monthly/quarterly schedules: today + 30 or 90
+    days, at 6:00 AM Eastern. Daily schedules don't need an anchor (cron handles
+    them), so this returns None for anything outside the offset map."""
+    offset = _SCHEDULE_ANCHOR_OFFSET_DAYS.get(cadence)
+    if offset is None:
+        return None
+    et = datetime.now(scheduler.TZ)
+    first_fire = et.replace(hour=6, minute=0, second=0, microsecond=0) + timedelta(days=offset)
+    return first_fire.isoformat()
+
+
 @app.route('/schedules/new', methods=['GET', 'POST'])
 def schedule_new():
     """Account-only creation. Requires ?account_id=X on GET; on POST, the
@@ -556,6 +571,7 @@ def schedule_new():
                 'recipients': form['recipients'],
                 'active': True,
                 'account_id': account['id'],
+                'anchor_at': _compute_anchor_at(form['cadence']),
             })
             if created:
                 scheduler.register(created)
@@ -613,6 +629,12 @@ def schedule_edit(schedule_id):
                 'recipients': form['recipients'],
                 'active': form['active'],
             }
+            # When the cadence changes, reset the anchor so the new cadence
+            # starts a fresh 30/90-day window from "now". Leaving cadence
+            # alone keeps the existing anchor (and legacy null-anchor rows
+            # remain on cron-on-the-1st).
+            if form['cadence'] != existing.get('cadence'):
+                payload['anchor_at'] = _compute_anchor_at(form['cadence'])
             if account:
                 payload['company_name'] = account['company_name']
                 payload['location'] = account['market']

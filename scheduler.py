@@ -5,9 +5,11 @@ Fire callback enqueues a job onto the app's existing job_queue so scheduled runs
 the same serialization/worker as ad-hoc submissions.
 """
 import logging
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 import db
 
@@ -19,18 +21,44 @@ _scheduler: BackgroundScheduler | None = None
 _fire_callback = None
 
 
-def _cron_for(cadence: str) -> CronTrigger:
-    """Return a CronTrigger for the given cadence, all at 6am ET."""
+_INTERVAL_DAYS = {'monthly': 30, 'quarterly': 90}
+
+
+def _parse_anchor(anchor_at):
+    """Coerce a Supabase `anchor_at` (str or datetime, possibly null) to a
+    tz-aware datetime, or None if not set."""
+    if not anchor_at:
+        return None
+    if isinstance(anchor_at, datetime):
+        dt = anchor_at
+    else:
+        # Supabase returns ISO 8601, e.g. "2026-06-10T10:00:00+00:00".
+        dt = datetime.fromisoformat(anchor_at.replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=TZ)
+    return dt
+
+
+def _trigger_for(schedule: dict):
+    """Return an APScheduler trigger for the given schedule row.
+
+    - daily: cron at 6am ET (no anchor needed).
+    - monthly/quarterly with an anchor_at: IntervalTrigger every 30/90 days
+      starting at anchor_at. APScheduler advances to the next future tick
+      automatically if anchor_at is in the past.
+    - monthly/quarterly without an anchor_at (legacy rows): the old
+      cron-on-the-1st behavior, preserved so pre-migration schedules don't
+      shift unexpectedly.
+    """
+    cadence = schedule['cadence']
     if cadence == 'daily':
         return CronTrigger(hour=6, minute=0, timezone=TZ)
-    if cadence == 'weekly':
-        # Monday 6am
-        return CronTrigger(day_of_week='mon', hour=6, minute=0, timezone=TZ)
-    if cadence == 'monthly':
-        # 1st of the month, 6am
-        return CronTrigger(day=1, hour=6, minute=0, timezone=TZ)
-    if cadence == 'quarterly':
-        # 1st of Jan/Apr/Jul/Oct, 6am
+    if cadence in _INTERVAL_DAYS:
+        anchor = _parse_anchor(schedule.get('anchor_at'))
+        if anchor is not None:
+            return IntervalTrigger(days=_INTERVAL_DAYS[cadence], start_date=anchor, timezone=TZ)
+        if cadence == 'monthly':
+            return CronTrigger(day=1, hour=6, minute=0, timezone=TZ)
         return CronTrigger(month='1,4,7,10', day=1, hour=6, minute=0, timezone=TZ)
     raise ValueError(f'Unknown cadence: {cadence}')
 
@@ -67,7 +95,7 @@ def register(schedule: dict):
         return
     schedule_id = schedule['id']
     cadence = schedule['cadence']
-    trigger = _cron_for(cadence)
+    trigger = _trigger_for(schedule)
     _scheduler.add_job(
         _fire,
         trigger=trigger,

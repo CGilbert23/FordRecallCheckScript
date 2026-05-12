@@ -83,7 +83,7 @@
 
                 <div class="field">
                     <label for="cadence">Cadence</label>
-                    <p class="hint">All scheduled runs fire at 6:00 AM Eastern Time.</p>
+                    <p class="hint">All scheduled runs fire at 6:00 AM Eastern Time. Monthly fires 30 days after the schedule is saved, then every 30 days. Quarterly fires every 90 days.</p>
                     <select name="cadence" id="cadence" required>
                         <option value="" disabled {% if not form.cadence %}selected{% endif %}>Select...</option>
                         {% for c in cadences %}
