@@ -351,6 +351,27 @@ def find_duplicate_matches(company_name=None, emails=None, phones=None):
     return matches
 
 
+# ---------------------------------------------------------------------------
+# Notepad (single-row shared scratchpad)
+# ---------------------------------------------------------------------------
+
+def get_notepad():
+    """Read the single notepad row. Returns {'content': str, 'updated_at': str|None}.
+    Falls back to an empty record if the row hasn't been seeded yet."""
+    client = get_client()
+    res = client.table('notepad').select('content, updated_at').eq('id', 1).limit(1).execute()
+    if res.data:
+        return res.data[0]
+    return {'content': '', 'updated_at': None}
+
+
+def save_notepad(content):
+    """Upsert the single notepad row with new content."""
+    client = get_client()
+    res = client.table('notepad').upsert({'id': 1, 'content': content}).execute()
+    return res.data[0] if res.data else None
+
+
 def convert_lead_to_account(lead_id, account_data):
     """Create an account from lead data, then mark the lead converted.
 

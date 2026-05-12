@@ -126,3 +126,16 @@ alter table schedules
   add constraint schedules_account_id_fkey
   foreign key (account_id) references accounts(id) on delete set null;
 create index schedules_account_id_idx on schedules(account_id);
+
+-- Notepad: shared scratchpad behind the Notes page. Single-row table — the
+-- CHECK constraint pins id=1 so the app always reads/writes the same row.
+create table notepad (
+  id integer primary key default 1,
+  content text not null default '',
+  updated_at timestamptz not null default now(),
+  constraint notepad_single_row check (id = 1)
+);
+insert into notepad (id, content) values (1, '') on conflict (id) do nothing;
+create trigger notepad_updated_at
+  before update on notepad
+  for each row execute function set_updated_at();

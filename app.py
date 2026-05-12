@@ -382,6 +382,40 @@ def used_car_tracker():
     return render_template('used_car_tracker.html')
 
 
+@app.route('/notes', methods=['GET', 'POST'])
+def notes_page():
+    """Shared scratchpad. Single-row notepad table backs it; the page
+    auto-saves via fetch POST (JSON) and falls back to a normal form POST
+    if JS is off."""
+    if request.method == 'POST':
+        if request.is_json:
+            payload = request.get_json(silent=True) or {}
+            content = payload.get('content', '')
+        else:
+            content = request.form.get('content', '')
+        try:
+            row = db.save_notepad(content)
+        except Exception as e:
+            logger.error(f"Save notepad failed: {e}")
+            if request.is_json:
+                return jsonify({'ok': False, 'error': str(e)}), 500
+            return redirect(url_for('notes_page'))
+        if request.is_json:
+            return jsonify({'ok': True, 'updated_at': (row or {}).get('updated_at')})
+        return redirect(url_for('notes_page'))
+
+    try:
+        row = db.get_notepad()
+    except Exception as e:
+        logger.error(f"Load notepad failed: {e}")
+        row = {'content': '', 'updated_at': None}
+    return render_template(
+        'notes.html',
+        content=row.get('content') or '',
+        updated_at=row.get('updated_at'),
+    )
+
+
 @app.route('/recall-checker')
 def one_time_form():
     active = sum(1 for j in jobs.values() if j['status'] in ('running', 'starting', 'queued'))

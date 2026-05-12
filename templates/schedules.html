@@ -24,9 +24,9 @@
         th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
         td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
-        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; line-height: 1.2; font-family: inherit; cursor: pointer; font-weight: 600; text-decoration: none; vertical-align: middle; box-sizing: border-box; }
         .btn:hover { background: #0050a8; }
-        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; line-height: 1.2; }
         .btn-secondary { background: #6b7280; }
         .btn-secondary:hover { background: #4b5563; }
         .btn-danger { background: #dc2626; }
@@ -129,9 +129,6 @@
                             </td>
                             <td>
                                 <div class="inline-actions">
-                                    <form method="POST" action="/schedules/{{ s.id }}/run">
-                                        <button type="submit" class="btn btn-sm">Run Now</button>
-                                    </form>
                                     <a href="/schedules/{{ s.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
                                     <form method="POST" action="/schedules/{{ s.id }}/delete" onsubmit="return confirm('Delete this schedule? This cannot be undone.');">
                                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
