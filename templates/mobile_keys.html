@@ -23,13 +23,19 @@
         .btn-danger:hover { background: #991b1b; }
         .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
         .btn-outline:hover { background: #eff6ff; }
+        .btn-inventory { background: #fff; color: #b45309; border: 1px solid #b45309; }
+        .btn-inventory:hover { background: #fffbeb; }
+        .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; cursor: default; opacity: 0.85; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1700px; }
-        th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        th { text-align: left; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        thead tr:first-child th:first-child { border-top-left-radius: 6px; }
+        thead tr:first-child th:last-child { border-top-right-radius: 6px; }
         td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; }
         tr:last-child td { border-bottom: none; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
         .center { text-align: center; }
+        .col-divider { border-right: 2px solid #d1d5db; }
         .muted { color: #9ca3af; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
         .badge-internal { background: #eff6ff; color: #1e40af; }
@@ -41,6 +47,15 @@
         .empty { text-align: center; color: #888; padding: 40px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
+        .search-input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 320px; font-family: inherit; }
+        .search-input:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .no-results-row td { text-align: center; color: #888; padding: 28px; font-style: italic; }
+        tr.row-pending td { background: #f3f4f6; }
+        .status-box { width: 16px; height: 16px; padding: 0; border: 1px solid #cbd5e1; background: #fff; border-radius: 3px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: transparent; font-family: inherit; font-size: 0.7rem; font-weight: 600; line-height: 1; }
+        .status-box:hover { border-color: #94a3b8; }
+        .status-box-done { color: #0a6f3b; border-color: #a7b3c2; }
+        .status-box-done:hover { color: #064e2a; border-color: #6b7280; }
+        .status-form { display: inline; margin: 0; }
     </style>
 </head>
 <body>
@@ -49,8 +64,15 @@
         {% include '_nav.html' %}
 
         <div class="actions">
-            <span class="muted" style="font-size: 0.9rem;">{{ keys | length }} key{{ '' if keys | length == 1 else 's' }} on record</span>
-            <a href="/mobile-keys/new" class="btn" style="margin-left: auto;">+ Add Key</a>
+            <div style="flex: 1; text-align: left;">
+                <span class="muted" style="font-size: 0.9rem;" id="keyCount">{{ keys | length }} key{{ '' if keys | length == 1 else 's' }} on record</span>
+            </div>
+            <div style="flex: 1; text-align: center;">
+                <input type="text" id="keySearch" class="search-input" placeholder="Search by year, make, or model…" autocomplete="off">
+            </div>
+            <div style="flex: 1; text-align: right;">
+                <a href="/mobile-keys/new" class="btn">+ Add Key</a>
+            </div>
         </div>
 
         {% if not keys %}
@@ -63,6 +85,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th class="center">Status</th>
                             <th>Date</th>
                             <th>End User</th>
                             <th>Customer</th>
@@ -71,24 +94,28 @@
                             <th>Year</th>
                             <th>Make</th>
                             <th>Model</th>
-                            <th>Type</th>
+                            <th class="col-divider">Type</th>
                             <th>Fob P/N</th>
-                            <th class="num">Fob $</th>
                             <th>Blank P/N</th>
+                            <th class="num">Fob $</th>
                             <th class="num">Blank $</th>
-                            <th class="num">Parts $</th>
-                            <th class="num">Prog $</th>
+                            <th class="num col-divider">Prog $</th>
                             <th class="num">Total $</th>
-                            <th class="num">Discount</th>
-                            <th class="num">Final $</th>
+                            <th class="center">Parts Discount</th>
                             <th class="center">Offset</th>
                             <th class="center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="keyRows">
                     {% for k in keys %}
-                        <tr>
-                            <td>{{ k.cut_date }}</td>
+                        <tr data-search="{{ k.year }} {{ k.make }} {{ k.model }}"{% if not k.status_done %} class="row-pending"{% endif %}>
+                            <td class="center">
+                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-status" class="status-form">
+                                    <input type="hidden" name="status_done" value="{{ '0' if k.status_done else '1' }}">
+                                    <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not done' if k.status_done else 'Mark as done' }}" title="{{ 'Mark as not done' if k.status_done else 'Mark as done' }}">{% if k.status_done %}✓{% endif %}</button>
+                                </form>
+                            </td>
+                            <td>{{ k.cut_date | format_short_date }}</td>
                             <td>
                                 {% if k.end_user == 'Internal' %}
                                     <span class="badge badge-internal">Internal</span>
@@ -102,16 +129,14 @@
                             <td>{{ k.year }}</td>
                             <td>{{ k.make }}</td>
                             <td>{{ k.model }}</td>
-                            <td>{{ k.key_type }}</td>
+                            <td class="col-divider">{{ k.key_type }}</td>
                             <td>{{ k.key_fob_part_number or '—' }}</td>
-                            <td class="num">{{ k.key_fob_cost | format_money }}</td>
                             <td>{{ k.key_blank_part_number or '—' }}</td>
+                            <td class="num">{{ k.key_fob_cost | format_money }}</td>
                             <td class="num">{{ k.key_blank_cost | format_money }}</td>
-                            <td class="num">{{ k.total_parts_cost | format_money }}</td>
-                            <td class="num">{{ k.programming_cost | format_money }}</td>
+                            <td class="num col-divider">{{ k.programming_cost | format_money }}</td>
                             <td class="num">{{ k.total_cost | format_money }}</td>
-                            <td class="num">{{ k.discount_needed | format_money }}</td>
-                            <td class="num"><strong>{{ k.final_charge | format_money }}</strong></td>
+                            <td class="center">{{ k.discount_needed | format_money }}</td>
                             <td class="center">
                                 {% if k.offset_eligible %}
                                     <span class="badge badge-yes">Y</span>
@@ -122,18 +147,60 @@
                             <td class="center">
                                 <div class="row-actions">
                                     <a href="/mobile-keys/{{ k.id }}/edit" class="btn btn-outline btn-xs">Edit</a>
-                                    <form method="POST" action="/mobile-keys/{{ k.id }}/delete" onsubmit="return confirm('Delete this key record? This cannot be undone.');">
-                                        <button type="submit" class="btn btn-danger btn-xs">Delete</button>
+                                    {% if k.moved_to_inventory_at %}
+                                    <button type="button" class="btn btn-inventory-filled btn-xs" disabled title="Moved to inventory">Inventory</button>
+                                    {% else %}
+                                    <form method="POST" action="/mobile-keys/{{ k.id }}/move-to-inventory" onsubmit="return confirm('Move this key to inventory? It will stay in the database but show as moved.');">
+                                        <button type="submit" class="btn btn-inventory btn-xs">Inventory</button>
                                     </form>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                     {% endfor %}
+                        <tr class="no-results-row" id="noResultsRow" style="display: none;">
+                            <td colspan="19">No keys match that search.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
         {% endif %}
     </div>
+
+    <script>
+        (function () {
+            var search = document.getElementById('keySearch');
+            var rowsContainer = document.getElementById('keyRows');
+            var countEl = document.getElementById('keyCount');
+            var noResults = document.getElementById('noResultsRow');
+            if (!search || !rowsContainer) return;
+
+            var rows = Array.prototype.slice.call(
+                rowsContainer.querySelectorAll('tr[data-search]')
+            );
+            var total = rows.length;
+
+            function applyFilter() {
+                var q = search.value.trim().toLowerCase();
+                var visible = 0;
+                rows.forEach(function (row) {
+                    var hay = (row.getAttribute('data-search') || '').toLowerCase();
+                    var match = !q || hay.indexOf(q) !== -1;
+                    row.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+                if (noResults) noResults.style.display = (visible === 0 && q) ? '' : 'none';
+                if (countEl) {
+                    if (q) {
+                        countEl.textContent = visible + ' of ' + total + ' shown';
+                    } else {
+                        countEl.textContent = total + ' key' + (total === 1 ? '' : 's') + ' on record';
+                    }
+                }
+            }
+            search.addEventListener('input', applyFilter);
+        })();
+    </script>
 </body>
 </html>

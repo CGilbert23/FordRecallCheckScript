@@ -12,7 +12,8 @@
     <a href="/recall-checker" class="nav-tab {% if path.startswith('/recall-checker') %}active{% endif %}">One Time Check</a>
     <a href="/recall/run-log" class="nav-tab {% if path.startswith('/recall/run-log') or path == '/dashboard' %}active{% endif %}">Run Log</a>
     {% elif path.startswith('/mobile-keys') %}
-    <a href="/mobile-keys" class="nav-tab {% if path.startswith('/mobile-keys') %}active{% endif %}">Key Database</a>
+    <a href="/mobile-keys" class="nav-tab {% if path == '/mobile-keys' or path.startswith('/mobile-keys/new') or '/edit' in path %}active{% endif %}">Key Database</a>
+    <a href="/mobile-keys/inventory" class="nav-tab {% if path.startswith('/mobile-keys/inventory') %}active{% endif %}">Inventory</a>
     {% endif %}
 </div>
 {% endif %}

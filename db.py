@@ -56,9 +56,9 @@ KEY_INTERNAL_CUSTOMERS = [
     'Chevrolet', 'CDJR', 'Hyundai', 'Lincoln', 'Ford', 'Subaru', 'Toyota', 'Bid Lot',
 ]
 KEY_MAKES = [
-    'Ford', 'Chevrolet', 'GMC', 'Cadillac', 'Buick', 'Dodge', 'Ram', 'Jeep',
-    'Chrysler', 'Lincoln', 'Toyota', 'Honda', 'Nissan', 'Lexus', 'Acura',
-    'Infiniti', 'Mazda', 'Subaru', 'Hyundai', 'Kia', 'Genesis',
+    'Acura', 'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Ford',
+    'Genesis', 'GMC', 'Honda', 'Hyundai', 'Infiniti', 'Jeep', 'Kia', 'Lexus',
+    'Lincoln', 'Mazda', 'Nissan', 'Ram', 'Subaru', 'Toyota',
 ]
 KEY_TYPES = ['Fob', 'Turnkey', 'Flip Key']
 KEY_PROGRAMMING_COST_DEFAULT = 60.00
@@ -463,3 +463,43 @@ def update_mobile_key(key_id, data):
 def delete_mobile_key(key_id):
     client = get_client()
     client.table('mobile_keys').delete().eq('id', key_id).execute()
+
+
+def mark_mobile_key_in_inventory(key_id):
+    """Stamp moved_to_inventory_at = now() so the key shows up under Inventory."""
+    from datetime import datetime, timezone
+    client = get_client()
+    res = client.table('mobile_keys').update({
+        'moved_to_inventory_at': datetime.now(timezone.utc).isoformat(),
+    }).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
+def clear_mobile_key_inventory(key_id):
+    """Clear the inventory flag so the key returns to the active list."""
+    client = get_client()
+    res = client.table('mobile_keys').update({
+        'moved_to_inventory_at': None,
+    }).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
+def set_mobile_key_status(key_id, status_done):
+    """Flip the per-row Status checkbox (true = done, false = pending)."""
+    client = get_client()
+    res = client.table('mobile_keys').update({
+        'status_done': bool(status_done),
+    }).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
+def list_mobile_keys_in_inventory():
+    client = get_client()
+    res = (
+        client.table('mobile_keys')
+        .select('*')
+        .not_.is_('moved_to_inventory_at', 'null')
+        .order('moved_to_inventory_at', desc=True)
+        .execute()
+    )
+    return res.data or []

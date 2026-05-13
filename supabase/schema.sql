@@ -161,11 +161,20 @@ create table mobile_keys (
   key_blank_cost numeric(10, 2),
   programming_cost numeric(10, 2) not null default 60.00,
   offset_eligible boolean not null default true,
+  -- NULL = active key. Non-NULL = timestamp it was moved into inventory
+  -- (customer no longer needed it, but we keep the part on hand).
+  moved_to_inventory_at timestamptz,
+  -- Per-row "done" flag. Default false (pending); rep marks done via the
+  -- leftmost Status checkbox on the list page. Pending rows render grey.
+  status_done boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index mobile_keys_cut_date_idx on mobile_keys(cut_date desc);
 create index mobile_keys_vin_idx on mobile_keys(vin);
+create index mobile_keys_inventory_idx
+  on mobile_keys(moved_to_inventory_at desc)
+  where moved_to_inventory_at is not null;
 create trigger mobile_keys_updated_at
   before update on mobile_keys
   for each row execute function set_updated_at();

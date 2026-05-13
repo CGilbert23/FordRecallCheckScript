@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1400px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .actions { margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-xs { padding: 3px 10px; font-size: 0.75rem; }
+        .btn-restore { background: #fff; color: #0a6f3b; border: 1px solid #0a6f3b; }
+        .btn-restore:hover { background: #ecfdf5; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        thead tr:first-child th:first-child { border-top-left-radius: 6px; }
+        thead tr:first-child th:last-child { border-top-right-radius: 6px; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; }
+        tr:last-child td { border-bottom: none; }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .center { text-align: center; }
+        .muted { color: #9ca3af; }
+        .empty { text-align: center; color: #888; padding: 40px; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Keys that were ordered but no longer needed by the original customer. The full row stays in the <a href="/mobile-keys" class="nav-link">Key Database</a>.</p>
+
+        <div class="actions">
+            <span class="muted" style="font-size: 0.9rem;">{{ keys | length }} part{{ '' if keys | length == 1 else 's' }} in inventory</span>
+        </div>
+
+        {% if not keys %}
+        <div class="card">
+            <p class="empty">No keys currently in inventory. Move a key from the <a href="/mobile-keys" class="nav-link">Key Database</a> to see it here.</p>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Year</th>
+                            <th>Make</th>
+                            <th>Model</th>
+                            <th>Fob P/N</th>
+                            <th class="num">Fob $</th>
+                            <th>Blank P/N</th>
+                            <th class="num">Blank $</th>
+                            <th class="num">Total $</th>
+                            <th class="center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for k in keys %}
+                        <tr>
+                            <td>{{ k.cut_date | format_short_date }}</td>
+                            <td>{{ k.year }}</td>
+                            <td>{{ k.make }}</td>
+                            <td>{{ k.model }}</td>
+                            <td>{{ k.key_fob_part_number or '—' }}</td>
+                            <td class="num">{{ k.key_fob_cost | format_money }}</td>
+                            <td>{{ k.key_blank_part_number or '—' }}</td>
+                            <td class="num">{{ k.key_blank_cost | format_money }}</td>
+                            <td class="num"><strong>{{ k.total_parts_cost | format_money }}</strong></td>
+                            <td class="center">
+                                <form method="POST" action="/mobile-keys/{{ k.id }}/restore-from-inventory" onsubmit="return confirm('Move this key back to the active list?');">
+                                    <button type="submit" class="btn btn-restore btn-xs">Move back to Active</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

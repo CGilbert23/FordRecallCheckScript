@@ -34,6 +34,21 @@ def _format_money(value):
         return '—'
 
 
+@app.template_filter('format_short_date')
+def _format_short_date(value):
+    """Render an ISO date string or date object as MM/DD/YY."""
+    if value is None or value == '':
+        return ''
+    try:
+        if isinstance(value, str):
+            d = datetime.strptime(value[:10], '%Y-%m-%d').date()
+        else:
+            d = value
+        return d.strftime('%m/%d/%y')
+    except (ValueError, TypeError):
+        return str(value)
+
+
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'fordrecalls@voxapp.co')
 
@@ -1457,13 +1472,10 @@ def _compute_key_totals(row):
     blank = float(row.get('key_blank_cost') or 0)
     programming = float(row.get('programming_cost') or 0)
     parts_total = fob + blank
-    total = parts_total + programming
     # Excel uses ROUND(parts*0.3, 0) — whole dollars, banker's rounding.
-    discount = round(parts_total * db.KEY_DISCOUNT_RATE)
     row['total_parts_cost'] = parts_total
-    row['total_cost'] = total
-    row['discount_needed'] = float(discount)
-    row['final_charge'] = total - discount
+    row['total_cost'] = parts_total + programming
+    row['discount_needed'] = float(round(parts_total * db.KEY_DISCOUNT_RATE))
     return row
 
 
@@ -1690,6 +1702,46 @@ def mobile_key_delete(key_id):
     except Exception as e:
         logger.error(f"Delete mobile key failed: {e}")
     return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/toggle-status', methods=['POST'])
+def mobile_key_toggle_status(key_id):
+    status_done = request.form.get('status_done') == '1'
+    try:
+        db.set_mobile_key_status(key_id, status_done)
+    except Exception as e:
+        logger.error(f"Toggle status failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/move-to-inventory', methods=['POST'])
+def mobile_key_move_to_inventory(key_id):
+    try:
+        db.mark_mobile_key_in_inventory(key_id)
+    except Exception as e:
+        logger.error(f"Move-to-inventory failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/restore-from-inventory', methods=['POST'])
+def mobile_key_restore_from_inventory(key_id):
+    try:
+        db.clear_mobile_key_inventory(key_id)
+    except Exception as e:
+        logger.error(f"Restore-from-inventory failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_inventory'))
+
+
+@app.route('/mobile-keys/inventory')
+def mobile_keys_inventory():
+    try:
+        rows = db.list_mobile_keys_in_inventory()
+    except Exception as e:
+        logger.error(f"Failed to list mobile keys inventory: {e}")
+        rows = []
+    for r in rows:
+        _compute_key_totals(r)
+    return render_template('mobile_keys_inventory.html', keys=rows)
 
 
 if __name__ == '__main__':
