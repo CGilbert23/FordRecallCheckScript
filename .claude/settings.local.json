@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir)"
+      "Bash(dir)",
+      "Bash(python -c 'import openpyxl; wb = openpyxl.load_workbook\\(r'\\\\''Mocks\\\\Key_DB.xlsx'\\\\'', data_only=False\\); *)"
     ]
   }
 }

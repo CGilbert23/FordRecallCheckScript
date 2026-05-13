@@ -22,6 +22,18 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+
+@app.template_filter('format_money')
+def _format_money(value):
+    """Render a numeric value as '$1,234.56'. Blank/None becomes an em dash."""
+    if value is None or value == '':
+        return '—'
+    try:
+        return f"${float(value):,.2f}"
+    except (TypeError, ValueError):
+        return '—'
+
+
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'fordrecalls@voxapp.co')
 
@@ -1408,6 +1420,276 @@ def lead_convert(lead_id):
         lead_sources=db.LEAD_SOURCES,
         from_lead_id=lead_id,
     )
+
+
+# ---------------------------------------------------------------------------
+# Mobile Keys (Key Database)
+# ---------------------------------------------------------------------------
+
+def _key_year_range():
+    """Years for the form dropdown. Extends to next year each January."""
+    current = datetime.now().year
+    upper = max(2026, current + 1)
+    return list(range(upper, 1999, -1))  # descending, newest first
+
+
+def _parse_money(raw):
+    """Parse a money-ish form value. Returns (float_or_None, error).
+
+    Accepts blank (None), bare numbers, and '$1,234.56'-style strings. The
+    Excel uses '--' for missing parts costs — treat that the same as blank.
+    """
+    if raw is None:
+        return None, None
+    s = str(raw).strip()
+    if s == '' or s == '--' or s == '-':
+        return None, None
+    cleaned = s.replace('$', '').replace(',', '').strip()
+    try:
+        return float(cleaned), None
+    except ValueError:
+        return None, f"Invalid money value: {raw!r}"
+
+
+def _compute_key_totals(row):
+    """Attach derived totals to a mobile_keys row dict for display."""
+    fob = float(row.get('key_fob_cost') or 0)
+    blank = float(row.get('key_blank_cost') or 0)
+    programming = float(row.get('programming_cost') or 0)
+    parts_total = fob + blank
+    total = parts_total + programming
+    # Excel uses ROUND(parts*0.3, 0) — whole dollars, banker's rounding.
+    discount = round(parts_total * db.KEY_DISCOUNT_RATE)
+    row['total_parts_cost'] = parts_total
+    row['total_cost'] = total
+    row['discount_needed'] = float(discount)
+    row['final_charge'] = total - discount
+    return row
+
+
+def _parse_mobile_key_form(req):
+    """Read + validate the mobile-key form. Returns (form, error, payload).
+
+    `form` always holds the raw inputs so the template can re-render on
+    validation failure without losing what the rep typed. On success
+    `error` is None and `payload` is the dict ready for the DB; on failure
+    `error` is the message and `payload` is None.
+    """
+    form = {
+        'cut_date': (req.form.get('cut_date') or '').strip(),
+        'end_user': (req.form.get('end_user') or '').strip(),
+        'customer_name_internal': (req.form.get('customer_name_internal') or '').strip(),
+        'customer_name_external': (req.form.get('customer_name_external') or '').strip(),
+        'ro_number': (req.form.get('ro_number') or '').strip(),
+        'vin': (req.form.get('vin') or '').strip().upper(),
+        'year': (req.form.get('year') or '').strip(),
+        'make': (req.form.get('make') or '').strip(),
+        'model': (req.form.get('model') or '').strip(),
+        'key_type': (req.form.get('key_type') or '').strip(),
+        'key_fob_part_number': (req.form.get('key_fob_part_number') or '').strip(),
+        'key_fob_cost': (req.form.get('key_fob_cost') or '').strip(),
+        'key_blank_part_number': (req.form.get('key_blank_part_number') or '').strip(),
+        'key_blank_cost': (req.form.get('key_blank_cost') or '').strip(),
+        'programming_cost': (req.form.get('programming_cost') or '').strip(),
+        'offset_eligible': req.form.get('offset_eligible', 'Y'),
+    }
+
+    if not form['cut_date']:
+        return form, 'Date is required.', None
+    try:
+        cut_date = datetime.strptime(form['cut_date'], '%Y-%m-%d').date()
+    except ValueError:
+        return form, 'Date must be a valid date.', None
+
+    if form['end_user'] not in db.KEY_END_USERS:
+        return form, 'End User must be Internal or Customer.', None
+
+    if form['end_user'] == 'Internal':
+        customer_name = form['customer_name_internal']
+        if customer_name not in db.KEY_INTERNAL_CUSTOMERS:
+            return form, 'Pick an internal customer from the list.', None
+    else:
+        customer_name = form['customer_name_external']
+        if not customer_name:
+            return form, 'Customer Name is required.', None
+
+    if len(form['vin']) != 17 or not form['vin'].isalnum():
+        return form, 'VIN must be exactly 17 alphanumeric characters.', None
+
+    try:
+        year = int(form['year'])
+    except (TypeError, ValueError):
+        return form, 'Year is required.', None
+    if year < 2000 or year > 2100:
+        return form, 'Year is out of range.', None
+
+    if form['make'] not in db.KEY_MAKES:
+        return form, 'Pick a Make from the list.', None
+    if not form['model']:
+        return form, 'Model is required.', None
+    if form['key_type'] not in db.KEY_TYPES:
+        return form, 'Pick a Key Type from the list.', None
+
+    fob_cost, err = _parse_money(form['key_fob_cost'])
+    if err:
+        return form, err, None
+    blank_cost, err = _parse_money(form['key_blank_cost'])
+    if err:
+        return form, err, None
+    programming_cost, err = _parse_money(form['programming_cost'])
+    if err:
+        return form, err, None
+    if programming_cost is None:
+        programming_cost = db.KEY_PROGRAMMING_COST_DEFAULT
+
+    fob_part = form['key_fob_part_number']
+    if fob_part in ('--', '-'):
+        fob_part = ''
+    blank_part = form['key_blank_part_number']
+    if blank_part in ('--', '-'):
+        blank_part = ''
+    ro_number = form['ro_number']
+    if ro_number in ('--', '-'):
+        ro_number = ''
+
+    payload = {
+        'cut_date': cut_date.isoformat(),
+        'end_user': form['end_user'],
+        'customer_name': customer_name,
+        'ro_number': ro_number or None,
+        'vin': form['vin'],
+        'year': year,
+        'make': form['make'],
+        'model': form['model'],
+        'key_type': form['key_type'],
+        'key_fob_part_number': fob_part or None,
+        'key_fob_cost': fob_cost,
+        'key_blank_part_number': blank_part or None,
+        'key_blank_cost': blank_cost,
+        'programming_cost': programming_cost,
+        'offset_eligible': form['offset_eligible'] == 'Y',
+    }
+    return form, None, payload
+
+
+def _mobile_key_form_context(form=None, key=None, error=None):
+    return dict(
+        form=form or {},
+        key=key,
+        error=error,
+        years=_key_year_range(),
+        internal_customers=db.KEY_INTERNAL_CUSTOMERS,
+        makes=db.KEY_MAKES,
+        key_types=db.KEY_TYPES,
+        end_users=db.KEY_END_USERS,
+        programming_default=db.KEY_PROGRAMMING_COST_DEFAULT,
+    )
+
+
+@app.route('/mobile-keys')
+def mobile_keys_list():
+    try:
+        rows = db.list_mobile_keys()
+    except Exception as e:
+        logger.error(f"Failed to list mobile keys: {e}")
+        rows = []
+    for r in rows:
+        _compute_key_totals(r)
+    return render_template('mobile_keys.html', keys=rows)
+
+
+@app.route('/mobile-keys/new', methods=['GET', 'POST'])
+def mobile_key_new():
+    if request.method == 'POST':
+        form, error, payload = _parse_mobile_key_form(request)
+        if error:
+            return render_template(
+                'mobile_key_form.html',
+                **_mobile_key_form_context(form=form, error=error),
+            )
+        try:
+            db.create_mobile_key(payload)
+        except Exception as e:
+            logger.error(f"Create mobile key failed: {e}")
+            return render_template(
+                'mobile_key_form.html',
+                **_mobile_key_form_context(form=form, error=str(e)),
+            )
+        return redirect(url_for('mobile_keys_list'))
+
+    # GET: prefill with sensible defaults
+    today = datetime.now().date().isoformat()
+    form = {
+        'cut_date': today,
+        'end_user': 'Internal',
+        'programming_cost': f"{db.KEY_PROGRAMMING_COST_DEFAULT:.2f}",
+        'offset_eligible': 'Y',
+    }
+    return render_template(
+        'mobile_key_form.html',
+        **_mobile_key_form_context(form=form),
+    )
+
+
+@app.route('/mobile-keys/<key_id>/edit', methods=['GET', 'POST'])
+def mobile_key_edit(key_id):
+    try:
+        existing = db.get_mobile_key(key_id)
+    except Exception as e:
+        logger.error(f"Failed to load mobile key {key_id}: {e}")
+        existing = None
+    if not existing:
+        return 'Key record not found', 404
+
+    if request.method == 'POST':
+        form, error, payload = _parse_mobile_key_form(request)
+        if error:
+            return render_template(
+                'mobile_key_form.html',
+                **_mobile_key_form_context(form=form, key=existing, error=error),
+            )
+        try:
+            db.update_mobile_key(key_id, payload)
+        except Exception as e:
+            logger.error(f"Update mobile key failed: {e}")
+            return render_template(
+                'mobile_key_form.html',
+                **_mobile_key_form_context(form=form, key=existing, error=str(e)),
+            )
+        return redirect(url_for('mobile_keys_list'))
+
+    is_internal = existing.get('end_user') == 'Internal'
+    form = {
+        'cut_date': existing.get('cut_date') or '',
+        'end_user': existing.get('end_user') or 'Internal',
+        'customer_name_internal': existing.get('customer_name') if is_internal else '',
+        'customer_name_external': existing.get('customer_name') if not is_internal else '',
+        'ro_number': existing.get('ro_number') or '',
+        'vin': existing.get('vin') or '',
+        'year': str(existing.get('year') or ''),
+        'make': existing.get('make') or '',
+        'model': existing.get('model') or '',
+        'key_type': existing.get('key_type') or '',
+        'key_fob_part_number': existing.get('key_fob_part_number') or '',
+        'key_fob_cost': f"{float(existing['key_fob_cost']):.2f}" if existing.get('key_fob_cost') is not None else '',
+        'key_blank_part_number': existing.get('key_blank_part_number') or '',
+        'key_blank_cost': f"{float(existing['key_blank_cost']):.2f}" if existing.get('key_blank_cost') is not None else '',
+        'programming_cost': f"{float(existing.get('programming_cost') or db.KEY_PROGRAMMING_COST_DEFAULT):.2f}",
+        'offset_eligible': 'Y' if existing.get('offset_eligible') else 'N',
+    }
+    return render_template(
+        'mobile_key_form.html',
+        **_mobile_key_form_context(form=form, key=existing),
+    )
+
+
+@app.route('/mobile-keys/<key_id>/delete', methods=['POST'])
+def mobile_key_delete(key_id):
+    try:
+        db.delete_mobile_key(key_id)
+    except Exception as e:
+        logger.error(f"Delete mobile key failed: {e}")
+    return redirect(url_for('mobile_keys_list'))
 
 
 if __name__ == '__main__':

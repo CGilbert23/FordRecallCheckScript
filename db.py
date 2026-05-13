@@ -48,6 +48,22 @@ CADENCES = ['daily', 'monthly', 'quarterly']
 
 ACCOUNT_CHECK_IN_DAYS = 25
 
+# Mobile Keys section. Internal cuts go to a Fred Beans-affiliated store from
+# the dropdown; customer cuts are free text. The 'Bid Lot' entry covers our
+# own auction lot inventory — internally tracked but not a brand.
+KEY_END_USERS = ['Internal', 'Customer']
+KEY_INTERNAL_CUSTOMERS = [
+    'Chevrolet', 'CDJR', 'Hyundai', 'Lincoln', 'Ford', 'Subaru', 'Toyota', 'Bid Lot',
+]
+KEY_MAKES = [
+    'Ford', 'Chevrolet', 'GMC', 'Cadillac', 'Buick', 'Dodge', 'Ram', 'Jeep',
+    'Chrysler', 'Lincoln', 'Toyota', 'Honda', 'Nissan', 'Lexus', 'Acura',
+    'Infiniti', 'Mazda', 'Subaru', 'Hyundai', 'Kia', 'Genesis',
+]
+KEY_TYPES = ['Fob', 'Turnkey', 'Flip Key']
+KEY_PROGRAMMING_COST_DEFAULT = 60.00
+KEY_DISCOUNT_RATE = 0.30
+
 _client: Client | None = None
 
 
@@ -408,3 +424,42 @@ def convert_lead_to_account(lead_id, account_data):
         'converted_account_id': account['id'],
     }).eq('id', lead_id).execute()
     return account
+
+
+# ---------------------------------------------------------------------------
+# Mobile keys
+# ---------------------------------------------------------------------------
+
+def list_mobile_keys():
+    client = get_client()
+    res = (
+        client.table('mobile_keys')
+        .select('*')
+        .order('cut_date', desc=True)
+        .order('created_at', desc=True)
+        .execute()
+    )
+    return res.data or []
+
+
+def get_mobile_key(key_id):
+    client = get_client()
+    res = client.table('mobile_keys').select('*').eq('id', key_id).limit(1).execute()
+    return res.data[0] if res.data else None
+
+
+def create_mobile_key(data):
+    client = get_client()
+    res = client.table('mobile_keys').insert(data).execute()
+    return res.data[0] if res.data else None
+
+
+def update_mobile_key(key_id, data):
+    client = get_client()
+    res = client.table('mobile_keys').update(data).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
+def delete_mobile_key(key_id):
+    client = get_client()
+    client.table('mobile_keys').delete().eq('id', key_id).execute()

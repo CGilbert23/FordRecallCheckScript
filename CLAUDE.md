@@ -1,10 +1,11 @@
 # Fred Beans Mobile Service
 
 ## Overview
-Internal Flask app for the mobile service team. Three top-level sections:
+Internal Flask app for the mobile service team. Four top-level sections:
 - **Account Management** — existing customer accounts and new leads (CRM)
 - **Recall Checker** — Ford VIN recall lookups (one-time, scheduled, run log)
 - **Used Car Tracker** — iframes an external Vercel app (`used-car-lot-recall-sweeper.vercel.app`) that sweeps used-car lot inventory for open recalls
+- **Mobile Keys** — Key Database for tracking each key cut (vehicle, parts + costs, P&L). One row per key with computed totals/discount/final charge on display.
 
 Recall data is scraped via Selenium, results are written to Excel and emailed via Resend. Account/lead/schedule data lives in Supabase Postgres.
 
@@ -32,6 +33,8 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `/schedules` and children — recurring recall checks
 - `/notes` (GET/POST) — shared scratchpad page under Account Management. Auto-saves a couple seconds after typing stops via JSON POST; falls back to a normal form POST if JS is off. `beforeunload` fires `navigator.sendBeacon` to save on tab close.
 - `/dashboard` — 302 redirect to `/recall/run-log` (back-compat)
+- `/mobile-keys` — Key Database list (table of all rows, newest first). Add/Edit/Delete inline.
+- `/mobile-keys/new`, `/mobile-keys/<id>/edit`, `/mobile-keys/<id>/delete` — CRUD endpoints
 - `/test-supabase`, `/test-chrome` — health checks
 
 ## Key Files
@@ -45,6 +48,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `templates/home.html`, `accounts.html`, `account_form.html`, `leads.html`, `lead_form.html` — CRM pages
 - `templates/index.html`, `status.html`, `dashboard.html`, `schedules.html`, `schedule_form.html` — recall checker pages
 - `templates/notes.html` — shared scratchpad page (auto-save textarea bound to the `notepad` single-row table)
+- `templates/mobile_keys.html`, `templates/mobile_key_form.html` — Key Database list + add/edit form
 - `supabase/schema.sql` — full base schema for setting up a NEW Supabase project
 - `supabase/<date>_*.sql` — one file per migration; run on existing projects in chronological order
 
@@ -54,6 +58,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `notepad` — shared scratchpad behind `/notes`. Single-row table — a CHECK constraint pins `id = 1`, so `db.get_notepad()` / `db.save_notepad()` always read/write that one row. No history kept.
 - `accounts` — master record for an existing customer (company, market, account_rep, fleet manager contact, service_type, VINs, notes). Supports an optional second fleet manager (`fleet_manager_2`, `fleet_manager_2_email`, `fleet_manager_2_phone`). Also stores origin context the same way leads do: `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other` (nullable), `lead_source_other` (only when source is Other), `source_contact` (only for Sales/Service/Parts). The lead→account convert flow carries these over from the source lead. Check-in column: `last_checked_in_at` (timestamptz) + `check_in_note` (nullable text) — both editable from the accounts table cell. The cell opens a modal that lets the rep either save just a note (no date change, via `/accounts/<id>/check-in-note`) or check in (bump date + save note, via `/accounts/<id>/check-in`). When the cell is already green, only "Save note" is offered — re-check-in waits for the 25-day auto-flip (`ACCOUNT_CHECK_IN_DAYS = 25`). Note is never required and is shown in the cell's hover tooltip.
 - `account_leads` — prospects (company, market, account_rep, phone, notes, optional `fleet_manager` / `fleet_manager_email` — collected for both lead types). Split into two workflows via `lead_type` (`cold` or `warm`); warm prospects additionally use `last_contacted_at`. `interest_level` (R/Y/G, default Y) still exists on the row but the lead form no longer collects it — new/edited leads fall back to `INTEREST_LEVEL_DEFAULT`. `lead_source` ∈ `Sales`/`Service`/`Parts`/`Visual`/`Other`; `source_contact` (free text) is only meaningful for Sales/Service/Parts and is cleared otherwise. Contact attempts are tracked on the row via `last_attempt_at` / `last_attempt_outcome` (`made_contact` or `left_voicemail`) / `last_attempt_note` — only the latest attempt is kept (no history table). `closed_at` + `closed_reason` soft-close a lead so it drops off the active list (mirrors how `converted_at` hides converted leads); `list_leads(include_converted=False)` filters out both converted and closed rows. `converted_at` + `converted_account_id` are set when a lead is converted.
+- `mobile_keys` — one row per key cut. Columns: `cut_date`, `end_user` (`Internal`/`Customer`), `customer_name` (Internal = one of `KEY_INTERNAL_CUSTOMERS` = `Chevrolet, CDJR, Hyundai, Lincoln, Ford, Subaru, Toyota, Bid Lot`; Customer = free text), `ro_number`, `vin`, `year`, `make` (from `KEY_MAKES` ~21 brands), `model`, `key_type` (`Fob`/`Turnkey`/`Flip Key`), `key_fob_part_number`/`key_fob_cost`, `key_blank_part_number`/`key_blank_cost`, `programming_cost` (default `KEY_PROGRAMMING_COST_DEFAULT` = $60), `offset_eligible`. Derived columns (Total Parts, Total Cost, Discount = `round(parts * KEY_DISCOUNT_RATE)`, Final Charge) are computed in `app.py` `_compute_key_totals()` at render time, not stored. Discount is `round(total_parts * 0.30)` to whole dollars to match the Excel formula.
 
 `MARKETS` (and the `location`/`market` check constraints) use: Boyertown, Doylestown, Exton, Langhorne, Newtown, Washington, West Chester, Mechanicsburg, Company-Wide. The legacy value `GroupWide` was renamed to `Company-Wide` in the 2026-05-07 migration.
 

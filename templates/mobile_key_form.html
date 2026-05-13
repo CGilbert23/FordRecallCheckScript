@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit' if key else 'New' }} Key - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
+        .container { max-width: 880px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+        .hint { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
+        input[type="text"], input[type="number"], input[type="date"], select, textarea {
+            width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px;
+            font-size: 0.95rem; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .row { display: flex; gap: 16px; margin-bottom: 18px; }
+        .row > div { flex: 1; }
+        .field { margin-bottom: 18px; }
+        .radios { display: flex; gap: 16px; padding: 8px 0; }
+        .radios label { font-weight: 500; display: flex; align-items: center; gap: 6px; margin-bottom: 0; cursor: pointer; }
+        .radios input[type="radio"] { width: auto; }
+        .hidden { display: none; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 12px 28px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-secondary { background: #6b7280; padding: 12px 20px; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-danger { background: #dc2626; padding: 12px 20px; }
+        .btn-danger:hover { background: #991b1b; }
+        .actions { display: flex; gap: 10px; margin-top: 24px; }
+        .delete-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+        .money-input { position: relative; }
+        .money-input::before { content: '$'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6b7280; font-size: 0.95rem; }
+        .money-input input { padding-left: 24px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">{{ 'Edit Key' if key else 'New Key' }} &middot; <a href="/mobile-keys" class="nav-link">&larr; Back to Key Database</a></p>
+
+        <div class="card">
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ '/mobile-keys/' ~ key.id ~ '/edit' if key else '/mobile-keys/new' }}">
+                <div class="row">
+                    <div>
+                        <label for="cut_date">Date</label>
+                        <input type="date" name="cut_date" id="cut_date" required value="{{ form.cut_date or '' }}">
+                    </div>
+                    <div>
+                        <label>End User</label>
+                        <div class="radios">
+                            {% for eu in end_users %}
+                            <label>
+                                <input type="radio" name="end_user" value="{{ eu }}" {% if (form.end_user or 'Internal') == eu %}checked{% endif %} data-end-user>
+                                {{ eu }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field" id="customerInternalField" {% if form.end_user == 'Customer' %}style="display: none;"{% endif %}>
+                    <label for="customer_name_internal">Customer Name (Internal)</label>
+                    <select name="customer_name_internal" id="customer_name_internal">
+                        <option value="" disabled {% if not form.customer_name_internal %}selected{% endif %}>Select...</option>
+                        {% for c in internal_customers %}
+                        <option value="{{ c }}" {% if form.customer_name_internal == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field" id="customerExternalField" {% if form.end_user != 'Customer' %}style="display: none;"{% endif %}>
+                    <label for="customer_name_external">Customer Name</label>
+                    <input type="text" name="customer_name_external" id="customer_name_external" placeholder="e.g. Aqualink" value="{{ form.customer_name_external or '' }}">
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="ro_number">RO Number</label>
+                        <input type="text" name="ro_number" id="ro_number" placeholder="6 digits, e.g. 314380" value="{{ form.ro_number or '' }}">
+                    </div>
+                    <div>
+                        <label for="vin">VIN</label>
+                        <input type="text" name="vin" id="vin" required maxlength="17" placeholder="17 alphanumeric" value="{{ form.vin or '' }}" style="font-family: monospace; text-transform: uppercase;">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="year">Year</label>
+                        <select name="year" id="year" required>
+                            <option value="" disabled {% if not form.year %}selected{% endif %}>Select...</option>
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if form.year == (y | string) %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="make">Make</label>
+                        <select name="make" id="make" required>
+                            <option value="" disabled {% if not form.make %}selected{% endif %}>Select...</option>
+                            {% for m in makes %}
+                            <option value="{{ m }}" {% if form.make == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="model">Model</label>
+                        <input type="text" name="model" id="model" required placeholder="e.g. Silverado" value="{{ form.model or '' }}">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="key_type">Type</label>
+                    <select name="key_type" id="key_type" required>
+                        <option value="" disabled {% if not form.key_type %}selected{% endif %}>Select...</option>
+                        {% for t in key_types %}
+                        <option value="{{ t }}" {% if form.key_type == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="key_fob_part_number">Key Fob Part #</label>
+                        <input type="text" name="key_fob_part_number" id="key_fob_part_number" placeholder="Leave blank if none" value="{{ form.key_fob_part_number or '' }}">
+                    </div>
+                    <div>
+                        <label for="key_fob_cost">Key Fob Cost</label>
+                        <div class="money-input">
+                            <input type="text" name="key_fob_cost" id="key_fob_cost" inputmode="decimal" placeholder="0.00" value="{{ form.key_fob_cost or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="key_blank_part_number">Key Blank Part #</label>
+                        <input type="text" name="key_blank_part_number" id="key_blank_part_number" placeholder="Leave blank if none" value="{{ form.key_blank_part_number or '' }}">
+                    </div>
+                    <div>
+                        <label for="key_blank_cost">Key Blank Cost</label>
+                        <div class="money-input">
+                            <input type="text" name="key_blank_cost" id="key_blank_cost" inputmode="decimal" placeholder="0.00" value="{{ form.key_blank_cost or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div>
+                        <label for="programming_cost">Programming Cost</label>
+                        <div class="money-input">
+                            <input type="text" name="programming_cost" id="programming_cost" inputmode="decimal" value="{{ form.programming_cost or ('%.2f' | format(programming_default)) }}">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Offset Eligible</label>
+                        <div class="radios">
+                            <label><input type="radio" name="offset_eligible" value="Y" {% if (form.offset_eligible or 'Y') == 'Y' %}checked{% endif %}> Yes</label>
+                            <label><input type="radio" name="offset_eligible" value="N" {% if form.offset_eligible == 'N' %}checked{% endif %}> No</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn">{{ 'Save Changes' if key else 'Create Key Record' }}</button>
+                    <a href="/mobile-keys" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+
+            {% if key %}
+            <form method="POST" action="/mobile-keys/{{ key.id }}/delete" class="delete-form" onsubmit="return confirm('Delete this key record? This cannot be undone.');">
+                <button type="submit" class="btn btn-danger">Delete Key Record</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        var internalField = document.getElementById('customerInternalField');
+        var externalField = document.getElementById('customerExternalField');
+        var endUserRadios = document.querySelectorAll('[data-end-user]');
+        function syncEndUser() {
+            var v = document.querySelector('[data-end-user]:checked');
+            var val = v ? v.value : 'Internal';
+            if (val === 'Internal') {
+                internalField.style.display = '';
+                externalField.style.display = 'none';
+            } else {
+                internalField.style.display = 'none';
+                externalField.style.display = '';
+            }
+        }
+        endUserRadios.forEach(function(r) { r.addEventListener('change', syncEndUser); });
+        syncEndUser();
+
+        var vinInput = document.getElementById('vin');
+        if (vinInput) {
+            vinInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        }
+    </script>
+</body>
+</html>

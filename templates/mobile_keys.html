@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key Database - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1800px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .actions { margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-xs { padding: 3px 10px; font-size: 0.75rem; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
+        .btn-outline:hover { background: #eff6ff; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1700px; }
+        th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; }
+        tr:last-child td { border-bottom: none; }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .center { text-align: center; }
+        .muted { color: #9ca3af; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+        .badge-internal { background: #eff6ff; color: #1e40af; }
+        .badge-customer { background: #ecfdf5; color: #065f46; }
+        .badge-yes { background: #ecfdf5; color: #065f46; }
+        .badge-no { background: #fef2f2; color: #b91c1c; }
+        .row-actions { display: flex; gap: 6px; align-items: center; }
+        .row-actions form { display: inline; margin: 0; }
+        .empty { text-align: center; color: #888; padding: 40px; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+
+        <div class="actions">
+            <span class="muted" style="font-size: 0.9rem;">{{ keys | length }} key{{ '' if keys | length == 1 else 's' }} on record</span>
+            <a href="/mobile-keys/new" class="btn" style="margin-left: auto;">+ Add Key</a>
+        </div>
+
+        {% if not keys %}
+        <div class="card">
+            <p class="empty">No keys logged yet. <a href="/mobile-keys/new" class="nav-link">Add the first one.</a></p>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>End User</th>
+                            <th>Customer</th>
+                            <th>RO</th>
+                            <th>VIN</th>
+                            <th>Year</th>
+                            <th>Make</th>
+                            <th>Model</th>
+                            <th>Type</th>
+                            <th>Fob P/N</th>
+                            <th class="num">Fob $</th>
+                            <th>Blank P/N</th>
+                            <th class="num">Blank $</th>
+                            <th class="num">Parts $</th>
+                            <th class="num">Prog $</th>
+                            <th class="num">Total $</th>
+                            <th class="num">Discount</th>
+                            <th class="num">Final $</th>
+                            <th class="center">Offset</th>
+                            <th class="center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for k in keys %}
+                        <tr>
+                            <td>{{ k.cut_date }}</td>
+                            <td>
+                                {% if k.end_user == 'Internal' %}
+                                    <span class="badge badge-internal">Internal</span>
+                                {% else %}
+                                    <span class="badge badge-customer">Customer</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ k.customer_name }}</td>
+                            <td>{{ k.ro_number or '—' }}</td>
+                            <td style="font-family: monospace; font-size: 0.78rem;">{{ k.vin }}</td>
+                            <td>{{ k.year }}</td>
+                            <td>{{ k.make }}</td>
+                            <td>{{ k.model }}</td>
+                            <td>{{ k.key_type }}</td>
+                            <td>{{ k.key_fob_part_number or '—' }}</td>
+                            <td class="num">{{ k.key_fob_cost | format_money }}</td>
+                            <td>{{ k.key_blank_part_number or '—' }}</td>
+                            <td class="num">{{ k.key_blank_cost | format_money }}</td>
+                            <td class="num">{{ k.total_parts_cost | format_money }}</td>
+                            <td class="num">{{ k.programming_cost | format_money }}</td>
+                            <td class="num">{{ k.total_cost | format_money }}</td>
+                            <td class="num">{{ k.discount_needed | format_money }}</td>
+                            <td class="num"><strong>{{ k.final_charge | format_money }}</strong></td>
+                            <td class="center">
+                                {% if k.offset_eligible %}
+                                    <span class="badge badge-yes">Y</span>
+                                {% else %}
+                                    <span class="badge badge-no">N</span>
+                                {% endif %}
+                            </td>
+                            <td class="center">
+                                <div class="row-actions">
+                                    <a href="/mobile-keys/{{ k.id }}/edit" class="btn btn-outline btn-xs">Edit</a>
+                                    <form method="POST" action="/mobile-keys/{{ k.id }}/delete" onsubmit="return confirm('Delete this key record? This cannot be undone.');">
+                                        <button type="submit" class="btn btn-danger btn-xs">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
