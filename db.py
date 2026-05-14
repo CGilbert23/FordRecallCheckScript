@@ -435,6 +435,8 @@ def list_mobile_keys():
     res = (
         client.table('mobile_keys')
         .select('*')
+        .is_('moved_to_inventory_at', 'null')
+        .order('status_done', desc=False)
         .order('cut_date', desc=True)
         .order('created_at', desc=True)
         .execute()

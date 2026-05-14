@@ -58,6 +58,7 @@
                         <tr>
                             <th>Date</th>
                             <th>Original Customer</th>
+                            <th>VIN</th>
                             <th>Year</th>
                             <th>Make</th>
                             <th>Model</th>
@@ -75,6 +76,7 @@
                         <tr>
                             <td>{{ k.cut_date | format_short_date }}</td>
                             <td>{{ k.customer_name or '—' }}</td>
+                            <td>{{ k.vin or '—' }}</td>
                             <td>{{ k.year }}</td>
                             <td>{{ k.make }}</td>
                             <td>{{ k.model }}</td>
