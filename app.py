@@ -15,6 +15,7 @@ import io
 import openpyxl
 import db
 import scheduler
+import dealership_locator as dealership_locator_mod
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -441,6 +442,30 @@ def notes_page():
         content=row.get('content') or '',
         updated_at=row.get('updated_at'),
     )
+
+
+@app.route('/dealership-locator', methods=['GET', 'POST'])
+def dealership_locator():
+    """Rank the 7 Fred Beans Ford stores by driving distance from a user-entered
+    address/town/ZIP. Form posts back to this route and renders results inline."""
+    if request.method == 'POST':
+        search_type = (request.form.get('search_type') or 'zip').strip().lower()
+        if search_type not in ('zip', 'city', 'address'):
+            search_type = 'zip'
+        query = (request.form.get('query') or '').strip()
+        if not query:
+            return render_template('dealership_locator.html', query='', search_type=search_type,
+                                   error='Enter a value to search.')
+        if search_type == 'zip' and not (query.isdigit() and len(query) == 5):
+            return render_template('dealership_locator.html', query=query, search_type=search_type,
+                                   error='ZIP must be 5 digits.')
+        result = dealership_locator_mod.find_nearest(query)
+        if result.get('error'):
+            return render_template('dealership_locator.html', query=query, search_type=search_type,
+                                   error=result['error'])
+        return render_template('dealership_locator.html', query=query, search_type=search_type,
+                               results=result['results'], origin=result['origin'])
+    return render_template('dealership_locator.html', query='', search_type='zip')
 
 
 @app.route('/recall-checker')

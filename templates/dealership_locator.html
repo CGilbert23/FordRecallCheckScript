@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fred Beans Ford - Dealership Locator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
+        .container { max-width: 980px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }
+        .hint { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
+        .mode-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+        .mode-btn { padding: 8px 18px; border: 1px solid #d1d5db; background: #fff; color: #4b5563; border-radius: 999px; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+        .mode-btn:hover { border-color: #0068d6; color: #0068d6; }
+        .mode-btn.active { background: #0068d6; border-color: #0068d6; color: #fff; }
+        .locator-form { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+        .locator-form input[type="text"] {
+            flex: 1; min-width: 240px;
+            border: 1px solid #ccc; border-radius: 6px; padding: 12px 14px;
+            font-size: 1rem;
+        }
+        .locator-form input[type="text"]:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 12px 28px; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+        .btn:hover { background: #0050a8; }
+        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
+        .results { margin-top: 28px; }
+        .results table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        .results th { text-align: left; padding: 10px 12px; background: #f3f4f6; color: #374151; font-weight: 600; border-bottom: 1px solid #e5e7eb; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.4px; }
+        .results td { padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        .results tr.closest td { background: #ecfdf5; font-weight: 600; }
+        .results .rank { width: 1%; white-space: nowrap; color: #6b7280; font-variant-numeric: tabular-nums; }
+        .results .num { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+        .results .addr { color: #555; font-size: 0.88rem; }
+        .estimate-note { color: #92400e; font-size: 0.85rem; margin-top: 12px; }
+        .map-preview { margin-top: 22px; }
+        .map-preview .map-label { font-size: 0.85rem; color: #6b7280; margin-bottom: 6px; }
+        .map-preview .map-coords { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #374151; }
+        .map-preview iframe { width: 100%; height: 280px; border: 1px solid #d1d5db; border-radius: 8px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Enter an address, town, or ZIP — we'll rank the Fred Beans Ford stores by driving distance.</p>
+
+        <div class="card">
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            {% set mode = search_type|default('zip') %}
+            <div class="mode-bar" role="group" aria-label="Search by">
+                <button type="button" class="mode-btn {% if mode == 'zip' %}active{% endif %}" data-mode="zip">ZIP</button>
+                <button type="button" class="mode-btn {% if mode == 'city' %}active{% endif %}" data-mode="city">Town / City</button>
+                <button type="button" class="mode-btn {% if mode == 'address' %}active{% endif %}" data-mode="address">Full Address</button>
+            </div>
+            <form method="POST" action="/dealership-locator" class="locator-form" id="locatorForm">
+                <input type="hidden" name="search_type" id="searchType" value="{{ mode }}">
+                <input type="text" name="query" id="queryInput" value="{{ query|default('') }}"
+                       autofocus required>
+                <button type="submit" class="btn">Find Nearest</button>
+            </form>
+
+            {% if origin %}
+            {% set olat = origin[0] %}
+            {% set olng = origin[1] %}
+            {% set pad = 0.03 %}
+            <div class="map-preview">
+                <div class="map-label">
+                    Pin: <span class="map-coords">{{ '%.5f'|format(olat) }}, {{ '%.5f'|format(olng) }}</span>
+                    &nbsp;·&nbsp;
+                    <a href="https://www.openstreetmap.org/?mlat={{ olat }}&mlon={{ olng }}#map=14/{{ olat }}/{{ olng }}" target="_blank" rel="noopener">open larger map</a>
+                </div>
+                <iframe loading="lazy"
+                        src="https://www.openstreetmap.org/export/embed.html?bbox={{ olng - pad }}%2C{{ olat - pad }}%2C{{ olng + pad }}%2C{{ olat + pad }}&layer=mapnik&marker={{ olat }}%2C{{ olng }}"
+                        title="Map preview"></iframe>
+            </div>
+            {% endif %}
+
+            {% if results %}
+            <div class="results">
+                {% set any_estimate = results | selectattr('is_estimate') | list | length > 0 %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="rank">#</th>
+                            <th>Dealership</th>
+                            <th class="num">Distance</th>
+                            <th class="num">Drive time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in results %}
+                        <tr class="{% if loop.first %}closest{% endif %}">
+                            <td class="rank">{{ loop.index }}</td>
+                            <td>
+                                <div>{{ r.name }}</div>
+                                <div class="addr">{{ r.address }}</div>
+                            </td>
+                            <td class="num">{% if r.is_estimate %}~{% endif %}{{ '%.1f'|format(r.miles) }} mi</td>
+                            <td class="num">
+                                {% if r.is_estimate %}~{% endif %}
+                                {% set mins = r.minutes|round(0)|int %}
+                                {% if mins >= 60 %}
+                                    {{ mins // 60 }} hr {{ mins % 60 }} min
+                                {% else %}
+                                    {{ mins }} min
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if any_estimate %}
+                <p class="estimate-note">~ = straight-line estimate; live routing was unavailable.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        var MODE_CONFIG = {
+            zip:     { placeholder: '18901', inputmode: 'numeric', pattern: '\\d{5}', maxlength: 5 },
+            city:    { placeholder: 'Doylestown, PA', inputmode: 'text', pattern: '', maxlength: 100 },
+            address: { placeholder: '123 Main St, Doylestown, PA 18901', inputmode: 'text', pattern: '', maxlength: 200 }
+        };
+        var input = document.getElementById('queryInput');
+        var hidden = document.getElementById('searchType');
+
+        function applyMode(mode) {
+            var cfg = MODE_CONFIG[mode] || MODE_CONFIG.zip;
+            input.placeholder = cfg.placeholder;
+            input.setAttribute('inputmode', cfg.inputmode);
+            input.maxLength = cfg.maxlength;
+            if (cfg.pattern) {
+                input.setAttribute('pattern', cfg.pattern);
+            } else {
+                input.removeAttribute('pattern');
+            }
+            hidden.value = mode;
+            document.querySelectorAll('.mode-btn').forEach(function(b) {
+                b.classList.toggle('active', b.dataset.mode === mode);
+            });
+        }
+
+        document.querySelectorAll('.mode-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                applyMode(btn.dataset.mode);
+                input.focus();
+            });
+        });
+
+        applyMode(hidden.value || 'zip');
+    </script>
+</body>
+</html>

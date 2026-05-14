@@ -14,6 +14,8 @@
     {% elif path.startswith('/mobile-keys') %}
     <a href="/mobile-keys" class="nav-tab {% if path == '/mobile-keys' or path.startswith('/mobile-keys/new') or '/edit' in path %}active{% endif %}">Key Database</a>
     <a href="/mobile-keys/inventory" class="nav-tab {% if path.startswith('/mobile-keys/inventory') %}active{% endif %}">Inventory</a>
+    {% elif path.startswith('/dealership-locator') %}
+    <a href="/dealership-locator" class="nav-tab active">Dealership Locator</a>
     {% endif %}
 </div>
 {% endif %}
