@@ -23,12 +23,12 @@
         .btn-restore:hover { background: #ecfdf5; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th { text-align: left; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        th { text-align: center; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
         thead tr:first-child th:first-child { border-top-left-radius: 6px; }
         thead tr:first-child th:last-child { border-top-right-radius: 6px; }
-        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; text-align: center; }
         tr:last-child td { border-bottom: none; }
-        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .num { text-align: center; font-variant-numeric: tabular-nums; }
         .center { text-align: center; }
         .muted { color: #9ca3af; }
         .empty { text-align: center; color: #888; padding: 40px; }
@@ -57,9 +57,11 @@
                     <thead>
                         <tr>
                             <th>Date</th>
+                            <th>Original Customer</th>
                             <th>Year</th>
                             <th>Make</th>
                             <th>Model</th>
+                            <th>Key Type</th>
                             <th>Fob P/N</th>
                             <th class="num">Fob $</th>
                             <th>Blank P/N</th>
@@ -72,9 +74,11 @@
                     {% for k in keys %}
                         <tr>
                             <td>{{ k.cut_date | format_short_date }}</td>
+                            <td>{{ k.customer_name or '—' }}</td>
                             <td>{{ k.year }}</td>
                             <td>{{ k.make }}</td>
                             <td>{{ k.model }}</td>
+                            <td>{{ k.key_type or '—' }}</td>
                             <td>{{ k.key_fob_part_number or '—' }}</td>
                             <td class="num">{{ k.key_fob_cost | format_money }}</td>
                             <td>{{ k.key_blank_part_number or '—' }}</td>

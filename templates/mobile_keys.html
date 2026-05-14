@@ -28,12 +28,12 @@
         .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; cursor: default; opacity: 0.85; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1700px; }
-        th { text-align: left; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        th { text-align: center; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
         thead tr:first-child th:first-child { border-top-left-radius: 6px; }
         thead tr:first-child th:last-child { border-top-right-radius: 6px; }
-        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; text-align: center; }
         tr:last-child td { border-bottom: none; }
-        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .num { text-align: center; font-variant-numeric: tabular-nums; }
         .center { text-align: center; }
         .col-divider { border-right: 2px solid #d1d5db; }
         .muted { color: #9ca3af; }
@@ -42,7 +42,7 @@
         .badge-customer { background: #ecfdf5; color: #065f46; }
         .badge-yes { background: #ecfdf5; color: #065f46; }
         .badge-no { background: #fef2f2; color: #b91c1c; }
-        .row-actions { display: flex; gap: 6px; align-items: center; }
+        .row-actions { display: flex; gap: 6px; align-items: center; justify-content: center; }
         .row-actions form { display: inline; margin: 0; }
         .empty { text-align: center; color: #888; padding: 40px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
@@ -85,7 +85,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th class="center">Status</th>
+                            <th class="center">Complete</th>
+                            <th class="center">Ordered</th>
                             <th>Date</th>
                             <th>End User</th>
                             <th>Customer</th>
@@ -112,7 +113,13 @@
                             <td class="center">
                                 <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-status" class="status-form">
                                     <input type="hidden" name="status_done" value="{{ '0' if k.status_done else '1' }}">
-                                    <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not done' if k.status_done else 'Mark as done' }}" title="{{ 'Mark as not done' if k.status_done else 'Mark as done' }}">{% if k.status_done %}✓{% endif %}</button>
+                                    <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}" title="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}">{% if k.status_done %}✓{% endif %}</button>
+                                </form>
+                            </td>
+                            <td class="center">
+                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-ordered" class="status-form">
+                                    <input type="hidden" name="ordered" value="{{ '0' if k.ordered else '1' }}">
+                                    <button type="submit" class="status-box {% if k.ordered %}status-box-done{% endif %}" aria-label="{{ 'Mark as not ordered' if k.ordered else 'Mark as ordered' }}" title="{{ 'Mark as not ordered' if k.ordered else 'Mark as ordered' }}">{% if k.ordered %}✓{% endif %}</button>
                                 </form>
                             </td>
                             <td>{{ k.cut_date | format_short_date }}</td>
@@ -159,7 +166,7 @@
                         </tr>
                     {% endfor %}
                         <tr class="no-results-row" id="noResultsRow" style="display: none;">
-                            <td colspan="19">No keys match that search.</td>
+                            <td colspan="20">No keys match that search.</td>
                         </tr>
                     </tbody>
                 </table>

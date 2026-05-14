@@ -165,8 +165,11 @@ create table mobile_keys (
   -- (customer no longer needed it, but we keep the part on hand).
   moved_to_inventory_at timestamptz,
   -- Per-row "done" flag. Default false (pending); rep marks done via the
-  -- leftmost Status checkbox on the list page. Pending rows render grey.
+  -- leftmost "Complete" checkbox on the list page. Pending rows render grey.
   status_done boolean not null default false,
+  -- Per-row "Ordered" flag. Toggled by the checkbox column next to Complete
+  -- on the list page. Default false.
+  ordered boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

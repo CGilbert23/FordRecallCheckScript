@@ -1714,6 +1714,16 @@ def mobile_key_toggle_status(key_id):
     return redirect(url_for('mobile_keys_list'))
 
 
+@app.route('/mobile-keys/<key_id>/toggle-ordered', methods=['POST'])
+def mobile_key_toggle_ordered(key_id):
+    ordered = request.form.get('ordered') == '1'
+    try:
+        db.set_mobile_key_ordered(key_id, ordered)
+    except Exception as e:
+        logger.error(f"Toggle ordered failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
 @app.route('/mobile-keys/<key_id>/move-to-inventory', methods=['POST'])
 def mobile_key_move_to_inventory(key_id):
     try:
