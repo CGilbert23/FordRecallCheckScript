@@ -181,3 +181,26 @@ create index mobile_keys_inventory_idx
 create trigger mobile_keys_updated_at
   before update on mobile_keys
   for each row execute function set_updated_at();
+
+-- Cold leads: backs the Xtime Follow Up Calls page. One row per prospect to
+-- call. The 5 markets here are the subset that actually run the Xtime
+-- follow-up workflow.
+create table cold_leads (
+  id uuid primary key default gen_random_uuid(),
+  market text not null check (market in (
+    'Doylestown', 'Newtown/Langhorne', 'Mechanicsburg', 'Washington', 'West Chester/Exton'
+  )),
+  name text,
+  phone text,
+  source text check (source is null or source in ('Xtime', 'Sales', 'Other')),
+  lead_date date,
+  contact_date date,
+  notes text,
+  hot_lead boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index cold_leads_market_idx on cold_leads(market, created_at);
+create trigger cold_leads_updated_at
+  before update on cold_leads
+  for each row execute function set_updated_at();

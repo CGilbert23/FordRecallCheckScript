@@ -64,6 +64,12 @@ KEY_TYPES = ['Fob', 'Turnkey', 'Flip Key']
 KEY_PROGRAMMING_COST_DEFAULT = 60.00
 KEY_DISCOUNT_RATE = 0.30
 
+# Xtime Follow Up Calls (cold_leads table). The 5 stores below are the
+# subset that run this workflow — distinct from MARKETS, which is the
+# 9-store list used elsewhere.
+COLD_LEAD_MARKETS = ['Doylestown', 'Newtown/Langhorne', 'Mechanicsburg', 'Washington', 'West Chester/Exton']
+COLD_LEAD_SOURCES = ['Xtime', 'Sales', 'Other']
+
 _client: Client | None = None
 
 
@@ -514,3 +520,85 @@ def list_mobile_keys_in_inventory():
         .execute()
     )
     return res.data or []
+
+
+# ---------------------------------------------------------------------------
+# Cold leads (Xtime Follow Up Calls)
+# ---------------------------------------------------------------------------
+
+def list_cold_leads(market=None):
+    """Return cold_leads rows. If market is given, scope to that market;
+    otherwise return all rows (used by the duplicate check)."""
+    client = get_client()
+    q = client.table('cold_leads').select('*')
+    if market:
+        q = q.eq('market', market)
+    res = q.order('created_at').execute()
+    return res.data or []
+
+
+def create_cold_lead(data):
+    client = get_client()
+    res = client.table('cold_leads').insert(data).execute()
+    return res.data[0] if res.data else None
+
+
+def update_cold_lead(lead_id, data):
+    client = get_client()
+    res = client.table('cold_leads').update(data).eq('id', lead_id).execute()
+    return res.data[0] if res.data else None
+
+
+def delete_cold_lead(lead_id):
+    client = get_client()
+    client.table('cold_leads').delete().eq('id', lead_id).execute()
+
+
+def find_cold_lead_duplicates(name=None, phone=None, exclude_id=None):
+    """Look across all cold_leads for soft-duplicate matches on name or phone.
+
+    Match rules:
+      - name: case-insensitive exact match (whitespace stripped)
+      - phone: digits-only exact match (10-digit minimum so partial entries
+        don't fire constant false-positives)
+
+    Returns a list of dicts: {id, market, name, phone, field, value}.
+    """
+    name_lc = (name or '').strip().lower()
+    phone_digits = _digits_only(phone)
+    if not name_lc and (not phone_digits or len(phone_digits) < 10):
+        return []
+
+    matches = []
+    seen = set()
+    for row in list_cold_leads():
+        if exclude_id and row.get('id') == exclude_id:
+            continue
+        row_name = (row.get('name') or '').strip().lower()
+        if name_lc and row_name and row_name == name_lc:
+            key = (row['id'], 'name')
+            if key not in seen:
+                seen.add(key)
+                matches.append({
+                    'id': row['id'],
+                    'market': row.get('market'),
+                    'name': row.get('name'),
+                    'phone': row.get('phone'),
+                    'field': 'name',
+                    'value': row.get('name'),
+                })
+        if phone_digits and len(phone_digits) >= 10:
+            row_phone = _digits_only(row.get('phone'))
+            if row_phone and row_phone == phone_digits:
+                key = (row['id'], 'phone')
+                if key not in seen:
+                    seen.add(key)
+                    matches.append({
+                        'id': row['id'],
+                        'market': row.get('market'),
+                        'name': row.get('name'),
+                        'phone': row.get('phone'),
+                        'field': 'phone',
+                        'value': row.get('phone'),
+                    })
+    return matches

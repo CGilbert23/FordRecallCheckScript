@@ -3,14 +3,15 @@
 {% if path != '/' %}
 <div class="page-nav">
     <a href="/" class="nav-tab">&larr; Home</a>
-    {% if path.startswith('/accounts') or path.startswith('/leads') or path.startswith('/schedules') or path.startswith('/notes') %}
-    <a href="/accounts" class="nav-tab {% if path.startswith('/accounts') %}active{% endif %}">Existing Accounts</a>
-    <a href="/leads" class="nav-tab {% if path.startswith('/leads') %}active{% endif %}">Leads</a>
-    <a href="/schedules" class="nav-tab {% if path.startswith('/schedules') %}active{% endif %}">Scheduled Recall Checks</a>
+    {% if path.startswith('/accounts') or path.startswith('/leads') or path.startswith('/notes') or path.startswith('/cold-leads') %}
+    <a href="/accounts" class="nav-tab {% if path.startswith('/accounts') %}active{% endif %}">Onboarded Accounts</a>
+    <a href="/leads" class="nav-tab {% if path.startswith('/leads') %}active{% endif %}">Warm Leads</a>
+    <a href="/cold-leads" class="nav-tab {% if path.startswith('/cold-leads') %}active{% endif %}">Xtime Follow Up Calls</a>
     <a href="/notes" class="nav-tab {% if path.startswith('/notes') %}active{% endif %}">Notes</a>
-    {% elif path.startswith('/recall') or path == '/dashboard' %}
+    {% elif path.startswith('/recall') or path.startswith('/schedules') or path == '/dashboard' %}
     <a href="/recall-checker" class="nav-tab {% if path.startswith('/recall-checker') %}active{% endif %}">One Time Check</a>
     <a href="/recall/run-log" class="nav-tab {% if path.startswith('/recall/run-log') or path == '/dashboard' %}active{% endif %}">Run Log</a>
+    <a href="/schedules" class="nav-tab {% if path.startswith('/schedules') %}active{% endif %}">Scheduled Recall Checks</a>
     {% elif path.startswith('/mobile-keys') %}
     <a href="/mobile-keys" class="nav-tab {% if path == '/mobile-keys' or path.startswith('/mobile-keys/new') or '/edit' in path %}active{% endif %}">Key Database</a>
     <a href="/mobile-keys/inventory" class="nav-tab {% if path.startswith('/mobile-keys/inventory') %}active{% endif %}">Inventory</a>

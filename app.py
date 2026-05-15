@@ -410,6 +410,113 @@ def used_car_tracker():
     return render_template('used_car_tracker.html')
 
 
+@app.route('/cold-leads')
+def cold_leads():
+    return render_template(
+        'cold_leads.html',
+        markets=db.COLD_LEAD_MARKETS,
+        sources=db.COLD_LEAD_SOURCES,
+    )
+
+
+@app.route('/cold-leads/api/list')
+def cold_leads_api_list():
+    market = (request.args.get('market') or '').strip()
+    if market not in db.COLD_LEAD_MARKETS:
+        return jsonify({'ok': False, 'error': 'Invalid market'}), 400
+    try:
+        rows = db.list_cold_leads(market=market)
+        return jsonify({'ok': True, 'rows': rows})
+    except Exception as e:
+        logger.error(f"cold_leads list failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+def _clean_cold_lead_payload(payload, partial=False):
+    """Pull cold_leads fields out of a JSON payload, normalizing blanks to None.
+    `partial` allows missing keys (for update); otherwise market is required."""
+    out = {}
+    if 'market' in payload or not partial:
+        market = (payload.get('market') or '').strip() or None
+        if not partial and market not in db.COLD_LEAD_MARKETS:
+            raise ValueError(f"market must be one of {db.COLD_LEAD_MARKETS}")
+        if market is not None:
+            out['market'] = market
+    for field in ('name', 'phone', 'notes'):
+        if field in payload:
+            v = (payload.get(field) or '').strip()
+            out[field] = v or None
+    if 'source' in payload:
+        v = (payload.get('source') or '').strip() or None
+        if v is not None and v not in db.COLD_LEAD_SOURCES:
+            raise ValueError(f"source must be one of {db.COLD_LEAD_SOURCES} or empty")
+        out['source'] = v
+    for field in ('lead_date', 'contact_date'):
+        if field in payload:
+            v = (payload.get(field) or '').strip()
+            out[field] = v or None
+    if 'hot_lead' in payload:
+        out['hot_lead'] = bool(payload.get('hot_lead'))
+    return out
+
+
+@app.route('/cold-leads/api/create', methods=['POST'])
+def cold_leads_api_create():
+    try:
+        payload = request.get_json(silent=True) or {}
+        data = _clean_cold_lead_payload(payload, partial=False)
+        if 'market' not in data:
+            return jsonify({'ok': False, 'error': 'market required'}), 400
+        row = db.create_cold_lead(data)
+        return jsonify({'ok': True, 'row': row})
+    except ValueError as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"cold_leads create failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/cold-leads/api/update/<lead_id>', methods=['POST'])
+def cold_leads_api_update(lead_id):
+    try:
+        payload = request.get_json(silent=True) or {}
+        data = _clean_cold_lead_payload(payload, partial=True)
+        if not data:
+            return jsonify({'ok': False, 'error': 'no fields to update'}), 400
+        row = db.update_cold_lead(lead_id, data)
+        return jsonify({'ok': True, 'row': row})
+    except ValueError as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"cold_leads update failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/cold-leads/api/delete/<lead_id>', methods=['POST'])
+def cold_leads_api_delete(lead_id):
+    try:
+        db.delete_cold_lead(lead_id)
+        return jsonify({'ok': True})
+    except Exception as e:
+        logger.error(f"cold_leads delete failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/cold-leads/api/check-duplicate', methods=['POST'])
+def cold_leads_api_check_duplicate():
+    try:
+        payload = request.get_json(silent=True) or {}
+        matches = db.find_cold_lead_duplicates(
+            name=payload.get('name'),
+            phone=payload.get('phone'),
+            exclude_id=payload.get('exclude_id'),
+        )
+        return jsonify({'ok': True, 'matches': matches})
+    except Exception as e:
+        logger.error(f"cold_leads dup check failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
 @app.route('/notes', methods=['GET', 'POST'])
 def notes_page():
     """Shared scratchpad. Single-row notepad table backs it; the page

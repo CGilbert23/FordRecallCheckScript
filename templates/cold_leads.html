@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xtime Follow Up Calls - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; min-height: 100vh; }
+        .page-nav {
+            background: #0a1f44; padding: 0 24px; display: flex; gap: 4px;
+            border-bottom: 1px solid #07182f;
+        }
+        .nav-tab {
+            color: #cdd6e4; text-decoration: none; padding: 14px 20px;
+            font-size: 0.95rem; font-weight: 500;
+            border-bottom: 3px solid transparent;
+        }
+        .nav-tab:hover { color: #fff; }
+        .nav-tab.active { color: #fff; border-bottom-color: #0068d6; }
+
+        .page { max-width: 1500px; margin: 24px auto; padding: 0 24px 48px; }
+        .page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .page-head h1 { font-size: 1.6rem; color: #0a1f44; font-weight: 700; }
+        .page-head .subtitle { display: block; font-size: 0.85rem; color: #888; font-weight: 400; margin-top: 4px; }
+
+        .market-tabs { display: flex; gap: 2px; margin-bottom: 0; border-bottom: 2px solid #0068d6; }
+        .market-tab {
+            padding: 10px 22px; cursor: pointer; background: #d8dee8;
+            border: 1px solid #b8c1d0; border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            font-size: 0.95rem; color: #555; user-select: none;
+            font-weight: 500;
+            transition: background 0.1s ease, color 0.1s ease;
+        }
+        .market-tab:hover { background: #c8d0dc; color: #0a1f44; }
+        .market-tab.active {
+            background: #fff; color: #0a1f44; font-weight: 700;
+            border-color: #0068d6; border-bottom: 2px solid #fff;
+            margin-bottom: -2px; position: relative; z-index: 1;
+        }
+
+        .table-wrap {
+            background: #fff;
+            border: 1px solid #0068d6; border-top: none;
+            border-radius: 0 8px 8px 8px;
+            padding: 16px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0; border: 1px solid #e3e7ed; text-align: left; vertical-align: middle; }
+        th {
+            background: #f6f8fb; padding: 10px 12px; font-size: 0.82rem;
+            color: #555; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        td.cell input[type="text"], td.cell input[type="tel"], td.cell input[type="date"], td.cell select {
+            width: 100%; border: none; padding: 9px 12px;
+            font-size: 0.95rem; outline: none; background: transparent;
+            font-family: inherit; color: #222;
+        }
+        td.cell input:focus, td.cell select:focus { background: #fff8d6; }
+        td.cell select {
+            cursor: pointer; appearance: none; -webkit-appearance: none;
+            padding-right: 28px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        td.cell select:focus {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");
+            background-color: #fff8d6;
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        tr.hot-lead td.cell select:focus { background-color: #b8ecae; }
+        td.actions { text-align: center; width: 48px; padding: 0; }
+        td.hot-cell { text-align: center; width: 56px; padding: 0; }
+        td.hot-cell label {
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px; cursor: pointer; height: 100%;
+        }
+        td.hot-cell input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer; accent-color: #1aaf5d;
+        }
+        .delete-btn {
+            background: none; border: none; cursor: pointer; color: #bbb;
+            font-size: 1.3rem; padding: 6px 10px; line-height: 1;
+        }
+        .delete-btn:hover { color: #c0392b; }
+
+        tr.hot-lead td { background: #d6f5d0; }
+        tr.hot-lead td.cell input:focus, tr.hot-lead td.cell select:focus { background: #b8ecae; }
+
+        .add-row-btn {
+            margin-top: 14px; padding: 10px 18px;
+            background: #fff; border: 1.5px dashed #9aa3b2;
+            border-radius: 8px; cursor: pointer;
+            color: #555; font-size: 0.92rem; font-weight: 500;
+            transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+        }
+        .add-row-btn:hover { background: #eaf3ff; border-color: #0068d6; color: #0068d6; }
+
+        .dup-toast {
+            position: fixed; top: 72px; right: 24px;
+            background: #fff8d6; border-left: 4px solid #f3c000;
+            padding: 12px 16px 12px 14px; border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            max-width: 380px; z-index: 1000;
+            font-size: 0.9rem; color: #5a4500;
+            animation: slideIn 0.18s ease-out;
+        }
+        .dup-toast .close {
+            background: none; border: none; float: right;
+            cursor: pointer; color: #5a4500;
+            font-size: 1.2rem; line-height: 1; padding: 0 0 0 8px;
+            margin-top: -2px;
+        }
+        .dup-toast .close:hover { color: #000; }
+        .dup-toast strong { display: block; margin-bottom: 6px; }
+        .dup-toast .match-line { padding: 2px 0; }
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .save-indicator {
+            position: fixed; bottom: 24px; right: 24px;
+            background: #0a1f44; color: #fff;
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 0.82rem; opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .save-indicator.show { opacity: 0.9; }
+        .save-indicator.error { background: #c0392b; }
+
+        .loading-state, .empty-state {
+            padding: 36px 16px; text-align: center; color: #888; font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    {% include '_nav.html' %}
+    <div class="page">
+        <div class="page-head">
+            <div>
+                <h1>Xtime Follow Up Calls</h1>
+                <span class="subtitle">Pick a market tab, log calls inline. Check the "Hot?" box for any contact that may turn into a hot lead.</span>
+            </div>
+        </div>
+
+        <div class="market-tabs" id="marketTabs"></div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 56px; text-align: center;">Hot?</th>
+                        <th style="width: 16%">Name</th>
+                        <th style="width: 12%">Phone Number</th>
+                        <th style="width: 11%">Source</th>
+                        <th style="width: 11%">Lead Date</th>
+                        <th style="width: 11%">Contact Date</th>
+                        <th>Notes</th>
+                        <th style="width: 48px"></th>
+                    </tr>
+                </thead>
+                <tbody id="rowsBody">
+                    <tr><td colspan="8" class="loading-state">Loading…</td></tr>
+                </tbody>
+            </table>
+            <button class="add-row-btn" id="addRowBtn">+ Add Row</button>
+        </div>
+    </div>
+
+    <div id="saveIndicator" class="save-indicator">Saved</div>
+
+    <script>
+        const MARKETS = {{ markets|tojson }};
+        const SOURCES = {{ sources|tojson }};
+        const STARTING_ROW_COUNT = 100;
+        const SAVE_DEBOUNCE_MS = 500;
+        let activeMarket = MARKETS[0];
+        const rowsByMarket = {};      // { market: [row, ...] } — rows include ghost (id=null) and saved (id=uuid)
+        const saveTimers = {};        // { clientId: timeoutId } — debounce per-row writes
+
+        // Clean up localStorage from the earlier v2 mock so old test data doesn't linger.
+        try {
+            Object.keys(localStorage)
+                .filter(k => k.startsWith('xtime-followup-v2:'))
+                .forEach(k => localStorage.removeItem(k));
+        } catch (_) {}
+
+        function uid() { return 'c_' + Math.random().toString(36).slice(2, 11); }
+
+        function blankRow(market) {
+            return {
+                clientId: uid(),
+                id: null,
+                market: market,
+                name: '', phone: '', source: '',
+                lead_date: '', contact_date: '',
+                notes: '', hot_lead: false,
+            };
+        }
+
+        function normalizeRow(r, market) {
+            return {
+                clientId: uid(),
+                id: r.id,
+                market: r.market || market,
+                name: r.name || '',
+                phone: r.phone || '',
+                source: r.source || '',
+                lead_date: r.lead_date || '',
+                contact_date: r.contact_date || '',
+                notes: r.notes || '',
+                hot_lead: !!r.hot_lead,
+            };
+        }
+
+        function padToCount(rows, market) {
+            while (rows.length < STARTING_ROW_COUNT) rows.push(blankRow(market));
+            return rows;
+        }
+
+        function rowHasUserData(row) {
+            return !!(
+                (row.name || '').trim() ||
+                (row.phone || '').trim() ||
+                (row.source || '').trim() ||
+                (row.lead_date || '').trim() ||
+                (row.contact_date || '').trim() ||
+                (row.notes || '').trim() ||
+                row.hot_lead
+            );
+        }
+
+        function rowPayload(row) {
+            return {
+                market: row.market,
+                name: row.name || null,
+                phone: row.phone || null,
+                source: row.source || null,
+                lead_date: row.lead_date || null,
+                contact_date: row.contact_date || null,
+                notes: row.notes || null,
+                hot_lead: !!row.hot_lead,
+            };
+        }
+
+        function today() {
+            const d = new Date();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${m}-${day}`;
+        }
+
+        // (267-897-5100) — strip non-digits, format if exactly 10 digits.
+        function formatPhone(value) {
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits.length === 10) {
+                return `(${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)})`;
+            }
+            return value;
+        }
+
+        function showSaveIndicator(text, isError) {
+            const el = document.getElementById('saveIndicator');
+            el.textContent = text;
+            el.classList.toggle('error', !!isError);
+            el.classList.add('show');
+            clearTimeout(el._t);
+            el._t = setTimeout(() => el.classList.remove('show'), 1400);
+        }
+
+        async function persistRow(row) {
+            if (row.id) {
+                const res = await fetch(`/cold-leads/api/update/${row.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rowPayload(row)),
+                });
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.error || 'update failed');
+                return data.row;
+            }
+            if (!rowHasUserData(row)) return null;
+            const res = await fetch('/cold-leads/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rowPayload(row)),
+            });
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.error || 'create failed');
+            row.id = data.row.id;
+            return data.row;
+        }
+
+        function schedulePersist(row) {
+            clearTimeout(saveTimers[row.clientId]);
+            saveTimers[row.clientId] = setTimeout(async () => {
+                try {
+                    const saved = await persistRow(row);
+                    if (saved) showSaveIndicator('Saved');
+                } catch (e) {
+                    console.error('Save failed:', e);
+                    showSaveIndicator('Save failed', true);
+                }
+            }, SAVE_DEBOUNCE_MS);
+        }
+
+        async function flushPendingSave(row) {
+            if (saveTimers[row.clientId]) {
+                clearTimeout(saveTimers[row.clientId]);
+                delete saveTimers[row.clientId];
+                try { await persistRow(row); } catch (e) { console.error(e); }
+            }
+        }
+
+        async function checkDuplicate(row) {
+            // Save first so the new row gets an id; the server-side check excludes it.
+            await flushPendingSave(row);
+            const name = (row.name || '').trim();
+            const phone = (row.phone || '').trim();
+            if (!name && !phone) return;
+            try {
+                const res = await fetch('/cold-leads/api/check-duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone, exclude_id: row.id }),
+                });
+                const data = await res.json();
+                if (data.ok && data.matches && data.matches.length > 0) {
+                    showDupToast(data.matches);
+                }
+            } catch (e) { /* silent — dup check is non-blocking */ }
+        }
+
+        function showDupToast(matches) {
+            removeDupToast();
+            const toast = document.createElement('div');
+            toast.className = 'dup-toast';
+            toast.id = 'dupToast';
+            const lines = matches.slice(0, 4).map(m => {
+                const label = m.field === 'phone' ? 'phone match' : 'name match';
+                const who = escapeHtml(m.name || '(no name)');
+                const where = escapeHtml(m.market || '');
+                return `<div class="match-line">• ${who} — ${where} <span style="color:#a07000">(${label})</span></div>`;
+            }).join('');
+            const more = matches.length > 4 ? `<div class="match-line" style="font-size:0.85em;">+ ${matches.length - 4} more</div>` : '';
+            toast.innerHTML = `<button class="close" type="button" aria-label="Dismiss">&times;</button><strong>Possible duplicate</strong>${lines}${more}`;
+            toast.querySelector('.close').addEventListener('click', removeDupToast);
+            document.body.appendChild(toast);
+            clearTimeout(toast._dismiss);
+            toast._dismiss = setTimeout(removeDupToast, 8000);
+        }
+
+        function removeDupToast() {
+            const t = document.getElementById('dupToast');
+            if (t) t.remove();
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function escapeAttr(s) { return escapeHtml(s); }
+
+        function buildSourceOptions(selected) {
+            return SOURCES.map(s => {
+                const sel = s === selected ? ' selected' : '';
+                return `<option value="${escapeAttr(s)}"${sel}>${escapeAttr(s)}</option>`;
+            }).join('');
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('marketTabs');
+            container.innerHTML = '';
+            MARKETS.forEach(m => {
+                const tab = document.createElement('div');
+                tab.className = 'market-tab' + (m === activeMarket ? ' active' : '');
+                tab.textContent = m;
+                tab.addEventListener('click', async () => {
+                    if (activeMarket === m) return;
+                    activeMarket = m;
+                    renderTabs();
+                    if (!rowsByMarket[m]) {
+                        setLoadingState();
+                        try { await loadRowsForMarket(m); }
+                        catch (e) {
+                            console.error('Load failed:', e);
+                            rowsByMarket[m] = padToCount([], m);
+                        }
+                    }
+                    renderRows();
+                });
+                container.appendChild(tab);
+            });
+        }
+
+        async function loadRowsForMarket(market) {
+            const res = await fetch(`/cold-leads/api/list?market=${encodeURIComponent(market)}`);
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.error || 'load failed');
+            const rows = (data.rows || []).map(r => normalizeRow(r, market));
+            rowsByMarket[market] = padToCount(rows, market);
+        }
+
+        function setLoadingState() {
+            const body = document.getElementById('rowsBody');
+            body.innerHTML = '<tr><td colspan="8" class="loading-state">Loading…</td></tr>';
+        }
+
+        function renderRows() {
+            const body = document.getElementById('rowsBody');
+            const rows = rowsByMarket[activeMarket] || [];
+            body.innerHTML = '';
+
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.dataset.clientId = row.clientId;
+                if (row.hot_lead) tr.classList.add('hot-lead');
+                const checked = row.hot_lead ? ' checked' : '';
+                const isGhost = !row.id;
+                tr.innerHTML = `
+                    <td class="hot-cell"><label><input type="checkbox" data-field="hot_lead"${checked}></label></td>
+                    <td class="cell"><input type="text" data-field="name" value="${escapeAttr(row.name)}"></td>
+                    <td class="cell"><input type="tel" data-field="phone" value="${escapeAttr(row.phone)}"></td>
+                    <td class="cell"><select data-field="source"><option value=""></option>${buildSourceOptions(row.source)}</select></td>
+                    <td class="cell"><input type="date" data-field="lead_date" value="${escapeAttr(row.lead_date)}"></td>
+                    <td class="cell"><input type="date" data-field="contact_date" value="${escapeAttr(row.contact_date)}"></td>
+                    <td class="cell"><input type="text" data-field="notes" value="${escapeAttr(row.notes)}"></td>
+                    <td class="actions">${isGhost ? '' : '<button class="delete-btn" title="Delete row" aria-label="Delete row">&times;</button>'}</td>
+                `;
+
+                tr.querySelectorAll('input, select').forEach(el => {
+                    const field = el.dataset.field;
+                    const isCheckbox = el.type === 'checkbox';
+                    const writeBack = () => {
+                        const value = isCheckbox ? el.checked : el.value;
+                        row[field] = value;
+                        if (field === 'hot_lead') tr.classList.toggle('hot-lead', !!value);
+                        schedulePersist(row);
+                    };
+                    el.addEventListener('input', writeBack);
+                    el.addEventListener('change', writeBack);
+
+                    if (field === 'phone') {
+                        el.addEventListener('blur', async () => {
+                            const formatted = formatPhone(el.value);
+                            if (formatted !== el.value) {
+                                el.value = formatted;
+                                row.phone = formatted;
+                                schedulePersist(row);
+                            }
+                            // Re-render delete button if this blur created a saveable row.
+                            // Skip — too much DOM churn. Delete button shows after page refresh / row promotion via re-render-from-server is handled lazily.
+                            await checkDuplicate(row);
+                            // If the row was just promoted from ghost to saved, refresh actions cell
+                            refreshActionsCell(tr, row);
+                        });
+                    }
+                    if (field === 'name') {
+                        el.addEventListener('blur', async () => {
+                            await checkDuplicate(row);
+                            refreshActionsCell(tr, row);
+                        });
+                    }
+                });
+
+                const delBtn = tr.querySelector('.delete-btn');
+                if (delBtn) bindDeleteButton(delBtn, row);
+
+                body.appendChild(tr);
+            });
+        }
+
+        function refreshActionsCell(tr, row) {
+            const cell = tr.querySelector('td.actions');
+            if (!cell) return;
+            const hasButton = !!cell.querySelector('.delete-btn');
+            if (row.id && !hasButton) {
+                cell.innerHTML = '<button class="delete-btn" title="Delete row" aria-label="Delete row">&times;</button>';
+                bindDeleteButton(cell.querySelector('.delete-btn'), row);
+            } else if (!row.id && hasButton) {
+                cell.innerHTML = '';
+            }
+        }
+
+        function bindDeleteButton(btn, row) {
+            btn.addEventListener('click', async () => {
+                const label = row.name ? `"${row.name}"` : 'this row';
+                if (!confirm(`Delete ${label}?`)) return;
+                try {
+                    const res = await fetch(`/cold-leads/api/delete/${row.id}`, { method: 'POST' });
+                    const data = await res.json();
+                    if (!data.ok) throw new Error(data.error || 'delete failed');
+                    const list = rowsByMarket[activeMarket];
+                    const i = list.findIndex(r => r.clientId === row.clientId);
+                    if (i >= 0) list.splice(i, 1);
+                    padToCount(list, activeMarket);
+                    renderRows();
+                    showSaveIndicator('Deleted');
+                } catch (e) {
+                    console.error(e);
+                    showSaveIndicator('Delete failed', true);
+                }
+            });
+        }
+
+        document.getElementById('addRowBtn').addEventListener('click', () => {
+            const list = rowsByMarket[activeMarket] || (rowsByMarket[activeMarket] = []);
+            const fresh = blankRow(activeMarket);
+            fresh.lead_date = today();
+            list.push(fresh);
+            renderRows();
+            const trs = document.querySelectorAll('#rowsBody tr');
+            const last = trs[trs.length - 1];
+            if (last) {
+                const nameInput = last.querySelector('input[data-field="name"]');
+                if (nameInput) nameInput.focus();
+            }
+        });
+
+        (async function init() {
+            renderTabs();
+            try {
+                await loadRowsForMarket(activeMarket);
+            } catch (e) {
+                console.error('Initial load failed:', e);
+                rowsByMarket[activeMarket] = padToCount([], activeMarket);
+            }
+            renderRows();
+        })();
+    </script>
+</body>
+</html>
