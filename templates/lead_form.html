@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% if promote %}
-    <title>Promote Lead to Warm - Fred Beans Mobile Service</title>
-    {% else %}
     <title>{{ 'Edit' if lead else 'New' }} Lead - Fred Beans Mobile Service</title>
-    {% endif %}
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; }
@@ -31,16 +27,6 @@
         textarea.other-source { font-family: inherit; height: 70px; resize: vertical; }
         .muted-label { color: #888; font-weight: 500; font-size: 0.85rem; }
         .hidden { display: none; }
-        .type-toggle { display: flex; gap: 8px; margin-bottom: 18px; }
-        .type-toggle label {
-            flex: 1; cursor: pointer; margin-bottom: 0; text-align: center;
-            padding: 14px 18px; border: 2px solid #e5e7eb; border-radius: 8px;
-            font-weight: 600; color: #6b7280; transition: all 0.12s ease;
-        }
-        .type-toggle label:hover { border-color: #cfd8e3; }
-        .type-toggle input[type="radio"] { display: none; }
-        .type-toggle input[type="radio"]:checked + .type-cold { background: #eff6ff; border-color: #0068d6; color: #0068d6; }
-        .type-toggle input[type="radio"]:checked + .type-warm { background: #fff7ed; border-color: #d97706; color: #b45309; }
         textarea.notes { font-family: inherit; height: 140px; resize: vertical; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
         .row { display: flex; gap: 16px; margin-bottom: 18px; }
@@ -67,7 +53,7 @@
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
-        <p class="subtitle">{% if promote %}Promote to Warm Prospect{% elif lead %}Edit Lead{% else %}New Lead{% endif %} &middot; <a href="/leads" class="nav-link">&larr; Back to leads</a></p>
+        <p class="subtitle">{{ 'Edit Lead' if lead else 'New Lead' }} &middot; <a href="/leads" class="nav-link">&larr; Back to leads</a></p>
 
         <div class="card">
             {% if error %}
@@ -98,17 +84,6 @@
                 {% if duplicates %}
                 <input type="hidden" name="confirm_duplicate" value="1">
                 {% endif %}
-                {% set current_type = form.lead_type or 'cold' %}
-                <div class="field">
-                    <label>Lead Type</label>
-                    <div class="type-toggle">
-                        <input type="radio" name="lead_type" id="type_cold" value="cold" {% if current_type == 'cold' %}checked{% endif %}>
-                        <label for="type_cold" class="type-cold">Cold Call</label>
-                        <input type="radio" name="lead_type" id="type_warm" value="warm" {% if current_type == 'warm' %}checked{% endif %}>
-                        <label for="type_warm" class="type-warm">Warm Prospect</label>
-                    </div>
-                </div>
-
                 <div class="field">
                     <label for="company_name">Company Name</label>
                     <input type="text" name="company_name" id="company_name" required value="{{ form.company_name or '' }}">
@@ -172,11 +147,9 @@
                     <input type="text" name="source_contact" id="source_contact" placeholder="e.g. George Wright" value="{{ form.source_contact or '' }}">
                 </div>
 
-                <div class="warm-block {% if current_type != 'warm' %}hidden{% endif %}" id="warmFields">
-                    <div class="field">
-                        <label for="last_contacted_at">Last Contacted</label>
-                        <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
-                    </div>
+                <div class="field">
+                    <label for="last_contacted_at">Last Contacted</label>
+                    <input type="date" name="last_contacted_at" id="last_contacted_at" value="{{ form.last_contacted_at or '' }}">
                 </div>
 
                 <div class="field">
@@ -185,7 +158,7 @@
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn">{% if duplicates %}Save anyway{% elif promote %}Confirm &amp; Promote to Warm{% elif lead %}Save Changes{% else %}Create Lead{% endif %}</button>
+                    <button type="submit" class="btn">{% if duplicates %}Save anyway{% elif lead %}Save Changes{% else %}Create Lead{% endif %}</button>
                     <a href="/leads" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
@@ -219,16 +192,6 @@
             });
         }
 
-        var warmFields = document.getElementById('warmFields');
-        document.querySelectorAll('input[name="lead_type"]').forEach(function(r) {
-            r.addEventListener('change', function() {
-                if (this.value === 'warm' && this.checked) {
-                    warmFields.classList.remove('hidden');
-                } else if (this.value === 'cold' && this.checked) {
-                    warmFields.classList.add('hidden');
-                }
-            });
-        });
     </script>
 </body>
 </html>

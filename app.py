@@ -1140,7 +1140,7 @@ def _read_lead_form(req):
     lead_source_other = req.form.get('lead_source_other', '').strip()
     source_contact = req.form.get('source_contact', '').strip()
     notes = req.form.get('notes', '').strip()
-    lead_type = req.form.get('lead_type', '').strip() or 'cold'
+    lead_type = 'warm'
     last_contacted_at = req.form.get('last_contacted_at', '').strip()
     interest_level = req.form.get('interest_level', '').strip() or db.INTEREST_LEVEL_DEFAULT
     fleet_manager = req.form.get('fleet_manager', '').strip()
@@ -1171,15 +1171,12 @@ def _read_lead_form(req):
         return form, 'Please pick a valid lead source.'
     if lead_source == 'Other' and not lead_source_other:
         return form, 'Please describe the lead source when "Other" is selected.'
-    if lead_type not in db.LEAD_TYPES:
-        return form, 'Please pick a valid lead type.'
     if interest_level not in db.INTEREST_LEVELS:
         return form, 'Please pick a valid interest level.'
     return form, None
 
 
 def _lead_payload(form):
-    is_warm = form['lead_type'] == 'warm'
     has_contact_source = form['lead_source'] in db.LEAD_SOURCES_WITH_CONTACT
     return {
         'company_name': form['company_name'],
@@ -1194,12 +1191,9 @@ def _lead_payload(form):
         # cleared otherwise so the column doesn't carry stale data.
         'source_contact': form['source_contact'] if (has_contact_source and form['source_contact']) else None,
         'notes': form['notes'] or None,
-        'lead_type': form['lead_type'],
-        # last_contacted_at is warm-only; cleared for cold leads so stale state
-        # doesn't carry over if a lead is promoted later. interest_level falls
-        # back to the default ('Y') since the form no longer collects it.
-        'last_contacted_at': form['last_contacted_at'] if (is_warm and form['last_contacted_at']) else None,
-        'interest_level': form['interest_level'] if is_warm else db.INTEREST_LEVEL_DEFAULT,
+        'lead_type': 'warm',
+        'last_contacted_at': form['last_contacted_at'] or None,
+        'interest_level': form['interest_level'],
         'fleet_manager': form['fleet_manager'] or None,
         'fleet_manager_email': form['fleet_manager_email'] or None,
     }
@@ -1210,7 +1204,6 @@ def _lead_form_context(extra=None):
         'markets': db.MARKETS,
         'reps': db.ACCOUNT_REPS,
         'lead_sources': db.LEAD_SOURCES,
-        'lead_types': db.LEAD_TYPES,
         'interest_levels': db.INTEREST_LEVELS,
     }
     if extra:
@@ -1222,12 +1215,12 @@ def _lead_form_context(extra=None):
 def leads_list():
     from datetime import date
     try:
-        all_leads = db.list_leads(include_converted=False)
+        warm_leads = db.list_leads(include_converted=False, lead_type='warm')
     except Exception as e:
         logger.error(f"Failed to load leads: {e}")
-        all_leads = []
+        warm_leads = []
     today = date.today()
-    for l in all_leads:
+    for l in warm_leads:
         last = l.get('last_attempt_at')
         days = None
         if last:
@@ -1236,12 +1229,9 @@ def leads_list():
             except (ValueError, TypeError):
                 days = None
         l['days_since_contact'] = days
-    warm_leads = [l for l in all_leads if (l.get('lead_type') or 'cold') == 'warm']
-    cold_leads = [l for l in all_leads if (l.get('lead_type') or 'cold') == 'cold']
     return render_template(
         'leads.html',
         warm_leads=warm_leads,
-        cold_leads=cold_leads,
         markets=db.MARKETS,
         reps=db.ACCOUNT_REPS,
     )
@@ -1282,12 +1272,9 @@ def lead_new():
             )
         return redirect(url_for('leads_list'))
 
-    default_type = request.args.get('type', 'cold')
-    if default_type not in db.LEAD_TYPES:
-        default_type = 'cold'
     return render_template(
         'lead_form.html', lead=None,
-        form={'lead_type': default_type, 'interest_level': db.INTEREST_LEVEL_DEFAULT},
+        form={'interest_level': db.INTEREST_LEVEL_DEFAULT},
         **_lead_form_context(),
     )
 
@@ -1328,7 +1315,6 @@ def lead_edit(lead_id):
         'lead_source_other': existing.get('lead_source_other') or '',
         'source_contact': existing.get('source_contact') or '',
         'notes': existing.get('notes') or '',
-        'lead_type': existing.get('lead_type') or 'cold',
         'last_contacted_at': existing.get('last_contacted_at') or '',
         'interest_level': existing.get('interest_level') or db.INTEREST_LEVEL_DEFAULT,
         'fleet_manager': existing.get('fleet_manager') or '',
@@ -1389,41 +1375,6 @@ def lead_attempt(lead_id):
         logger.error(f"Record lead attempt failed: {e}")
 
     return redirect(url_for('leads_list'))
-
-
-@app.route('/leads/<lead_id>/promote', methods=['GET'])
-def lead_promote(lead_id):
-    """Render the lead form pre-filled and forced to lead_type=warm so the
-    rep can fill in warm-prospect-only fields (interest level, last
-    contacted, fleet manager) before confirming the promotion. The form
-    posts to /leads/<id>/edit, which performs the actual save."""
-    try:
-        existing = db.get_lead(lead_id)
-    except Exception as e:
-        logger.error(f"Failed to load lead {lead_id}: {e}")
-        existing = None
-    if not existing:
-        return 'Lead not found', 404
-
-    form = {
-        'company_name': existing.get('company_name') or '',
-        'market': existing.get('market') or '',
-        'account_rep': existing.get('account_rep') or '',
-        'phone': existing.get('phone') or '',
-        'lead_source': existing.get('lead_source') or '',
-        'lead_source_other': existing.get('lead_source_other') or '',
-        'source_contact': existing.get('source_contact') or '',
-        'notes': existing.get('notes') or '',
-        'lead_type': 'warm',
-        'last_contacted_at': existing.get('last_contacted_at') or '',
-        'interest_level': existing.get('interest_level') or db.INTEREST_LEVEL_DEFAULT,
-        'fleet_manager': existing.get('fleet_manager') or '',
-        'fleet_manager_email': existing.get('fleet_manager_email') or '',
-    }
-    return render_template(
-        'lead_form.html', lead=existing, form=form, promote=True,
-        **_lead_form_context(),
-    )
 
 
 @app.route('/leads/<lead_id>/convert')

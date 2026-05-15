@@ -25,9 +25,6 @@
         .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
         .nav-tab:hover { color: #0068d6; }
         .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
-        .section-title { display: flex; align-items: center; gap: 10px; margin: 24px 0 12px; font-size: 1.15rem; font-weight: 700; color: #0a1f44; }
-        .section-title .count { font-size: 0.8rem; font-weight: 500; color: #6b7280; background: #f3f4f6; padding: 2px 10px; border-radius: 999px; }
-        .section-warm .section-title { color: #b45309; }
         .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: center; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -51,8 +48,6 @@
         .btn-danger:hover { background: #991b1b; }
         .btn-success { background: #059669; }
         .btn-success:hover { background: #047857; }
-        .btn-warm { background: #d97706; }
-        .btn-warm:hover { background: #b45309; }
         .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
         .btn-outline:hover { background: #eff6ff; }
         .btn-outline.btn-secondary { background: #fff; color: #6b7280; border-color: #6b7280; }
@@ -73,24 +68,6 @@
         .rep-title { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid #0068d6; display: flex; justify-content: space-between; align-items: center; }
         .rep-count { font-weight: 500; color: #6b7280; font-size: 0.85rem; }
         .empty-row { color: #888; font-style: italic; padding: 12px 4px; }
-        .new-lead-wrap { position: relative; }
-        .new-lead-menu {
-            position: absolute; right: 0; top: calc(100% + 6px);
-            background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            min-width: 200px; padding: 6px; z-index: 20; display: none;
-        }
-        .new-lead-menu.open { display: block; }
-        .new-lead-menu a {
-            display: block; padding: 10px 12px; border-radius: 6px;
-            text-decoration: none; color: #1f2937; font-weight: 600; font-size: 0.9rem;
-        }
-        .new-lead-menu a:hover { background: #f3f4f6; }
-        .new-lead-menu a.warm { color: #b45309; }
-        .new-lead-menu a.warm:hover { background: #fef3c7; }
-        .new-lead-menu a.cold { color: #0068d6; }
-        .new-lead-menu a.cold:hover { background: #eff6ff; }
-        .new-lead-menu .menu-sub { display: block; font-size: 0.75rem; font-weight: 400; color: #6b7280; margin-top: 2px; }
         .empty { text-align: center; color: #888; padding: 30px; }
         .inline-actions { display: flex; gap: 6px; align-items: center; justify-content: center; white-space: nowrap; }
         .inline-actions form { display: inline; margin: 0; }
@@ -187,7 +164,6 @@
         .outcome-toggle input[type="radio"]:checked + .out-contact { background: #ecfdf5; border-color: #16a34a; color: #065f46; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
-        .section.hidden { display: none; }
     </style>
 </head>
 <body>
@@ -217,7 +193,7 @@
 
         {% if not warm_leads %}
         <div class="card">
-            <p class="empty">No warm prospects yet. <a href="/leads/new?type=warm" class="nav-link">Add one</a>, or promote a cold lead.</p>
+            <p class="empty">No warm prospects yet. <a href="/leads/new?type=warm" class="nav-link">Add one</a>.</p>
         </div>
         {% else %}
         {% for rep in reps %}
@@ -324,99 +300,6 @@
             </div>
         {% endfor %}
         {% endif %}
-
-        {# Cold call list hidden — only warm prospects shown for now.
-        <section class="section section-cold" data-section-type="cold">
-            <div class="section-title">Cold Call List <span class="count" id="coldCount">{{ cold_leads|length }}</span></div>
-            {% if not cold_leads %}
-            <div class="card">
-                <p class="empty">No cold leads yet. <a href="/leads/new?type=cold" class="nav-link">Create your first cold lead.</a></p>
-            </div>
-            {% else %}
-            <div class="card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="col-actions">Actions</th>
-                            <th>Company</th>
-                            <th>Market</th>
-                            <th>Account Rep</th>
-                            <th>Phone</th>
-                            <th>Source</th>
-                            <th class="col-contact">Contact</th>
-                            <th class="col-actions">Other</th>
-                        </tr>
-                    </thead>
-                    <tbody class="leadsTbody">
-                    {% for l in cold_leads %}
-                        <tr data-rep="{{ l.account_rep }}" data-market="{{ l.market }}" data-type="cold">
-                            <td class="col-actions">
-                                <a href="/leads/{{ l.id }}/promote" class="btn btn-xs btn-warm">Promote</a>
-                            </td>
-                            <td>
-                                <strong>{{ l.company_name }}</strong>
-                                {% if l.notes %}
-                                <span class="notes-popover">
-                                    <a href="/leads/{{ l.id }}/edit" class="notes-icon" aria-label="View notes" title="View notes">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M19 4h-3.5l-1-1h-5l-1 1H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
-                                            <line x1="8" y1="10" x2="16" y2="10"/>
-                                            <line x1="8" y1="14" x2="16" y2="14"/>
-                                            <line x1="8" y1="18" x2="13" y2="18"/>
-                                        </svg>
-                                    </a>
-                                    <span class="notes-info">{{ l.notes }}</span>
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td>{{ l.market }}</td>
-                            <td>{{ l.account_rep }}</td>
-                            <td>{% if l.phone %}{{ l.phone }}{% else %}<span class="muted">—</span>{% endif %}</td>
-                            <td class="col-source">
-                                {% if l.lead_source == 'Other' and l.lead_source_other %}
-                                    Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
-                                {% elif l.lead_source in ['Sales', 'Service', 'Parts'] and l.source_contact %}
-                                    {{ l.lead_source }} &middot; <span class="muted">{{ l.source_contact }}</span>
-                                {% elif l.lead_source %}
-                                    {{ l.lead_source }}
-                                {% else %}
-                                    <span class="muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="col-contact">
-                                {% if l.last_attempt_at %}
-                                    {% if l.last_attempt_outcome == 'left_voicemail' %}
-                                    <span class="attempt-badge attempt-vm">VM {{ short_date(l.last_attempt_at) }}</span>
-                                    {% elif l.last_attempt_note %}
-                                    <span class="notes-popover">
-                                        <span class="attempt-badge attempt-contact attempt-has-note">Contacted {{ short_date(l.last_attempt_at) }}</span>
-                                        <span class="notes-info">{{ l.last_attempt_note }}</span>
-                                    </span>
-                                    {% else %}
-                                    <span class="attempt-badge attempt-contact">Contacted {{ short_date(l.last_attempt_at) }}</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="col-actions">
-                                <div class="inline-actions">
-                                    <button type="button" class="btn btn-xs btn-outline attempt-open"
-                                            data-lead-id="{{ l.id }}"
-                                            data-company="{{ l.company_name }}">
-                                        Log Attempt
-                                    </button>
-                                    <a href="/leads/{{ l.id }}/edit" class="btn btn-xs btn-outline btn-secondary">Edit</a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-        </section>
-        #}
     </div>
 
     <div id="attemptModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="attemptTitle">
@@ -511,8 +394,8 @@
         });
 
         // Attempted Contact modal: one shared modal at the page bottom; the
-        // Log Attempt buttons in each cold row carry the lead id + company
-        // name in dataset attrs, which we use to rewire the form action and
+        // Log Attempt buttons in each row carry the lead id + company name
+        // in dataset attrs, which we use to rewire the form action and
         // header before showing the modal.
         var attemptModal = document.getElementById('attemptModal');
         var attemptForm = document.getElementById('attemptForm');

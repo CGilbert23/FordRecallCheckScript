@@ -24,8 +24,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 ## Routes (high-level)
 - `/` — home tile page (Account Management / Recall Checker)
 - `/accounts` and `/accounts/new`, `/accounts/<id>/edit`, `/accounts/<id>/delete`
-- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/convert` (lead → account). `/leads/new?type=warm` defaults the form to warm.
-- `/leads/<id>/promote` (GET) — renders the lead form pre-filled with `lead_type=warm` so the rep can fill in warm-only fields before posting to `/leads/<id>/edit` to save.
+- `/leads` and `/leads/new`, `/leads/<id>/edit`, `/leads/<id>/delete`, `/leads/<id>/convert` (lead → account). All leads created through the UI are warm prospects (the cold-call workflow was removed; existing cold rows in the DB are no longer surfaced).
 - `/leads/<id>/attempt` (POST) — record a contact attempt (`outcome` = `made_contact` or `left_voicemail`). A note is required server-side for `made_contact`; voicemail attempts always store a null note.
 - `/leads/<id>/last-contacted` (POST) — inline update of just `last_contacted_at` from the warm-prospect table (no full edit form).
 - `/recall-checker` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
@@ -113,7 +112,7 @@ docker run -d --name ford-checker -p 5000:10000 --env-file .env ford-checker
 - Selenium requires a compatible Chrome/Chromium + ChromeDriver setup (handled in the Dockerfile).
 - The mobileservice@fredbeans.com address is auto-CC'd on every scheduled email; no need to add it to recipient lists.
 - Account and lead create forms run a soft-duplicate check (`db.find_duplicate_matches`) against existing accounts + active leads on company name (case-insensitive exact), email (case-insensitive exact, sentinel `--` ignored), and phone (digits-only exact). On a match the form re-renders with a yellow warning banner; the user must resubmit with the hidden `confirm_duplicate=1` flag (set automatically by the "Save anyway" button) to bypass. Lead-to-account conversion excludes the source lead from its own duplicate set.
-- The `/leads` page currently renders only warm prospects, grouped by account rep. The cold-call section is commented out in `templates/leads.html` (still present, just `{# ... #}`-wrapped) and the "+ New Lead" button defaults to `?type=warm`. Cold leads still exist in the DB and can be created via `/leads/new?type=cold` directly or by toggling the type radio on the form.
+- The `/leads` page renders only warm prospects, grouped by account rep. The cold-call workflow was removed: the lead form has no Cold/Warm toggle, all new leads are saved with `lead_type='warm'`, and `list_leads()` is called with `lead_type='warm'` so any pre-existing cold rows in `account_leads` are hidden from the UI. `db.LEAD_TYPES` and `db.promote_lead_to_warm()` are still defined but no longer used by the app.
 - Warm-prospect contact badges are color-coded by recency: green ≤19 days, yellow 20–29 days, red ≥30 days since `last_attempt_at`. The age (`days_since_contact`) is computed in `leads_list()` and rendered via the `recency_class` macro in the template.
 - Schedule firing: daily uses a cron trigger at 6am ET; monthly/quarterly use `IntervalTrigger` (30/90 days) starting at `anchor_at`. On create, `_compute_anchor_at()` sets the anchor to today + 30 or 90 days at 6am ET. On edit, the anchor is only reset when the cadence itself changes — otherwise the existing anchor is preserved.
 - The `/schedules/<id>/run` POST route (`schedule_run_now`) still exists, but the "Run Now" button on the schedules list was removed in the 2026-05-11 commit — the endpoint is no longer reachable from the UI.
