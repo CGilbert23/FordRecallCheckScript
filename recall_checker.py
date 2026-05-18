@@ -139,10 +139,22 @@ def check_ford_recall(driver, vin, log_file=None):
     Returns: dict with hasRecall and recalls list
     """
     url = "https://www.ford.com/support/recalls-details/"
+    vin = vin.strip().upper()
 
     try:
         wait = WebDriverWait(driver, 15)
 
+        # Load the page with a CLEAN session. The redesigned Ford recalls page
+        # (2026-05-18) keeps the previous VIN's results cached in cookies/storage;
+        # a plain reload does NOT clear them, which caused recalls to be
+        # attributed to the wrong VIN. Clearing cookies + storage forces a
+        # genuine fresh search for every VIN.
+        driver.get(url)
+        try:
+            driver.delete_all_cookies()
+            driver.execute_script("try{localStorage.clear();sessionStorage.clear();}catch(e){}")
+        except Exception:
+            pass
         driver.get(url)
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="vin-search-text-field"]')))
         debug_log(log_file, vin, f"URL after load: {driver.current_url}")
@@ -222,30 +234,31 @@ def check_ford_recall(driver, vin, log_file=None):
         except Exception as e:
             debug_log(log_file, vin, f"Error checking for errors: {str(e)[:50]}")
 
-        time.sleep(3)
+        # Wait for THIS VIN's results to render. The redesigned page prints
+        # "VIN: <vin>" in the results area, so wait until the searched VIN
+        # actually appears on the page - not merely "some results".
+        try:
+            WebDriverWait(driver, 20).until(
+                lambda d: vin in d.find_element(By.TAG_NAME, "body").text.upper()
+            )
+            debug_log(log_file, vin, "Searched VIN appeared on results page")
+        except:
+            debug_log(log_file, vin, "Timeout waiting for searched VIN to appear")
+        time.sleep(1.5)
 
         debug_log(log_file, vin, f"URL after submit: {driver.current_url}")
-
-        if '/recalls-details/' not in driver.current_url:
-            debug_log(log_file, vin, f"Redirect detected, navigating back...")
-            driver.get(url)
-            time.sleep(3)
-            debug_log(log_file, vin, f"URL after redirect: {driver.current_url}")
-        else:
-            debug_log(log_file, vin, "No redirect, waiting for results...")
-            try:
-                WebDriverWait(driver, 8).until(
-                    lambda d: 'no recalls' in d.find_element(By.TAG_NAME, "body").text.lower() or
-                              d.find_elements(By.CSS_SELECTOR, '[data-testid="button-safety-recalls-section-header"]') or
-                              'there are no' in d.find_element(By.TAG_NAME, "body").text.lower()
-                )
-                debug_log(log_file, vin, "Results detected on page")
-            except:
-                debug_log(log_file, vin, "Timeout waiting for results, continuing anyway")
-                time.sleep(2)
-
         body_text = driver.find_element(By.TAG_NAME, "body").text
         debug_log(log_file, vin, f"Page title: {driver.title}")
+
+        # VIN-match gate: never trust results that do not belong to this VIN.
+        # If the searched VIN is not shown, the page is stale/stuck - return an
+        # ERROR so the run flags it instead of recording another car's recall.
+        if vin not in body_text.upper():
+            debug_log(log_file, vin, "VIN not on results page - page stale/stuck, returning ERROR")
+            return {
+                'hasRecall': None,
+                'recalls': [{'number': 'ERROR', 'description': 'VIN not on results page (page stale)', 'remedy_available': None}]
+            }
 
         if 'no recalls' in body_text.lower() or 'there are no recalls' in body_text.lower():
             return {
