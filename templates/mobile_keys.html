@@ -85,8 +85,9 @@
                 <table>
                     <thead>
                         <tr>
-                            <th class="center">Complete</th>
                             <th class="center">Ordered</th>
+                            <th class="center">Key Code</th>
+                            <th class="center">Complete</th>
                             <th>Date</th>
                             <th>End User</th>
                             <th>Customer</th>
@@ -111,15 +112,21 @@
                     {% for k in keys %}
                         <tr data-search="{{ k.year }} {{ k.make }} {{ k.model }}"{% if not k.status_done %} class="row-pending"{% endif %}>
                             <td class="center">
-                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-status" class="status-form">
-                                    <input type="hidden" name="status_done" value="{{ '0' if k.status_done else '1' }}">
-                                    <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}" title="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}">{% if k.status_done %}✓{% endif %}</button>
-                                </form>
-                            </td>
-                            <td class="center">
                                 <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-ordered" class="status-form">
                                     <input type="hidden" name="ordered" value="{{ '0' if k.ordered else '1' }}">
                                     <button type="submit" class="status-box {% if k.ordered %}status-box-done{% endif %}" aria-label="{{ 'Mark as not ordered' if k.ordered else 'Mark as ordered' }}" title="{{ 'Mark as not ordered' if k.ordered else 'Mark as ordered' }}">{% if k.ordered %}✓{% endif %}</button>
+                                </form>
+                            </td>
+                            <td class="center">
+                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-key-code" class="status-form">
+                                    <input type="hidden" name="key_code" value="{{ '0' if k.key_code else '1' }}">
+                                    <button type="submit" class="status-box {% if k.key_code %}status-box-done{% endif %}" aria-label="{{ 'Mark key code as not done' if k.key_code else 'Mark key code as done' }}" title="{{ 'Mark key code as not done' if k.key_code else 'Mark key code as done' }}">{% if k.key_code %}✓{% endif %}</button>
+                                </form>
+                            </td>
+                            <td class="center">
+                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-status" class="status-form">
+                                    <input type="hidden" name="status_done" value="{{ '0' if k.status_done else '1' }}">
+                                    <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}" title="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}">{% if k.status_done %}✓{% endif %}</button>
                                 </form>
                             </td>
                             <td>{{ k.cut_date | format_short_date }}</td>
@@ -166,7 +173,7 @@
                         </tr>
                     {% endfor %}
                         <tr class="no-results-row" id="noResultsRow" style="display: none;">
-                            <td colspan="20">No keys match that search.</td>
+                            <td colspan="21">No keys match that search.</td>
                         </tr>
                     </tbody>
                 </table>

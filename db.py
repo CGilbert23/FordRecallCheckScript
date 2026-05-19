@@ -510,6 +510,15 @@ def set_mobile_key_ordered(key_id, ordered):
     return res.data[0] if res.data else None
 
 
+def set_mobile_key_key_code(key_id, key_code):
+    """Flip the per-row Key Code checkbox."""
+    client = get_client()
+    res = client.table('mobile_keys').update({
+        'key_code': bool(key_code),
+    }).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
 def list_mobile_keys_in_inventory():
     client = get_client()
     res = (

@@ -167,9 +167,12 @@ create table mobile_keys (
   -- Per-row "done" flag. Default false (pending); rep marks done via the
   -- leftmost "Complete" checkbox on the list page. Pending rows render grey.
   status_done boolean not null default false,
-  -- Per-row "Ordered" flag. Toggled by the checkbox column next to Complete
-  -- on the list page. Default false.
+  -- Per-row "Ordered" flag. Toggled by a checkbox column on the list page.
+  -- Default false.
   ordered boolean not null default false,
+  -- Per-row "Key Code" flag. Toggled by the checkbox column between Ordered
+  -- and Complete on the list page. Default false.
+  key_code boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -1807,6 +1807,16 @@ def mobile_key_toggle_ordered(key_id):
     return redirect(url_for('mobile_keys_list'))
 
 
+@app.route('/mobile-keys/<key_id>/toggle-key-code', methods=['POST'])
+def mobile_key_toggle_key_code(key_id):
+    key_code = request.form.get('key_code') == '1'
+    try:
+        db.set_mobile_key_key_code(key_id, key_code)
+    except Exception as e:
+        logger.error(f"Toggle key code failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
 @app.route('/mobile-keys/<key_id>/move-to-inventory', methods=['POST'])
 def mobile_key_move_to_inventory(key_id):
     try:
