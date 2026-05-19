@@ -60,6 +60,12 @@ DEALERSHIPS = [
         "lng": -74.9412,
     },
     {
+        "name": "Fred Beans Ford of Washington",
+        "address": "359 Route 31, Washington, NJ 07882",
+        "lat": 40.7338,
+        "lng": -74.9751,
+    },
+    {
         "name": "Fred Beans Ford of West Chester",
         "address": "1155 Wilmington Pike, West Chester, PA 19382",
         "lat": 39.9298,
