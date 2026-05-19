@@ -1807,13 +1807,18 @@ def mobile_key_toggle_ordered(key_id):
     return redirect(url_for('mobile_keys_list'))
 
 
-@app.route('/mobile-keys/<key_id>/toggle-key-code', methods=['POST'])
-def mobile_key_toggle_key_code(key_id):
-    key_code = request.form.get('key_code') == '1'
+@app.route('/mobile-keys/<key_id>/key-code', methods=['POST'])
+def mobile_key_set_key_code(key_id):
+    # Driven by the Key Code modal: "Save" submits key_code=1 with the entered
+    # text; "Uncheck" submits key_code=0 and the code is cleared.
+    checked = request.form.get('key_code') == '1'
+    code_value = (request.form.get('key_code_value') or '').strip() or None
+    if not checked:
+        code_value = None
     try:
-        db.set_mobile_key_key_code(key_id, key_code)
+        db.set_mobile_key_key_code(key_id, checked, code_value)
     except Exception as e:
-        logger.error(f"Toggle key code failed for {key_id}: {e}")
+        logger.error(f"Set key code failed for {key_id}: {e}")
     return redirect(url_for('mobile_keys_list'))
 
 
@@ -1845,6 +1850,63 @@ def mobile_keys_inventory():
     for r in rows:
         _compute_key_totals(r)
     return render_template('mobile_keys_inventory.html', keys=rows)
+
+
+@app.route('/mobile-keys/contacts')
+def mobile_key_contacts():
+    try:
+        contacts = db.list_key_code_contacts()
+    except Exception as e:
+        logger.error(f"Failed to list key code contacts: {e}")
+        contacts = []
+    return render_template('mobile_key_contacts.html', contacts=contacts)
+
+
+def _clean_key_code_contact_payload(payload):
+    """Pull store/name/email out of a JSON payload, blanks normalized to None."""
+    out = {}
+    for field in ('store', 'name', 'email'):
+        if field in payload:
+            out[field] = (payload.get(field) or '').strip() or None
+    return out
+
+
+@app.route('/mobile-keys/contacts/api/create', methods=['POST'])
+def mobile_key_contacts_api_create():
+    try:
+        payload = request.get_json(silent=True) or {}
+        data = _clean_key_code_contact_payload(payload)
+        if not any(data.values()):
+            return jsonify({'ok': False, 'error': 'empty contact'}), 400
+        row = db.create_key_code_contact(data)
+        return jsonify({'ok': True, 'row': row})
+    except Exception as e:
+        logger.error(f"key code contact create failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/mobile-keys/contacts/api/update/<contact_id>', methods=['POST'])
+def mobile_key_contacts_api_update(contact_id):
+    try:
+        payload = request.get_json(silent=True) or {}
+        data = _clean_key_code_contact_payload(payload)
+        if not data:
+            return jsonify({'ok': False, 'error': 'no fields to update'}), 400
+        row = db.update_key_code_contact(contact_id, data)
+        return jsonify({'ok': True, 'row': row})
+    except Exception as e:
+        logger.error(f"key code contact update failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/mobile-keys/contacts/api/delete/<contact_id>', methods=['POST'])
+def mobile_key_contacts_api_delete(contact_id):
+    try:
+        db.delete_key_code_contact(contact_id)
+        return jsonify({'ok': True})
+    except Exception as e:
+        logger.error(f"key code contact delete failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 
 if __name__ == '__main__':

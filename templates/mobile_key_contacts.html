@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key Code Contacts - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1000px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #e3e7ed; text-align: left; vertical-align: middle; }
+        th { background: #e5e7eb; padding: 10px 12px; font-size: 0.72rem; color: #374151; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        td.cell { padding: 0; }
+        td.cell input { width: 100%; border: none; padding: 10px 12px; font-size: 0.95rem; outline: none; background: transparent; font-family: inherit; color: #222; }
+        td.cell input:focus { background: #fff8d6; }
+        td.cell input::placeholder { color: #c3c9d2; }
+        td.actions { text-align: center; width: 48px; padding: 0; }
+        .delete-btn { background: none; border: none; cursor: pointer; color: #bbb; font-size: 1.3rem; padding: 6px 10px; line-height: 1; }
+        .delete-btn:hover { color: #c0392b; }
+        .add-row-btn { margin-top: 14px; padding: 10px 18px; background: #fff; border: 1.5px dashed #9aa3b2; border-radius: 8px; cursor: pointer; color: #555; font-size: 0.92rem; font-weight: 500; font-family: inherit; }
+        .add-row-btn:hover { background: #eaf3ff; border-color: #0068d6; color: #0068d6; }
+        .save-indicator { position: fixed; bottom: 24px; right: 24px; background: #0a1f44; color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; opacity: 0; transition: opacity 0.2s ease; pointer-events: none; z-index: 999; }
+        .save-indicator.show { opacity: 0.9; }
+        .save-indicator.error { background: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Who to reach out to at each store for a key code. Type directly in the table &mdash; rows save automatically.</p>
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 32%">Store</th>
+                        <th style="width: 30%">Name</th>
+                        <th>Email</th>
+                        <th style="width: 48px"></th>
+                    </tr>
+                </thead>
+                <tbody id="contactRows">
+                {% for c in contacts %}
+                    <tr data-id="{{ c.id }}">
+                        <td class="cell"><input type="text" data-field="store" value="{{ c.store or '' }}" placeholder="Store"></td>
+                        <td class="cell"><input type="text" data-field="name" value="{{ c.name or '' }}" placeholder="Name"></td>
+                        <td class="cell"><input type="email" data-field="email" value="{{ c.email or '' }}" placeholder="Email"></td>
+                        <td class="actions"><button type="button" class="delete-btn" title="Delete contact" aria-label="Delete contact">&times;</button></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="add-row-btn" id="addRowBtn">+ Add Contact</button>
+        </div>
+    </div>
+
+    <div id="saveIndicator" class="save-indicator">Saved</div>
+
+    <script>
+        (function () {
+            var SAVE_DEBOUNCE_MS = 600;
+            var tbody = document.getElementById('contactRows');
+            var saveTimers = new WeakMap();
+            var saveChains = new WeakMap();
+
+            function showIndicator(text, isError) {
+                var el = document.getElementById('saveIndicator');
+                el.textContent = text;
+                el.classList.toggle('error', !!isError);
+                el.classList.add('show');
+                clearTimeout(el._t);
+                el._t = setTimeout(function () { el.classList.remove('show'); }, 1400);
+            }
+
+            function rowPayload(tr) {
+                var payload = {};
+                tr.querySelectorAll('input[data-field]').forEach(function (el) {
+                    payload[el.dataset.field] = el.value.trim() || null;
+                });
+                return payload;
+            }
+
+            function rowHasData(payload) {
+                return !!(payload.store || payload.name || payload.email);
+            }
+
+            async function persistRow(tr) {
+                var payload = rowPayload(tr);
+                var id = tr.dataset.id;
+                if (id) {
+                    var res = await fetch('/mobile-keys/contacts/api/update/' + id, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    var data = await res.json();
+                    if (!data.ok) throw new Error(data.error || 'update failed');
+                    return true;
+                }
+                if (!rowHasData(payload)) return false;
+                var res2 = await fetch('/mobile-keys/contacts/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                var data2 = await res2.json();
+                if (!data2.ok) throw new Error(data2.error || 'create failed');
+                tr.dataset.id = data2.row.id;
+                return true;
+            }
+
+            function scheduleSave(tr) {
+                clearTimeout(saveTimers.get(tr));
+                saveTimers.set(tr, setTimeout(function () {
+                    // Chain saves per row so a debounced edit can't fire a
+                    // second create before the first one returns an id.
+                    var prev = saveChains.get(tr) || Promise.resolve();
+                    var next = prev
+                        .then(function () { return persistRow(tr); })
+                        .then(function (saved) { if (saved) showIndicator('Saved'); })
+                        .catch(function (e) {
+                            console.error('Save failed:', e);
+                            showIndicator('Save failed', true);
+                        });
+                    saveChains.set(tr, next);
+                }, SAVE_DEBOUNCE_MS));
+            }
+
+            async function deleteRow(tr) {
+                var id = tr.dataset.id;
+                if (id) {
+                    if (!confirm('Delete this contact?')) return;
+                    try {
+                        var res = await fetch('/mobile-keys/contacts/api/delete/' + id, { method: 'POST' });
+                        var data = await res.json();
+                        if (!data.ok) throw new Error(data.error || 'delete failed');
+                        showIndicator('Deleted');
+                    } catch (e) {
+                        console.error('Delete failed:', e);
+                        showIndicator('Delete failed', true);
+                        return;
+                    }
+                }
+                tr.remove();
+            }
+
+            function bindRow(tr) {
+                tr.querySelectorAll('input[data-field]').forEach(function (el) {
+                    el.addEventListener('input', function () { scheduleSave(tr); });
+                });
+                var del = tr.querySelector('.delete-btn');
+                if (del) del.addEventListener('click', function () { deleteRow(tr); });
+            }
+
+            function addRow(focus) {
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td class="cell"><input type="text" data-field="store" placeholder="Store"></td>' +
+                    '<td class="cell"><input type="text" data-field="name" placeholder="Name"></td>' +
+                    '<td class="cell"><input type="email" data-field="email" placeholder="Email"></td>' +
+                    '<td class="actions"><button type="button" class="delete-btn" title="Delete contact" aria-label="Delete contact">&times;</button></td>';
+                tbody.appendChild(tr);
+                bindRow(tr);
+                if (focus) {
+                    var first = tr.querySelector('input');
+                    if (first) first.focus();
+                }
+            }
+
+            tbody.querySelectorAll('tr').forEach(bindRow);
+            document.getElementById('addRowBtn').addEventListener('click', function () { addRow(true); });
+            // Start with one empty row so the page isn't blank on first visit.
+            if (!tbody.querySelector('tr')) addRow(false);
+        })();
+    </script>
+</body>
+</html>

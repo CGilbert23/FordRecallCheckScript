@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dir)",
       "Bash(python -c 'import openpyxl; wb = openpyxl.load_workbook\\(r'\\\\''Mocks\\\\Key_DB.xlsx'\\\\'', data_only=False\\); *)",
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(python -m py_compile app.py db.py)"
     ]
   }
 }

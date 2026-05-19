@@ -170,9 +170,12 @@ create table mobile_keys (
   -- Per-row "Ordered" flag. Toggled by a checkbox column on the list page.
   -- Default false.
   ordered boolean not null default false,
-  -- Per-row "Key Code" flag. Toggled by the checkbox column between Ordered
-  -- and Complete on the list page. Default false.
+  -- Per-row "Key Code" tracking, surfaced by the checkbox column between
+  -- Ordered and Complete on the list page. key_code is the checkbox state;
+  -- key_code_value holds the actual key code text, entered via a modal that
+  -- opens when the checkbox is clicked. Default false / null.
   key_code boolean not null default false,
+  key_code_value text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -206,4 +209,19 @@ create table cold_leads (
 create index cold_leads_market_idx on cold_leads(market, created_at);
 create trigger cold_leads_updated_at
   before update on cold_leads
+  for each row execute function set_updated_at();
+
+-- Key code contacts: backs the "Key Code Contacts" page under Mobile Keys.
+-- Free-text reference list of who to reach out to at each store for a key
+-- code. Every column is nullable -- rows are typed in inline.
+create table key_code_contacts (
+  id uuid primary key default gen_random_uuid(),
+  store text,
+  name text,
+  email text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create trigger key_code_contacts_updated_at
+  before update on key_code_contacts
   for each row execute function set_updated_at();

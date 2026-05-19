@@ -56,6 +56,18 @@
         .status-box-done { color: #0a6f3b; border-color: #a7b3c2; }
         .status-box-done:hover { color: #064e2a; border-color: #6b7280; }
         .status-form { display: inline; margin: 0; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay.hidden { display: none; }
+        .modal-card { background: #fff; padding: 22px 24px; border-radius: 8px; min-width: 360px; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+        .modal-card h3 { font-size: 1.05rem; margin-bottom: 4px; }
+        .modal-state { color: #6b7280; font-size: 0.85rem; margin-bottom: 12px; }
+        .modal-card label { display: block; font-size: 0.85rem; color: #374151; margin-bottom: 4px; font-weight: 500; }
+        .modal-card input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid #cfd8e3; border-radius: 6px; font-size: 0.9rem; font-family: inherit; }
+        .modal-card input[type="text"]:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-light { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+        .btn-light:hover { background: #e5e7eb; color: #1f2937; }
     </style>
 </head>
 <body>
@@ -118,10 +130,13 @@
                                 </form>
                             </td>
                             <td class="center">
-                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-key-code" class="status-form">
-                                    <input type="hidden" name="key_code" value="{{ '0' if k.key_code else '1' }}">
-                                    <button type="submit" class="status-box {% if k.key_code %}status-box-done{% endif %}" aria-label="{{ 'Mark key code as not done' if k.key_code else 'Mark key code as done' }}" title="{{ 'Mark key code as not done' if k.key_code else 'Mark key code as done' }}">{% if k.key_code %}✓{% endif %}</button>
-                                </form>
+                                <button type="button" class="status-box key-code-open {% if k.key_code %}status-box-done{% endif %}"
+                                        data-key-id="{{ k.id }}"
+                                        data-label="{{ k.year }} {{ k.make }} {{ k.model }}"
+                                        data-checked="{{ '1' if k.key_code else '' }}"
+                                        data-code="{{ k.key_code_value or '' }}"
+                                        aria-label="{{ 'Edit key code' if k.key_code else 'Set key code' }}"
+                                        title="{% if k.key_code %}Key code: {{ k.key_code_value or '(none entered)' }}{% else %}Set key code{% endif %}">{% if k.key_code %}✓{% endif %}</button>
                             </td>
                             <td class="center">
                                 <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-status" class="status-form">
@@ -182,6 +197,23 @@
         {% endif %}
     </div>
 
+    <div id="keyCodeModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="keyCodeTitle">
+        <div class="modal-card">
+            <h3 id="keyCodeTitle">Key code</h3>
+            <p id="keyCodeState" class="modal-state"></p>
+            <form method="POST" id="keyCodeForm">
+                <input type="hidden" name="key_code" id="keyCodeChecked" value="1">
+                <label for="key_code_value">Key code:</label>
+                <input type="text" name="key_code_value" id="key_code_value" placeholder="e.g. B1234" autocomplete="off">
+                <div class="modal-actions">
+                    <button type="button" data-modal-close class="btn btn-sm btn-light">Cancel</button>
+                    <button type="submit" id="keyCodeClearBtn" class="btn btn-sm btn-outline">Uncheck</button>
+                    <button type="submit" id="keyCodeSaveBtn" class="btn btn-sm">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         (function () {
             var search = document.getElementById('keySearch');
@@ -214,6 +246,61 @@
                 }
             }
             search.addEventListener('input', applyFilter);
+        })();
+
+        // Key Code modal: clicking the checkbox-style button opens a modal to
+        // enter the actual key code. "Save" checks the row off; "Uncheck"
+        // clears both the checkbox and the stored code.
+        (function () {
+            var modal = document.getElementById('keyCodeModal');
+            var form = document.getElementById('keyCodeForm');
+            var title = document.getElementById('keyCodeTitle');
+            var state = document.getElementById('keyCodeState');
+            var input = document.getElementById('key_code_value');
+            var checkedField = document.getElementById('keyCodeChecked');
+            var saveBtn = document.getElementById('keyCodeSaveBtn');
+            var clearBtn = document.getElementById('keyCodeClearBtn');
+            if (!modal) return;
+
+            function closeModal() { modal.classList.add('hidden'); }
+
+            function openModal(btn) {
+                var id = btn.dataset.keyId;
+                var label = btn.dataset.label || '';
+                var checked = btn.dataset.checked === '1';
+                var code = btn.dataset.code || '';
+
+                form.action = '/mobile-keys/' + id + '/key-code';
+                title.textContent = 'Key code: ' + label;
+                state.textContent = checked
+                    ? 'Key code recorded — edit it below, or uncheck to clear.'
+                    : 'Enter the key code. Saving checks this row off.';
+                input.value = code;
+                checkedField.value = '1';
+                // Only offer "Uncheck" once the row is already checked.
+                clearBtn.style.display = checked ? '' : 'none';
+                modal.classList.remove('hidden');
+                setTimeout(function () { input.focus(); }, 0);
+            }
+
+            saveBtn.addEventListener('click', function () { checkedField.value = '1'; });
+            clearBtn.addEventListener('click', function () { checkedField.value = '0'; });
+
+            document.querySelectorAll('.key-code-open').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openModal(btn);
+                });
+            });
+            document.querySelectorAll('[data-modal-close]').forEach(function (el) {
+                el.addEventListener('click', closeModal);
+            });
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
         })();
     </script>
 </body>

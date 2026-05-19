@@ -510,11 +510,16 @@ def set_mobile_key_ordered(key_id, ordered):
     return res.data[0] if res.data else None
 
 
-def set_mobile_key_key_code(key_id, key_code):
-    """Flip the per-row Key Code checkbox."""
+def set_mobile_key_key_code(key_id, key_code, key_code_value=None):
+    """Set the per-row Key Code checkbox state plus the entered code text.
+
+    key_code is the checkbox state; key_code_value is the actual key code
+    string (None when unchecked / no code entered).
+    """
     client = get_client()
     res = client.table('mobile_keys').update({
         'key_code': bool(key_code),
+        'key_code_value': key_code_value,
     }).eq('id', key_id).execute()
     return res.data[0] if res.data else None
 
@@ -611,3 +616,31 @@ def find_cold_lead_duplicates(name=None, phone=None, exclude_id=None):
                         'value': row.get('phone'),
                     })
     return matches
+
+
+# ---------------------------------------------------------------------------
+# Key code contacts (Mobile Keys -> Key Code Contacts)
+# ---------------------------------------------------------------------------
+
+def list_key_code_contacts():
+    """Return all key_code_contacts rows, oldest first (insertion order)."""
+    client = get_client()
+    res = client.table('key_code_contacts').select('*').order('created_at').execute()
+    return res.data or []
+
+
+def create_key_code_contact(data):
+    client = get_client()
+    res = client.table('key_code_contacts').insert(data).execute()
+    return res.data[0] if res.data else None
+
+
+def update_key_code_contact(contact_id, data):
+    client = get_client()
+    res = client.table('key_code_contacts').update(data).eq('id', contact_id).execute()
+    return res.data[0] if res.data else None
+
+
+def delete_key_code_contact(contact_id):
+    client = get_client()
+    client.table('key_code_contacts').delete().eq('id', contact_id).execute()
