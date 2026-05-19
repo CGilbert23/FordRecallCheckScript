@@ -446,6 +446,22 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
 
             recall_data = check_ford_recall(driver, vin, log_file)
 
+            # check_ford_recall returns hasRecall=None when the page was stale
+            # (VIN-match gate) or an error occurred. Restart the browser and
+            # re-check THIS vin before accepting it - otherwise a stale-page
+            # VIN is silently counted as an error and dropped from the output.
+            attempt = 0
+            while recall_data['hasRecall'] is None and attempt < 2:
+                attempt += 1
+                debug_log(log_file, vin, f"ERROR result, restarting browser and retrying ({attempt}/2)")
+                try:
+                    driver.quit()
+                except:
+                    pass
+                time.sleep(3)
+                driver = setup_driver()
+                recall_data = check_ford_recall(driver, vin, log_file)
+
             if recall_data['hasRecall'] is None:
                 errors += 1
             elif recall_data['hasRecall']:
