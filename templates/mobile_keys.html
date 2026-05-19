@@ -18,7 +18,7 @@
         .actions { margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
         .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #0050a8; }
-        .btn-xs { padding: 3px 10px; font-size: 0.75rem; }
+        .btn-xs { padding: 3px 8px; font-size: 0.7rem; }
         .btn-danger { background: #dc2626; }
         .btn-danger:hover { background: #991b1b; }
         .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
@@ -26,12 +26,12 @@
         .btn-inventory { background: #fff; color: #b45309; border: 1px solid #b45309; }
         .btn-inventory:hover { background: #fffbeb; }
         .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; cursor: default; opacity: 0.85; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1700px; }
-        th { text-align: center; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        .table-wrap { overflow: auto; max-height: calc(100vh - 240px); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.73rem; min-width: 1380px; }
+        th { text-align: center; padding: 8px 5px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
         thead tr:first-child th:first-child { border-top-left-radius: 6px; }
         thead tr:first-child th:last-child { border-top-right-radius: 6px; }
-        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; text-align: center; }
+        td { padding: 8px 5px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; text-align: center; }
         tr:last-child td { border-bottom: none; }
         .num { text-align: center; font-variant-numeric: tabular-nums; }
         .center { text-align: center; }
@@ -154,7 +154,7 @@
                             </td>
                             <td>{{ k.customer_name }}</td>
                             <td>{{ k.ro_number or '—' }}</td>
-                            <td style="font-family: monospace; font-size: 0.78rem;">{{ k.vin }}</td>
+                            <td style="font-family: monospace; font-size: 0.7rem;">{{ k.vin }}</td>
                             <td>{{ k.year }}</td>
                             <td>{{ k.make }}</td>
                             <td>{{ k.model }}</td>

@@ -1863,9 +1863,9 @@ def mobile_key_contacts():
 
 
 def _clean_key_code_contact_payload(payload):
-    """Pull store/name/email out of a JSON payload, blanks normalized to None."""
+    """Pull store/name/email/notes out of a JSON payload, blanks -> None."""
     out = {}
-    for field in ('store', 'name', 'email'):
+    for field in ('store', 'name', 'email', 'notes'):
         if field in payload:
             out[field] = (payload.get(field) or '').strip() or None
     return out

@@ -219,6 +219,7 @@ create table key_code_contacts (
   store text,
   name text,
   email text,
+  notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
