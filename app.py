@@ -330,9 +330,22 @@ def run_job(job_id, vins, output_file, vin_units=None, meta=None):
     recalls_found = None
     error_msg = None
 
+    is_scheduled = meta.get('schedule_run_id') is not None
+
+    def _patch_one_time(**fields):
+        """Best-effort update of the persisted one_time_runs row. Skipped for
+        scheduled jobs (they're tracked in schedule_runs instead)."""
+        if is_scheduled:
+            return
+        try:
+            db.update_one_time_run(job_id, **fields)
+        except Exception as e:
+            logger.error(f"Failed to update one_time_run for job {job_id}: {e}")
+
     try:
         logger.info(f"Job {job_id}: starting with {len(vins)} VINs")
         jobs[job_id]['status'] = 'running'
+        _patch_one_time(status='running')
         result = process_recalls(vins, output_file, progress_callback=on_progress, vin_units=vin_units)
         jobs[job_id]['status'] = 'complete'
         jobs[job_id]['result'] = result
@@ -340,7 +353,6 @@ def run_job(job_id, vins, output_file, vin_units=None, meta=None):
         recalls_found = result.get('with_recalls', 0)
         logger.info(f"Job {job_id}: complete - {recalls_found} recalls found")
 
-        is_scheduled = meta.get('schedule_run_id') is not None
         if is_scheduled:
             # Scheduled runs always send email (always-CC handles empty recipient lists).
             subject = meta.get('subject') or f"Ford Recall Results - {recalls_found} recall(s) found"
@@ -365,6 +377,15 @@ def run_job(job_id, vins, output_file, vin_units=None, meta=None):
                 db.finish_run(run_id, recalls_found=recalls_found, email_sent=bool(sent), error=error_msg)
             except Exception as e:
                 logger.error(f"Failed to finalize schedule_run {run_id}: {e}")
+        else:
+            final_status = jobs[job_id]['status']
+            _patch_one_time(
+                status=final_status,
+                finished_at=datetime.now(timezone.utc).isoformat(),
+                recalls_found=recalls_found,
+                email_sent=sent,
+                error=error_msg,
+            )
 
 
 @app.route('/test-chrome')
@@ -646,6 +667,20 @@ def submit():
 
     logger.info(f"Created job {job_id} (status: {initial_status})")
 
+    try:
+        db.create_one_time_run(
+            job_id=job_id,
+            vins=vins,
+            status=initial_status,
+            customer_name=name or None,
+            output_file=output_file,
+            email=email or None,
+        )
+    except Exception as e:
+        # Persisting the run is best-effort — if Supabase is down we still
+        # want the in-memory job to run. The run just won't appear in the log.
+        logger.error(f"Failed to persist one_time_run for job {job_id}: {e}")
+
     job_queue.put((job_id, vins, output_file, vin_units))
 
     return redirect(url_for('job_page', job_id=job_id))
@@ -673,8 +708,12 @@ def status(job_id):
 
 @app.route('/recall/run-log')
 def run_log():
-    sorted_jobs = sorted(jobs.items(), key=lambda x: x[1].get('started', ''), reverse=True)
-    return render_template('dashboard.html', jobs=sorted_jobs)
+    try:
+        rows = db.list_one_time_runs(limit=200)
+    except Exception as e:
+        logger.error(f"Failed to load one_time_runs: {e}")
+        rows = []
+    return render_template('dashboard.html', runs=rows)
 
 
 @app.route('/dashboard')

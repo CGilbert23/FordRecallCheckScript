@@ -42,6 +42,42 @@
         .file-name { font-family: monospace; font-size: 0.82rem; color: #444; word-break: break-all; }
         .recalls-zero { color: #888; }
         .recalls-found { color: #166534; font-weight: 600; }
+
+        .vin-link {
+            background: none; border: none; padding: 0;
+            color: #0068d6; cursor: pointer; font-family: inherit; font-size: 0.9rem;
+            font-weight: 600; text-decoration: underline; text-decoration-style: dotted;
+            text-underline-offset: 3px;
+        }
+        .vin-link:hover { color: #0050a8; }
+        .vin-link:disabled { color: #888; cursor: default; text-decoration: none; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .modal {
+            background: #fff; border-radius: 10px; padding: 24px;
+            width: 100%; max-width: 560px; max-height: 80vh; display: flex; flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+        }
+        .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .modal-head h2 { font-size: 1.1rem; color: #0a1f44; }
+        .modal-sub { font-size: 0.85rem; color: #666; margin-bottom: 16px; }
+        .modal-close { background: none; border: none; cursor: pointer; font-size: 1.4rem; color: #888; line-height: 1; padding: 4px 8px; }
+        .modal-close:hover { color: #333; }
+        .vin-list {
+            flex: 1; overflow-y: auto;
+            border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 14px;
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            font-size: 0.85rem; color: #222; background: #fafafa;
+            white-space: pre; line-height: 1.55;
+        }
+        .modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
+        .btn-copy { background: #0068d6; }
+        .copy-flash { color: #166534; font-weight: 600; align-self: center; margin-right: auto; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s; }
+        .copy-flash.show { opacity: 1; }
     </style>
 </head>
 <body>
@@ -51,7 +87,7 @@
         <p class="subtitle">Recent recall check jobs</p>
 
         <div class="card">
-            {% if jobs %}
+            {% if runs %}
             <table>
                 <thead>
                     <tr>
@@ -66,44 +102,49 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for job_id, job in jobs %}
+                    {% for run in runs %}
                     <tr>
-                        <td><a href="/job/{{ job_id }}" class="job-link">{{ job_id }}</a></td>
-                        <td>{{ job.started[:16] | replace('T', ' ') if job.started else '—' }}</td>
-                        <td class="file-name">{{ job.output_file.split('\\')[-1].split('/')[-1] if job.output_file else '—' }}</td>
-                        <td>{{ job.vin_count }}</td>
+                        <td><a href="/job/{{ run.job_id }}" class="job-link">{{ run.job_id }}</a></td>
+                        <td>{{ run.started_at[:16] | replace('T', ' ') if run.started_at else '—' }}</td>
+                        <td class="file-name">{{ run.output_file.split('\\')[-1].split('/')[-1] if run.output_file else '—' }}</td>
                         <td>
-                            {% if job.status == 'complete' and job.result %}
-                                {% set rc = job.result.get('with_recalls', 0) %}
-                                <span class="{{ 'recalls-found' if rc > 0 else 'recalls-zero' }}">{{ rc }}</span>
+                            {% if run.vins and run.vin_count > 0 %}
+                                <button type="button" class="vin-link" data-vins='{{ run.vins | tojson }}' data-jobid="{{ run.job_id }}" data-customer="{{ run.customer_name or '' }}">{{ run.vin_count }}</button>
+                            {% else %}
+                                <span class="recalls-zero">{{ run.vin_count }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if run.status == 'complete' and run.recalls_found is not none %}
+                                <span class="{{ 'recalls-found' if run.recalls_found > 0 else 'recalls-zero' }}">{{ run.recalls_found }}</span>
                             {% else %}
                                 <span class="recalls-zero">—</span>
                             {% endif %}
                         </td>
-                        <td>{{ job.email or '—' }}</td>
+                        <td>{{ run.email or '—' }}</td>
                         <td>
-                            {% if job.email_sent == true %}
+                            {% if run.email_sent == true %}
                                 <span class="email-yes">Sent</span>
-                            {% elif job.email_sent == false %}
+                            {% elif run.email_sent == false %}
                                 <span class="email-no">Failed</span>
-                            {% elif job.status in ['running', 'starting', 'queued'] %}
+                            {% elif run.status in ['running', 'starting', 'queued'] %}
                                 <span class="email-pending">Pending</span>
-                            {% elif not job.email %}
+                            {% elif not run.email %}
                                 <span class="email-pending">—</span>
                             {% else %}
                                 <span class="email-pending">Pending</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if job.status == 'complete' %}
+                            {% if run.status == 'complete' %}
                                 <span class="status-complete">Complete</span>
-                            {% elif job.status == 'running' %}
+                            {% elif run.status == 'running' %}
                                 <span class="status-running">Running</span>
-                            {% elif job.status == 'error' %}
+                            {% elif run.status == 'error' %}
                                 <span class="status-error">Error</span>
-                            {% elif job.status == 'starting' %}
+                            {% elif run.status == 'starting' %}
                                 <span class="status-starting">Starting</span>
-                            {% elif job.status == 'queued' %}
+                            {% elif run.status == 'queued' %}
                                 <span class="status-queued">Queued</span>
                             {% endif %}
                         </td>
@@ -116,5 +157,81 @@
             {% endif %}
         </div>
     </div>
+
+    <div id="vinModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true">
+        <div class="modal">
+            <div class="modal-head">
+                <h2 id="vinModalTitle">VIN list</h2>
+                <button type="button" class="modal-close" id="vinModalClose" aria-label="Close">&times;</button>
+            </div>
+            <p class="modal-sub" id="vinModalSub"></p>
+            <pre class="vin-list" id="vinModalList"></pre>
+            <div class="modal-actions">
+                <span class="copy-flash" id="vinCopyFlash">Copied!</span>
+                <button type="button" class="btn btn-secondary" id="vinModalCloseBtn">Close</button>
+                <button type="button" class="btn btn-copy" id="vinCopyBtn">Copy all</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const overlay = document.getElementById('vinModal');
+            const list = document.getElementById('vinModalList');
+            const title = document.getElementById('vinModalTitle');
+            const sub = document.getElementById('vinModalSub');
+            const copyBtn = document.getElementById('vinCopyBtn');
+            const copyFlash = document.getElementById('vinCopyFlash');
+
+            function openModal(vins, jobId, customer) {
+                list.textContent = vins.join('\n');
+                title.textContent = `VIN list — ${vins.length} VIN${vins.length === 1 ? '' : 's'}`;
+                const parts = [];
+                if (customer) parts.push(customer);
+                if (jobId) parts.push(`Job ${jobId}`);
+                sub.textContent = parts.join(' • ');
+                copyFlash.classList.remove('show');
+                overlay.style.display = 'flex';
+            }
+            function closeModal() {
+                overlay.style.display = 'none';
+            }
+
+            document.querySelectorAll('.vin-link').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    let vins;
+                    try { vins = JSON.parse(btn.dataset.vins); }
+                    catch (_) { vins = []; }
+                    if (!vins.length) return;
+                    openModal(vins, btn.dataset.jobid, btn.dataset.customer);
+                });
+            });
+
+            document.getElementById('vinModalClose').addEventListener('click', closeModal);
+            document.getElementById('vinModalCloseBtn').addEventListener('click', closeModal);
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.style.display !== 'none') closeModal();
+            });
+
+            copyBtn.addEventListener('click', async () => {
+                const text = list.textContent;
+                try {
+                    await navigator.clipboard.writeText(text);
+                } catch (_) {
+                    // Fallback for older browsers / non-HTTPS contexts.
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed'; ta.style.opacity = '0';
+                    document.body.appendChild(ta); ta.select();
+                    try { document.execCommand('copy'); } catch (_) {}
+                    document.body.removeChild(ta);
+                }
+                copyFlash.classList.add('show');
+                clearTimeout(copyFlash._t);
+                copyFlash._t = setTimeout(() => copyFlash.classList.remove('show'), 1600);
+            });
+        })();
+    </script>
 </body>
 </html>

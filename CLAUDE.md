@@ -29,7 +29,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `/leads/<id>/attempt` (POST) — record a contact attempt (`outcome` = `made_contact` or `left_voicemail`). A note is required server-side for `made_contact`; voicemail attempts always store a null note.
 - `/leads/<id>/last-contacted` (POST) — inline update of just `last_contacted_at` from the warm-prospect table (no full edit form).
 - `/recall-checker` — one-time VIN check form (posts to `/submit`). Accepts `?account_id=<id>` to prefill VINs and customer name from an account.
-- `/recall/run-log` — recent jobs (in-memory only, lost on restart)
+- `/recall/run-log` — recent ad-hoc jobs, persisted in the Supabase `one_time_runs` table (survives container restarts). The in-memory `jobs` dict in `app.py` is still used for live progress polling on `/status/<job_id>`. Clicking the VIN count opens a modal with the original VIN list + a Copy button so the rep can re-run it.
 - `/schedules` and children — recurring recall checks
 - `/notes` (GET/POST) — shared scratchpad page under Account Management. Auto-saves a couple seconds after typing stops via JSON POST; falls back to a normal form POST if JS is off. `beforeunload` fires `navigator.sendBeacon` to save on tab close.
 - `/dashboard` — 302 redirect to `/recall/run-log` (back-compat)
@@ -64,6 +64,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `supabase/seed_mobile_keys_2026-04-15.sql` — second one-time INSERT seed (5 rows cut on 2026-04-15, hand-supplied). Same cleanup conventions as the first seed. Not idempotent.
 
 ## Supabase tables
+- `one_time_runs` — one row per ad-hoc `/submit` recall check. Columns: `job_id` (12-char hex from app.py), `started_at`, `finished_at`, `status` (queued/starting/running/complete/error), `vin_count`, `vins` (text[] — the original list, used by the run-log modal for copy/re-run), `recalls_found`, `customer_name`, `output_file`, `email`, `email_sent`, `error`. Rows are INSERTed in `submit()` at queue time and UPDATEd by the worker on status transitions. Best-effort writes — Supabase failures don't break the in-memory job. Note: a container killed mid-job leaves the row in `status='running'` (no startup sweep).
 - `schedules` — recurring recall checks. Optional `account_id` FK to `accounts`. `cadence` is one of `daily`/`monthly`/`quarterly` (the legacy `weekly` was dropped in the 2026-05-11 migration). `anchor_at` (nullable timestamptz) is the first-fire timestamp for monthly/quarterly rows; the scheduler builds an `IntervalTrigger` of 30 or 90 days starting at that anchor. Null `anchor_at` falls back to the legacy cron behavior (1st of the month, or 1st of Jan/Apr/Jul/Oct).
 - `schedule_runs` — per-execution log (started_at, finished_at, recalls_found, email_sent, error)
 - `notepad` — shared scratchpad behind `/notes`. Single-row table — a CHECK constraint pins `id = 1`, so `db.get_notepad()` / `db.save_notepad()` always read/write that one row. No history kept.
@@ -114,7 +115,7 @@ docker run -d --name ford-checker -p 5000:10000 --env-file .env ford-checker
 ```
 
 ## Notes
-- One-time recall jobs run in background threads and results are stored in `outputs/`. Job state is in-memory only — restart loses the run log (the Supabase `schedule_runs` table only logs scheduled/manual runs of `schedules`, not ad-hoc one-time checks).
+- One-time recall jobs run in background threads and results are stored in `outputs/`. Live job state (progress %, in-flight status, output_file) is in-memory only — restart wipes the `jobs` dict and the `/job/<id>` and `/status/<id>` endpoints will show "Job not found" for old IDs. The historical *run log* itself is persisted to the Supabase `one_time_runs` table and survives restarts (scheduled runs continue to log to `schedule_runs` separately).
 - `/submit` is rate-limited to 200 VINs per rolling 6 hours (`RATE_LIMIT_MAX_VINS`/`RATE_LIMIT_WINDOW` in `app.py`). The check is "is the window already full?" — submissions aren't capped by size, so a 400-VIN job goes through if the window had room, then locks out further submits until enough of those 400 ages past 6 hours. State is in-memory only (lost on restart) and scheduled runs are exempt.
 - Single Gunicorn worker (see `gunicorn.conf.py`) keeps APScheduler to one instance — don't bump worker count without revisiting that.
 - Selenium requires a compatible Chrome/Chromium + ChromeDriver setup (handled in the Dockerfile).

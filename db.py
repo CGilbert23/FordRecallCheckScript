@@ -177,6 +177,50 @@ def finish_run(run_id, recalls_found=None, email_sent=False, error=None):
 
 
 # ---------------------------------------------------------------------------
+# One-time runs (ad-hoc /submit jobs — persisted so the run log survives
+# container restarts; the in-memory `jobs` dict in app.py is still used for
+# live progress polling)
+# ---------------------------------------------------------------------------
+
+def create_one_time_run(job_id, vins, status='queued', customer_name=None,
+                        output_file=None, email=None):
+    client = get_client()
+    res = client.table('one_time_runs').insert({
+        'job_id': job_id,
+        'status': status,
+        'vin_count': len(vins),
+        'vins': list(vins),
+        'customer_name': customer_name,
+        'output_file': output_file,
+        'email': email,
+    }).execute()
+    return res.data[0] if res.data else None
+
+
+def update_one_time_run(job_id, **fields):
+    """Patch a one-time run row. Pass any subset of: status, recalls_found,
+    finished_at, output_file, email_sent, error. Caller controls finished_at
+    (we don't auto-stamp it — some transitions like queued->running shouldn't)."""
+    if not fields:
+        return None
+    client = get_client()
+    res = client.table('one_time_runs').update(fields).eq('job_id', job_id).execute()
+    return res.data[0] if res.data else None
+
+
+def list_one_time_runs(limit=100):
+    client = get_client()
+    res = (
+        client.table('one_time_runs')
+        .select('*')
+        .order('started_at', desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return res.data or []
+
+
+# ---------------------------------------------------------------------------
 # Accounts
 # ---------------------------------------------------------------------------
 
