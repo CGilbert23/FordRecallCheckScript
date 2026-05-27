@@ -200,6 +200,10 @@ create table mobile_keys (
   -- opens when the checkbox is clicked. Default false / null.
   key_code boolean not null default false,
   key_code_value text,
+  -- Manual display order on the Key Database page. Reps drag rows up/down;
+  -- the list query sorts by sort_order asc only. New rows are inserted with
+  -- min(sort_order) - 1 so they land at the top.
+  sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -208,6 +212,7 @@ create index mobile_keys_vin_idx on mobile_keys(vin);
 create index mobile_keys_inventory_idx
   on mobile_keys(moved_to_inventory_at desc)
   where moved_to_inventory_at is not null;
+create index mobile_keys_sort_order_idx on mobile_keys(sort_order);
 create trigger mobile_keys_updated_at
   before update on mobile_keys
   for each row execute function set_updated_at();

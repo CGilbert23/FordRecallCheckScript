@@ -486,9 +486,7 @@ def list_mobile_keys():
         client.table('mobile_keys')
         .select('*')
         .is_('moved_to_inventory_at', 'null')
-        .order('status_done', desc=False)
-        .order('cut_date', desc=True)
-        .order('created_at', desc=True)
+        .order('sort_order', desc=False)
         .execute()
     )
     return res.data or []
@@ -502,8 +500,29 @@ def get_mobile_key(key_id):
 
 def create_mobile_key(data):
     client = get_client()
-    res = client.table('mobile_keys').insert(data).execute()
+    # New rows go to the top of the manual order: min(sort_order) - 1.
+    top = (
+        client.table('mobile_keys')
+        .select('sort_order')
+        .order('sort_order', desc=False)
+        .limit(1)
+        .execute()
+    )
+    current_min = top.data[0]['sort_order'] if top.data else 0
+    payload = dict(data)
+    payload['sort_order'] = current_min - 1
+    res = client.table('mobile_keys').insert(payload).execute()
     return res.data[0] if res.data else None
+
+
+def reorder_mobile_keys(ids):
+    """Persist a new manual order. `ids` is the list of key UUIDs in the
+    visual order the user dropped them into; each gets sort_order = index."""
+    client = get_client()
+    for index, key_id in enumerate(ids):
+        client.table('mobile_keys').update({
+            'sort_order': index,
+        }).eq('id', key_id).execute()
 
 
 def update_mobile_key(key_id, data):

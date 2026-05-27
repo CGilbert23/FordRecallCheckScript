@@ -1861,6 +1861,20 @@ def mobile_key_set_key_code(key_id):
     return redirect(url_for('mobile_keys_list'))
 
 
+@app.route('/mobile-keys/api/reorder', methods=['POST'])
+def mobile_key_reorder():
+    payload = request.get_json(silent=True) or {}
+    ids = payload.get('ids')
+    if not isinstance(ids, list) or not all(isinstance(i, str) and i for i in ids):
+        return jsonify({'ok': False, 'error': 'ids must be a list of strings'}), 400
+    try:
+        db.reorder_mobile_keys(ids)
+    except Exception as e:
+        logger.error(f"Reorder mobile keys failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+    return jsonify({'ok': True})
+
+
 @app.route('/mobile-keys/<key_id>/move-to-inventory', methods=['POST'])
 def mobile_key_move_to_inventory(key_id):
     try:

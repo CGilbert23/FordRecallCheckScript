@@ -26,6 +26,12 @@
         .btn-inventory { background: #fff; color: #b45309; border: 1px solid #b45309; }
         .btn-inventory:hover { background: #fffbeb; }
         .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; cursor: default; opacity: 0.85; }
+        .drag-handle { cursor: grab; color: #9ca3af; font-size: 1rem; line-height: 1; user-select: none; padding: 0 4px; }
+        .drag-handle:hover { color: #4b5563; }
+        .drag-handle:active { cursor: grabbing; }
+        tr.drag-disabled .drag-handle { cursor: not-allowed; opacity: 0.35; }
+        .sortable-ghost { opacity: 0.4; background: #eff6ff; }
+        .sortable-chosen { background: #f0f9ff; }
         .table-wrap { overflow: auto; max-height: calc(100vh - 240px); }
         table { width: 100%; border-collapse: collapse; font-size: 0.73rem; min-width: 1380px; }
         th { text-align: center; padding: 8px 5px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
@@ -97,10 +103,11 @@
                 <table>
                     <thead>
                         <tr>
+                            <th aria-label="Drag to reorder"></th>
                             <th class="center">Ordered</th>
                             <th class="center">Key Code</th>
                             <th class="center">Complete</th>
-                            <th>Date</th>
+                            <th>Appt Date</th>
                             <th>End User</th>
                             <th>Customer</th>
                             <th>RO</th>
@@ -122,7 +129,8 @@
                     </thead>
                     <tbody id="keyRows">
                     {% for k in keys %}
-                        <tr data-search="{{ k.year }} {{ k.make }} {{ k.model }}"{% if not k.status_done %} class="row-pending"{% endif %}>
+                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }}"{% if not k.status_done %} class="row-pending"{% endif %}>
+                            <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
                             <td class="center">
                                 <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-ordered" class="status-form">
                                     <input type="hidden" name="ordered" value="{{ '0' if k.ordered else '1' }}">
@@ -176,19 +184,12 @@
                             <td class="center">
                                 <div class="row-actions">
                                     <a href="/mobile-keys/{{ k.id }}/edit" class="btn btn-outline btn-xs">Edit</a>
-                                    {% if k.moved_to_inventory_at %}
-                                    <button type="button" class="btn btn-inventory-filled btn-xs" disabled title="Moved to inventory">Inventory</button>
-                                    {% else %}
-                                    <form method="POST" action="/mobile-keys/{{ k.id }}/move-to-inventory" onsubmit="return confirm('Move this key to inventory? It will stay in the database but show as moved.');">
-                                        <button type="submit" class="btn btn-inventory btn-xs">Inventory</button>
-                                    </form>
-                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                     {% endfor %}
                         <tr class="no-results-row" id="noResultsRow" style="display: none;">
-                            <td colspan="21">No keys match that search.</td>
+                            <td colspan="22">No keys match that search.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -214,7 +215,10 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script>
+        var keySortable = null;
+        var searchFiltering = false;
         (function () {
             var search = document.getElementById('keySearch');
             var rowsContainer = document.getElementById('keyRows');
@@ -244,8 +248,46 @@
                         countEl.textContent = total + ' key' + (total === 1 ? '' : 's') + ' on record';
                     }
                 }
+                // Disable drag while filtering: dropping a row in a filtered
+                // view would persist an order that doesn't match what the user
+                // sees with the full list.
+                searchFiltering = !!q;
+                if (keySortable) keySortable.option('disabled', searchFiltering);
+                rows.forEach(function (row) {
+                    if (searchFiltering) row.classList.add('drag-disabled');
+                    else row.classList.remove('drag-disabled');
+                });
             }
             search.addEventListener('input', applyFilter);
+        })();
+
+        // Drag-and-drop row reordering via SortableJS. On drop we POST the
+        // new row order to /mobile-keys/api/reorder; on error we reload so
+        // the UI matches what the server still believes.
+        (function () {
+            var tbody = document.getElementById('keyRows');
+            if (!tbody || typeof Sortable === 'undefined') return;
+            keySortable = Sortable.create(tbody, {
+                handle: '.drag-handle',
+                draggable: 'tr[data-key-id]',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function () {
+                    var ids = Array.prototype.slice
+                        .call(tbody.querySelectorAll('tr[data-key-id]'))
+                        .map(function (tr) { return tr.getAttribute('data-key-id'); });
+                    fetch('/mobile-keys/api/reorder', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: ids }),
+                    }).then(function (r) {
+                        if (!r.ok) window.location.reload();
+                    }).catch(function () {
+                        window.location.reload();
+                    });
+                }
+            });
         })();
 
         // Key Code modal: clicking the checkbox-style button opens a modal to
