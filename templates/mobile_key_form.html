@@ -63,8 +63,8 @@
             <form method="POST" action="{{ '/mobile-keys/' ~ key.id ~ '/edit' if key else '/mobile-keys/new' }}">
                 <div class="row">
                     <div>
-                        <label for="cut_date">Appt Date</label>
-                        <input type="date" name="cut_date" id="cut_date" required value="{{ form.cut_date or '' }}">
+                        <label for="cut_date">Appt Date <span style="color: #9ca3af; font-weight: 400; font-size: 0.85rem;">(optional)</span></label>
+                        <input type="date" name="cut_date" id="cut_date" value="{{ form.cut_date or '' }}">
                     </div>
                     <div>
                         <label>End User</label>

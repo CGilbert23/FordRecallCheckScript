@@ -152,7 +152,7 @@
                                     <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}" title="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}">{% if k.status_done %}✓{% endif %}</button>
                                 </form>
                             </td>
-                            <td>{{ k.cut_date | format_short_date }}</td>
+                            <td>{{ k.cut_date | format_short_date or '—' }}</td>
                             <td>
                                 {% if k.end_user == 'Internal' %}
                                     <span class="badge badge-internal">Internal</span>

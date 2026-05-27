@@ -170,7 +170,7 @@ create trigger notepad_updated_at
 -- total, discount, final charge) are computed in the app, not stored.
 create table mobile_keys (
   id uuid primary key default gen_random_uuid(),
-  cut_date date not null,
+  cut_date date,
   end_user text not null check (end_user in ('Internal', 'Customer')),
   customer_name text not null,
   ro_number text,

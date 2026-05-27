@@ -1628,12 +1628,14 @@ def _parse_mobile_key_form(req):
         'offset_eligible': req.form.get('offset_eligible', 'Y'),
     }
 
-    if not form['cut_date']:
-        return form, 'Date is required.', None
-    try:
-        cut_date = datetime.strptime(form['cut_date'], '%Y-%m-%d').date()
-    except ValueError:
-        return form, 'Date must be a valid date.', None
+    # Appt Date is optional — reps may log a key before it's scheduled.
+    if form['cut_date']:
+        try:
+            cut_date = datetime.strptime(form['cut_date'], '%Y-%m-%d').date()
+        except ValueError:
+            return form, 'Appt Date must be a valid date.', None
+    else:
+        cut_date = None
 
     if form['end_user'] not in db.KEY_END_USERS:
         return form, 'End User must be Internal or Customer.', None
@@ -1687,7 +1689,7 @@ def _parse_mobile_key_form(req):
         ro_number = ''
 
     payload = {
-        'cut_date': cut_date.isoformat(),
+        'cut_date': cut_date.isoformat() if cut_date else None,
         'end_user': form['end_user'],
         'customer_name': customer_name,
         'ro_number': ro_number or None,

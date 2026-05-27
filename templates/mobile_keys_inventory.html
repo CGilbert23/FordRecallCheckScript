@@ -74,7 +74,7 @@
                     <tbody>
                     {% for k in keys %}
                         <tr>
-                            <td>{{ k.cut_date | format_short_date }}</td>
+                            <td>{{ k.cut_date | format_short_date or '—' }}</td>
                             <td>{{ k.customer_name or '—' }}</td>
                             <td>{{ k.vin or '—' }}</td>
                             <td>{{ k.year }}</td>

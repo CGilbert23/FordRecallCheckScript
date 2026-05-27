@@ -53,7 +53,7 @@ ACCOUNT_CHECK_IN_DAYS = 25
 # own auction lot inventory — internally tracked but not a brand.
 KEY_END_USERS = ['Internal', 'Customer']
 KEY_INTERNAL_CUSTOMERS = [
-    'Chevrolet', 'CDJR', 'Hyundai', 'Lincoln', 'Ford', 'Subaru', 'Toyota', 'Bid Lot',
+    'FB Chevrolet', 'FB CDJR', 'FB Hyundai', 'FB Lincoln', 'FB Ford', 'FB Subaru', 'FB Toyota', 'Bid Lot',
 ]
 KEY_MAKES = [
     'Acura', 'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Ford',
