@@ -200,6 +200,10 @@ create table mobile_keys (
   -- opens when the checkbox is clicked. Default false / null.
   key_code boolean not null default false,
   key_code_value text,
+  -- Free-text notes per key. Surfaced as a textarea on the add/edit form,
+  -- and as a hover popover (notepad icon next to customer name) on the list
+  -- page when non-empty.
+  notes text,
   -- Manual display order on the Key Database page. Reps drag rows up/down;
   -- the list query sorts by sort_order asc only. New rows are inserted with
   -- min(sort_order) - 1 so they land at the top.

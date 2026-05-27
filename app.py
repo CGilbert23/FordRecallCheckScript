@@ -1626,6 +1626,7 @@ def _parse_mobile_key_form(req):
         'key_blank_cost': (req.form.get('key_blank_cost') or '').strip(),
         'programming_cost': (req.form.get('programming_cost') or '').strip(),
         'offset_eligible': req.form.get('offset_eligible', 'Y'),
+        'notes': (req.form.get('notes') or '').strip(),
     }
 
     # Appt Date is optional — reps may log a key before it's scheduled.
@@ -1704,6 +1705,7 @@ def _parse_mobile_key_form(req):
         'key_blank_cost': blank_cost,
         'programming_cost': programming_cost,
         'offset_eligible': form['offset_eligible'] == 'Y',
+        'notes': form['notes'] or None,
     }
     return form, None, payload
 
@@ -1812,6 +1814,7 @@ def mobile_key_edit(key_id):
         'key_blank_cost': f"{float(existing['key_blank_cost']):.2f}" if existing.get('key_blank_cost') is not None else '',
         'programming_cost': f"{float(existing.get('programming_cost') or db.KEY_PROGRAMMING_COST_DEFAULT):.2f}",
         'offset_eligible': 'Y' if existing.get('offset_eligible') else 'N',
+        'notes': existing.get('notes') or '',
     }
     return render_template(
         'mobile_key_form.html',

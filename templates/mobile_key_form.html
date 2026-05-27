@@ -182,6 +182,11 @@
                     </div>
                 </div>
 
+                <div class="field">
+                    <label for="notes">Notes <span style="color: #9ca3af; font-weight: 400; font-size: 0.85rem;">(optional)</span></label>
+                    <textarea name="notes" id="notes" rows="3" placeholder="Anything worth remembering about this key…">{{ form.notes or '' }}</textarea>
+                </div>
+
                 <div class="actions">
                     <button type="submit" class="btn">{{ 'Save Changes' if key else 'Create Key Record' }}</button>
                     <a href="/mobile-keys" class="btn btn-secondary">Cancel</a>
