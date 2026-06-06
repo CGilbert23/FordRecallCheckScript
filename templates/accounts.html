@@ -313,7 +313,6 @@
                 <textarea name="note" id="check_in_note" rows="3" placeholder="What happened on this visit?"></textarea>
                 <div class="modal-actions">
                     <button type="button" data-modal-close class="btn btn-sm btn-light">Cancel</button>
-                    <button type="submit" id="saveNoteBtn" class="btn btn-sm btn-outline">Save note</button>
                     <button type="submit" id="checkInBtn" class="btn btn-sm">Check In</button>
                 </div>
             </form>
@@ -383,7 +382,6 @@
         var checkInState = document.getElementById('checkInState');
         var checkInNote = document.getElementById('check_in_note');
         var checkInBtn = document.getElementById('checkInBtn');
-        var saveNoteBtn = document.getElementById('saveNoteBtn');
 
         function openCheckInModal(btn) {
             var id = btn.dataset.accountId;
@@ -394,16 +392,9 @@
 
             checkInTitle.textContent = 'Check in: ' + company;
             checkInState.textContent = checked
-                ? ('Last checked in ' + display + ' — editing note only.')
-                : 'Not yet checked in. Save a note now, or check in (with or without a note).';
+                ? ('Last checked in ' + display + '. Check in again to bump the date (with or without a note).')
+                : 'Not yet checked in. Check in now (with or without a note).';
             checkInNote.value = note;
-            // When already green, hide the Check In button — per design, the
-            // user waits for the 25-day auto-flip to re-check-in. They can
-            // still update the note in the meantime.
-            checkInBtn.style.display = checked ? 'none' : '';
-            saveNoteBtn.onclick = function() {
-                checkInForm.action = '/accounts/' + id + '/check-in-note';
-            };
             checkInBtn.onclick = function() {
                 checkInForm.action = '/accounts/' + id + '/check-in';
             };

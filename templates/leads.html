@@ -129,6 +129,7 @@
         .inline-date { border: 1px solid transparent; background: transparent; padding: 4px 6px; border-radius: 4px; font-family: inherit; font-size: 0.9rem; cursor: pointer; color: inherit; }
         .inline-date:hover { border-color: #cfd8e3; background: #f9fafb; }
         .inline-date:focus { border-color: #0068d6; background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        .col-market { white-space: nowrap; }
         .col-source { max-width: 200px; }
         .col-source .muted { white-space: normal; }
         .attempt-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
@@ -213,7 +214,7 @@
                         <tr>
                             <th class="col-actions">Actions</th>
                             <th>Company</th>
-                            <th>Market</th>
+                            <th class="col-market">Market</th>
                             <th>Source</th>
                             <th>Fleet Manager</th>
                             <th class="col-contact">Contact</th>
@@ -242,7 +243,7 @@
                                 </span>
                                 {% endif %}
                             </td>
-                            <td>{{ l.market }}</td>
+                            <td class="col-market">{{ l.market }}</td>
                             <td class="col-source">
                                 {% if l.lead_source == 'Other' and l.lead_source_other %}
                                     Other &middot; <span class="muted">{{ l.lead_source_other }}</span>
