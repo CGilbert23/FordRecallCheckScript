@@ -109,6 +109,26 @@
             border-bottom: 5px solid #fffbea;
         }
         .notes-popover:hover .notes-info { display: block; }
+        .info-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 4px; cursor: help; }
+        .info-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 15px; height: 15px; border-radius: 50%;
+            background: #0068d6; color: #fff; font-size: 0.62rem; font-weight: 700;
+            font-style: italic; font-family: Georgia, 'Times New Roman', serif;
+            text-transform: none; line-height: 1;
+        }
+        .info-bubble {
+            position: absolute; right: 0; top: 22px;
+            background: #1f2937; color: #fff;
+            padding: 10px 12px; border-radius: 6px;
+            font-size: 0.72rem; font-weight: 400; line-height: 1.5;
+            white-space: normal; text-align: left; text-transform: none; letter-spacing: normal;
+            width: 250px; z-index: 20;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            display: none;
+        }
+        .info-bubble strong { display: block; margin-bottom: 4px; }
+        .info-tip:hover .info-bubble, .info-tip:focus-within .info-bubble { display: block; }
     </style>
 </head>
 <body>
@@ -156,8 +176,18 @@
                             <th class="num">Fob $</th>
                             <th class="num">Blank $</th>
                             <th class="num col-divider">Prog $</th>
-                            <th class="num">Total $</th>
-                            <th class="center">Parts Discount</th>
+                            <th class="num">
+                                Total $
+                                <span class="info-tip" tabindex="0" aria-label="How Total is calculated">
+                                    <span class="info-icon">i</span>
+                                    <span class="info-bubble">
+                                        <strong>How Total is calculated</strong>
+                                        Parts + parts markup + programming, based on the Billing Information.<br><br>
+                                        &bull; Internal: 10% parts markup + $60 programming<br>
+                                        &bull; Customer: 35% parts markup + $100 programming
+                                    </span>
+                                </span>
+                            </th>
                             <th class="center">Offset</th>
                             <th class="center">Actions</th>
                         </tr>
@@ -223,7 +253,6 @@
                             <td class="num">{{ k.key_blank_cost | format_money }}</td>
                             <td class="num col-divider">{{ k.programming_cost | format_money }}</td>
                             <td class="num">{{ k.total_cost | format_money }}</td>
-                            <td class="center">{{ k.discount_needed | format_money }}</td>
                             <td class="center">
                                 {% if k.offset_eligible %}
                                     <span class="badge badge-yes">Y</span>

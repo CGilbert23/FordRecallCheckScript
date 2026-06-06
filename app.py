@@ -1594,10 +1594,12 @@ def _compute_key_totals(row):
     blank = float(row.get('key_blank_cost') or 0)
     programming = float(row.get('programming_cost') or 0)
     parts_total = fob + blank
-    # Excel uses ROUND(parts*0.3, 0) — whole dollars, banker's rounding.
+    # Billed Total = parts + parts markup + programming. Markup depends on who's
+    # billed: Internal 10%, Customer 35%.
+    markup_rate = (db.KEY_MARKUP_CUSTOMER if row.get('end_user') == 'Customer'
+                   else db.KEY_MARKUP_INTERNAL)
     row['total_parts_cost'] = parts_total
-    row['total_cost'] = parts_total + programming
-    row['discount_needed'] = float(round(parts_total * db.KEY_DISCOUNT_RATE))
+    row['total_cost'] = parts_total * (1 + markup_rate) + programming
     return row
 
 

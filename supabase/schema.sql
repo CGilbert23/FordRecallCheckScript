@@ -167,7 +167,7 @@ create trigger notepad_updated_at
 
 -- Mobile keys: one row per key cut by the mobile service team. Tracks the
 -- vehicle, parts + costs, and offset eligibility. Derived totals (parts
--- total, discount, final charge) are computed in the app, not stored.
+-- total, total cost) are computed in the app, not stored.
 create table mobile_keys (
   id uuid primary key default gen_random_uuid(),
   cut_date date,

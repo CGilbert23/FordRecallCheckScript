@@ -62,7 +62,11 @@ KEY_MAKES = [
 ]
 KEY_TYPES = ['Fob', 'Turnkey', 'Flip Key']
 KEY_PROGRAMMING_COST_DEFAULT = 60.00
-KEY_DISCOUNT_RATE = 0.30
+KEY_PROGRAMMING_COST_INTERNAL = 60.00
+KEY_PROGRAMMING_COST_CUSTOMER = 100.00
+# Parts markup applied to the billed Total, by who's billed.
+KEY_MARKUP_INTERNAL = 0.10
+KEY_MARKUP_CUSTOMER = 0.35
 
 # Xtime Follow Up Calls (cold_leads table). The 5 stores below are the
 # subset that run this workflow — distinct from MARKETS, which is the

@@ -34,6 +34,41 @@
         .empty { text-align: center; color: #888; padding: 40px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
+        .notes-popover { position: relative; display: inline-block; vertical-align: middle; }
+        .notes-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; margin-left: 4px; padding: 0;
+            border: 1px solid #cfd8e3; background: #fff; color: #0068d6;
+            border-radius: 4px; text-decoration: none; vertical-align: middle;
+            cursor: pointer;
+        }
+        .notes-icon:hover { background: #eff6ff; }
+        .notes-icon svg { width: 11px; height: 13px; display: block; }
+        .notes-info {
+            position: absolute; left: 0; top: 24px;
+            background: #fffbea; color: #1f2937;
+            border: 1px solid #f3e0a4;
+            padding: 10px 12px; border-radius: 6px;
+            font-size: 0.8rem; line-height: 1.45;
+            white-space: pre-wrap; word-break: break-word; text-align: left;
+            width: 280px; max-width: 90vw;
+            z-index: 10;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            display: none;
+        }
+        .notes-info::before {
+            content: ''; position: absolute; top: -6px; left: 10px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #f3e0a4;
+        }
+        .notes-info::after {
+            content: ''; position: absolute; top: -5px; left: 11px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid #fffbea;
+        }
+        .notes-popover:hover .notes-info { display: block; }
     </style>
 </head>
 <body>
@@ -75,7 +110,22 @@
                     {% for k in keys %}
                         <tr>
                             <td>{{ k.cut_date | format_short_date or '—' }}</td>
-                            <td>{{ k.customer_name or '—' }}</td>
+                            <td>
+                                {{ k.customer_name or '—' }}
+                                {% if k.notes %}
+                                <span class="notes-popover">
+                                    <a href="/mobile-keys/{{ k.id }}/edit" class="notes-icon" aria-label="View notes" title="View notes">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M19 4h-3.5l-1-1h-5l-1 1H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                                            <line x1="8" y1="10" x2="16" y2="10"/>
+                                            <line x1="8" y1="14" x2="16" y2="14"/>
+                                            <line x1="8" y1="18" x2="13" y2="18"/>
+                                        </svg>
+                                    </a>
+                                    <span class="notes-info">{{ k.notes }}</span>
+                                </span>
+                                {% endif %}
+                            </td>
                             <td>{{ k.vin or '—' }}</td>
                             <td>{{ k.year }}</td>
                             <td>{{ k.make }}</td>

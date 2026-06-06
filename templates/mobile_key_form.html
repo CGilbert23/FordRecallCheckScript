@@ -67,7 +67,7 @@
                         <input type="date" name="cut_date" id="cut_date" value="{{ form.cut_date or '' }}">
                     </div>
                     <div>
-                        <label>End User</label>
+                        <label>Billing Information</label>
                         <div class="radios">
                             {% for eu in end_users %}
                             <label>
@@ -168,10 +168,16 @@
 
                 <div class="row">
                     <div>
-                        <label for="programming_cost">Programming Cost</label>
-                        <div class="money-input">
-                            <input type="text" name="programming_cost" id="programming_cost" inputmode="decimal" value="{{ form.programming_cost or ('%.2f' | format(programming_default)) }}">
+                        <label for="programming_choice">Programming Cost</label>
+                        <select id="programming_choice">
+                            <option value="60">$60</option>
+                            <option value="100">$100</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <div class="money-input" id="programmingOtherWrap" style="display: none; margin-top: 8px;">
+                            <input type="text" id="programming_other" inputmode="decimal" placeholder="0.00">
                         </div>
+                        <input type="hidden" name="programming_cost" id="programming_cost" value="{{ form.programming_cost or '' }}">
                     </div>
                     <div>
                         <label>Offset Eligible</label>
@@ -214,6 +220,53 @@
         var internalField = document.getElementById('customerInternalField');
         var externalField = document.getElementById('customerExternalField');
         var endUserRadios = document.querySelectorAll('[data-end-user]');
+
+        // Programming cost: dropdown ($60/$100/Other) drives a hidden field the
+        // server reads. Billing default is $60 Internal / $100 Customer.
+        var progChoice = document.getElementById('programming_choice');
+        var progOtherWrap = document.getElementById('programmingOtherWrap');
+        var progOther = document.getElementById('programming_other');
+        var progHidden = document.getElementById('programming_cost');
+
+        function syncProgramming() {
+            if (progChoice.value === 'other') {
+                progOtherWrap.style.display = '';
+                progHidden.value = (progOther.value || '').trim();
+            } else {
+                progOtherWrap.style.display = 'none';
+                progHidden.value = progChoice.value;
+            }
+        }
+        progChoice.addEventListener('change', syncProgramming);
+        progOther.addEventListener('input', syncProgramming);
+
+        function applyBillingProgrammingDefault() {
+            var v = document.querySelector('[data-end-user]:checked');
+            var val = v ? v.value : 'Internal';
+            progChoice.value = (val === 'Customer') ? '100' : '60';
+            syncProgramming();
+        }
+
+        // Set the initial dropdown state from the saved value (edit) or fall
+        // back to the billing default (new record / unrecognized amount).
+        (function initProgramming() {
+            var initial = (progHidden.value || '').trim();
+            if (initial === '') {
+                applyBillingProgrammingDefault();
+                return;
+            }
+            var num = parseFloat(initial);
+            if (num === 60) {
+                progChoice.value = '60';
+            } else if (num === 100) {
+                progChoice.value = '100';
+            } else {
+                progChoice.value = 'other';
+                progOther.value = initial;
+            }
+            syncProgramming();
+        })();
+
         function syncEndUser() {
             var v = document.querySelector('[data-end-user]:checked');
             var val = v ? v.value : 'Internal';
@@ -225,7 +278,12 @@
                 externalField.style.display = '';
             }
         }
-        endUserRadios.forEach(function(r) { r.addEventListener('change', syncEndUser); });
+        endUserRadios.forEach(function(r) {
+            r.addEventListener('change', function() {
+                syncEndUser();
+                applyBillingProgrammingDefault();
+            });
+        });
         syncEndUser();
 
         var vinInput = document.getElementById('vin');
