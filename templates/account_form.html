@@ -81,8 +81,8 @@
                         {% if d.market %}({{ d.market }}){% endif %}
                         — {{ 'Account' if d.table == 'accounts' else 'Lead' }} matches on
                         {% if d.field == 'company_name' %}company name{% elif d.field == 'email' %}email <em>{{ d.value }}</em>{% elif d.field == 'phone' %}phone <em>{{ d.value }}</em>{% endif %}
-                        &middot;
-                        <a href="{{ ('/accounts/' ~ d.id ~ '/edit') if d.table == 'accounts' else ('/leads/' ~ d.id ~ '/edit') }}" target="_blank">open</a>
+                        {% if d.table == 'accounts' %}&middot;
+                        <a href="/accounts/{{ d.id }}/edit" target="_blank">open</a>{% endif %}
                     </li>
                     {% endfor %}
                 </ul>

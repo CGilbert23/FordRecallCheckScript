@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xtime Follow Up Calls - Fred Beans Mobile Service</title>
+    <title>Lead Tracking - Fred Beans Mobile Service</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e5e7eb; color: #333; min-height: 100vh; }
-        .page-nav {
-            background: #0a1f44; padding: 0 24px; display: flex; gap: 4px;
-            border-bottom: 1px solid #07182f;
-        }
-        .nav-tab {
-            color: #cdd6e4; text-decoration: none; padding: 14px 20px;
-            font-size: 0.95rem; font-weight: 500;
-            border-bottom: 3px solid transparent;
-        }
-        .nav-tab:hover { color: #fff; }
-        .nav-tab.active { color: #fff; border-bottom-color: #0068d6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; min-height: 100vh; }
+        /* Shared "Account Management" header style — kept identical to accounts.html / notes.html. */
+        .app-title { font-size: 1.8rem; margin-bottom: 12px; text-align: center; color: #0a1f44; font-weight: 700; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
 
         .page { max-width: 1500px; margin: 24px auto; padding: 0 24px 48px; }
         .page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
@@ -45,6 +40,13 @@
             border: 1px solid #0068d6; border-top: none;
             border-radius: 0 8px 8px 8px;
             padding: 16px;
+        }
+        /* Each table is capped to ~half the viewport and scrolls on its own.
+           The sticky <th> sticks within its scroll container. */
+        .table-scroll { max-height: 42vh; overflow-y: auto; border: 1px solid #e3e7ed; }
+        .hot-heading {
+            margin: 22px 0 8px; font-size: 0.95rem; font-weight: 700;
+            color: #0a1f44; text-transform: uppercase; letter-spacing: 0.03em;
         }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 0; border: 1px solid #e3e7ed; text-align: left; vertical-align: middle; }
@@ -74,7 +76,8 @@
             background-repeat: no-repeat;
             background-position: right 10px center;
         }
-        tr.hot-lead td.cell select:focus { background-color: #b8ecae; }
+        tr.hot-lead td.cell select:focus { background-color: #f6e7a0; }
+        tr.hot-lead.appt-booked td.cell select:focus { background-color: #b8ecae; }
         td.actions { text-align: center; width: 48px; padding: 0; }
         td.hot-cell { text-align: center; width: 56px; padding: 0; }
         td.hot-cell label {
@@ -82,7 +85,7 @@
             padding: 8px; cursor: pointer; height: 100%;
         }
         td.hot-cell input[type="checkbox"] {
-            width: 18px; height: 18px; cursor: pointer; accent-color: #1aaf5d;
+            width: 18px; height: 18px; cursor: pointer; accent-color: #0a1f44;
         }
         .delete-btn {
             background: none; border: none; cursor: pointer; color: #bbb;
@@ -90,11 +93,19 @@
         }
         .delete-btn:hover { color: #c0392b; }
 
-        tr.hot-lead td { background: #d6f5d0; }
-        tr.hot-lead td.cell input:focus, tr.hot-lead td.cell select:focus { background: #b8ecae; }
+        /* Not yet called — no contact date logged. Subtle grey tint.
+           Defined before .hot-lead so the green hot tint overrides it. */
+        tr.no-contact td { background: #eceef1; }
+
+        /* Hot prospect, no appointment booked yet → yellow. */
+        tr.hot-lead td { background: #fdf3c7; }
+        tr.hot-lead td.cell input:focus, tr.hot-lead td.cell select:focus { background: #f6e7a0; }
+        /* Hot prospect with an appointment booked → green. */
+        tr.hot-lead.appt-booked td { background: #d6f5d0; }
+        tr.hot-lead.appt-booked td.cell input:focus, tr.hot-lead.appt-booked td.cell select:focus { background: #b8ecae; }
 
         .add-row-btn {
-            margin-top: 14px; padding: 10px 18px;
+            margin-bottom: 14px; padding: 10px 18px;
             background: #fff; border: 1.5px dashed #9aa3b2;
             border-radius: 8px; cursor: pointer;
             color: #555; font-size: 0.92rem; font-weight: 500;
@@ -102,28 +113,65 @@
         }
         .add-row-btn:hover { background: #eaf3ff; border-color: #0068d6; color: #0068d6; }
 
-        .dup-toast {
-            position: fixed; top: 72px; right: 24px;
-            background: #fff8d6; border-left: 4px solid #f3c000;
-            padding: 12px 16px 12px 14px; border-radius: 6px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-            max-width: 380px; z-index: 1000;
-            font-size: 0.9rem; color: #5a4500;
-            animation: slideIn 0.18s ease-out;
+        /* Possible-duplicate popup — centered on screen. */
+        .dup-modal-backdrop {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(10,31,68,0.18);
+            display: flex; align-items: center; justify-content: center;
+            animation: dupFade 0.15s ease-out;
         }
-        .dup-toast .close {
-            background: none; border: none; float: right;
-            cursor: pointer; color: #5a4500;
-            font-size: 1.2rem; line-height: 1; padding: 0 0 0 8px;
-            margin-top: -2px;
+        .dup-modal {
+            background: #fff; border-top: 5px solid #f3c000;
+            border-radius: 10px; box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+            width: 92%; max-width: 460px; padding: 22px 24px 20px;
+            font-size: 0.92rem; color: #333;
+            animation: dupPop 0.16s ease-out;
         }
-        .dup-toast .close:hover { color: #000; }
-        .dup-toast strong { display: block; margin-bottom: 6px; }
-        .dup-toast .match-line { padding: 2px 0; }
-        @keyframes slideIn {
-            from { transform: translateX(20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .dup-modal h3 { font-size: 1.05rem; color: #8a6d00; margin-bottom: 4px; }
+        .dup-modal .sub { color: #777; font-size: 0.85rem; margin-bottom: 14px; }
+        .dup-modal .close {
+            background: none; border: none; float: right; cursor: pointer;
+            color: #999; font-size: 1.5rem; line-height: 1;
+            padding: 0 0 0 8px; margin-top: -6px;
         }
+        .dup-modal .close:hover { color: #333; }
+        .dup-match {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; padding: 10px 0; border-top: 1px solid #eee;
+        }
+        .dup-match:first-of-type { border-top: none; }
+        .dup-match .who { font-weight: 600; }
+        .dup-match .meta { color: #888; font-size: 0.82rem; }
+        .dup-match .goto-btn {
+            flex: none; background: #0068d6; color: #fff; border: none;
+            border-radius: 6px; padding: 7px 12px; font-size: 0.85rem;
+            font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .dup-match .goto-btn:hover { background: #0055b0; }
+        .dup-modal .more { color: #888; font-size: 0.82rem; margin-top: 10px; }
+        @keyframes dupFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes dupPop {
+            from { transform: scale(0.96); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Brief flash when "Go to record" lands on an existing row. */
+        @keyframes flashRow {
+            0%, 40% { background: #fde68a; }
+            100% { background: transparent; }
+        }
+        tr.flash-row td { animation: flashRow 1.6s ease-out; }
+
+        /* Full-note popup shown on hover when a Notes cell is truncated. */
+        .note-tip {
+            position: fixed; z-index: 1100; display: none;
+            background: #0a1f44; color: #fff;
+            padding: 8px 11px; border-radius: 6px;
+            font-size: 0.85rem; line-height: 1.35;
+            max-width: 320px; white-space: normal; word-break: break-word;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25); pointer-events: none;
+        }
+        .note-tip.show { display: block; }
 
         .save-indicator {
             position: fixed; bottom: 24px; right: 24px;
@@ -143,44 +191,67 @@
     </style>
 </head>
 <body>
-    {% include '_nav.html' %}
     <div class="page">
+        <h1 class="app-title">Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
         <div class="page-head">
             <div>
-                <h1>Xtime Follow Up Calls</h1>
-                <span class="subtitle">Recent service-lane visitors worth a follow-up call &mdash; potential mobile-service leads sourced from Xtime.</span>
+                <h1>Lead Tracking</h1>
+                <span class="subtitle">Prospects worth a follow-up call &mdash; potential mobile-service leads, by market.</span>
             </div>
         </div>
 
         <div class="market-tabs" id="marketTabs"></div>
         <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 56px; text-align: center;">Hot?</th>
-                        <th style="width: 16%">Name</th>
-                        <th style="width: 12%">Phone Number</th>
-                        <th style="width: 11%">Source</th>
-                        <th style="width: 11%">Lead Date</th>
-                        <th style="width: 11%">Contact Date</th>
-                        <th>Notes</th>
-                        <th style="width: 48px"></th>
-                    </tr>
-                </thead>
-                <tbody id="rowsBody">
-                    <tr><td colspan="8" class="loading-state">Loading…</td></tr>
-                </tbody>
-            </table>
             <button class="add-row-btn" id="addRowBtn">+ Add Row</button>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 56px; text-align: center;">Hot?</th>
+                            <th style="width: 16%">Name</th>
+                            <th style="width: 12%">Phone Number</th>
+                            <th style="width: 11%">Source</th>
+                            <th style="width: 100px">Lead Date</th>
+                            <th style="width: 100px">Contact Date</th>
+                            <th>Notes</th>
+                            <th style="width: 48px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="rowsBody">
+                        <tr><td colspan="8" class="loading-state">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 class="hot-heading">🔥 Hot Prospects</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 56px; text-align: center;">Hot?</th>
+                            <th style="width: 64px; text-align: center;">Appt Booked?</th>
+                            <th style="width: 16%">Name</th>
+                            <th style="width: 12%">Phone Number</th>
+                            <th style="width: 11%">Source</th>
+                            <th style="width: 100px">Lead Date</th>
+                            <th style="width: 100px">Contact Date</th>
+                            <th>Notes</th>
+                            <th style="width: 48px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="hotRowsBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="saveIndicator" class="save-indicator">Saved</div>
+    <div id="noteTip" class="note-tip"></div>
 
     <script>
         const MARKETS = {{ markets|tojson }};
         const SOURCES = {{ sources|tojson }};
-        const STARTING_ROW_COUNT = 100;
         const SAVE_DEBOUNCE_MS = 500;
         let activeMarket = MARKETS[0];
         const rowsByMarket = {};      // { market: [row, ...] } — rows include ghost (id=null) and saved (id=uuid)
@@ -202,7 +273,7 @@
                 market: market,
                 name: '', phone: '', source: '',
                 lead_date: '', contact_date: '',
-                notes: '', hot_lead: false,
+                notes: '', hot_lead: false, appt_booked: false,
             };
         }
 
@@ -218,12 +289,12 @@
                 contact_date: r.contact_date || '',
                 notes: r.notes || '',
                 hot_lead: !!r.hot_lead,
+                appt_booked: !!r.appt_booked,
             };
         }
 
-        function padToCount(rows, market) {
-            while (rows.length < STARTING_ROW_COUNT) rows.push(blankRow(market));
-            return rows;
+        function hasNoContact(row) {
+            return !(row.contact_date || '').trim();
         }
 
         function rowHasUserData(row) {
@@ -234,7 +305,8 @@
                 (row.lead_date || '').trim() ||
                 (row.contact_date || '').trim() ||
                 (row.notes || '').trim() ||
-                row.hot_lead
+                row.hot_lead ||
+                row.appt_booked
             );
         }
 
@@ -248,6 +320,7 @@
                 contact_date: row.contact_date || null,
                 notes: row.notes || null,
                 hot_lead: !!row.hot_lead,
+                appt_booked: !!row.appt_booked,
             };
         }
 
@@ -265,6 +338,27 @@
                 return `(${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)})`;
             }
             return value;
+        }
+
+        // ISO date (YYYY-MM-DD) is what we store; the cell shows a compact M/D/YY.
+        function formatDateDisplay(iso) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+            if (!m) return iso || '';
+            return `${parseInt(m[2], 10)}/${parseInt(m[3], 10)}/${m[1].slice(2)}`;
+        }
+
+        // Parse a typed date back to ISO. Accepts M/D/YY, M/D/YYYY (also - or .
+        // separators) and already-ISO strings. Returns '' if blank/unparseable.
+        function parseDateInput(str) {
+            const s = (str || '').trim();
+            if (!s) return '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            const m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/.exec(s);
+            if (!m) return '';
+            const mo = parseInt(m[1], 10), da = parseInt(m[2], 10);
+            const yr = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+            if (mo < 1 || mo > 12 || da < 1 || da > 31) return '';
+            return `${yr}-${String(mo).padStart(2, '0')}-${String(da).padStart(2, '0')}`;
         }
 
         function showSaveIndicator(text, isError) {
@@ -341,26 +435,88 @@
 
         function showDupToast(matches) {
             removeDupToast();
-            const toast = document.createElement('div');
-            toast.className = 'dup-toast';
-            toast.id = 'dupToast';
-            const lines = matches.slice(0, 4).map(m => {
+            const backdrop = document.createElement('div');
+            backdrop.className = 'dup-modal-backdrop';
+            backdrop.id = 'dupToast';
+            const shown = matches.slice(0, 4);
+            const rowsHtml = shown.map((m, i) => {
                 const label = m.field === 'phone' ? 'phone match' : 'name match';
                 const who = escapeHtml(m.name || '(no name)');
                 const where = escapeHtml(m.market || '');
-                return `<div class="match-line">• ${who} — ${where} <span style="color:#a07000">(${label})</span></div>`;
+                return `<div class="dup-match">
+                    <div><div class="who">${who}</div><div class="meta">${where} &middot; ${label}</div></div>
+                    <button class="goto-btn" type="button" data-idx="${i}">Go to record &rarr;</button>
+                </div>`;
             }).join('');
-            const more = matches.length > 4 ? `<div class="match-line" style="font-size:0.85em;">+ ${matches.length - 4} more</div>` : '';
-            toast.innerHTML = `<button class="close" type="button" aria-label="Dismiss">&times;</button><strong>Possible duplicate</strong>${lines}${more}`;
-            toast.querySelector('.close').addEventListener('click', removeDupToast);
-            document.body.appendChild(toast);
-            clearTimeout(toast._dismiss);
-            toast._dismiss = setTimeout(removeDupToast, 8000);
+            const more = matches.length > 4 ? `<div class="more">+ ${matches.length - 4} more not shown</div>` : '';
+            backdrop.innerHTML = `<div class="dup-modal" role="dialog" aria-label="Possible duplicate">
+                <button class="close" type="button" aria-label="Dismiss">&times;</button>
+                <h3>Possible duplicate</h3>
+                <div class="sub">This contact may already exist.</div>
+                ${rowsHtml}${more}
+            </div>`;
+            backdrop.querySelector('.close').addEventListener('click', removeDupToast);
+            // Click outside the card (on the backdrop) dismisses; clicks inside don't.
+            backdrop.addEventListener('click', (e) => { if (e.target === backdrop) removeDupToast(); });
+            backdrop.querySelectorAll('.goto-btn').forEach(btn => {
+                const m = shown[parseInt(btn.dataset.idx, 10)];
+                btn.addEventListener('click', () => goToRecord(m.id, m.market));
+            });
+            document.body.appendChild(backdrop);
         }
 
         function removeDupToast() {
             const t = document.getElementById('dupToast');
             if (t) t.remove();
+        }
+
+        async function goToRecord(id, market) {
+            removeDupToast();
+            if (market && market !== activeMarket) {
+                activeMarket = market;
+                renderTabs();
+            }
+            if (market && !rowsByMarket[market]) {
+                setLoadingState();
+                try { await loadRowsForMarket(market); }
+                catch (e) { console.error('Load failed:', e); rowsByMarket[market] = []; }
+            }
+            // Re-render so the target row is in the DOM with its data-id, then flash it.
+            renderRows();
+            highlightRecord(id);
+        }
+
+        function showNoteTip(el) {
+            const text = (el.value || '').trim();
+            // Only pop up when there's a note AND it's clipped by the cell width.
+            if (!text || el.scrollWidth <= el.clientWidth + 1) return;
+            const tip = document.getElementById('noteTip');
+            tip.textContent = text;
+            tip.classList.add('show');
+            const r = el.getBoundingClientRect();
+            const tw = tip.offsetWidth, th = tip.offsetHeight;
+            let left = r.left;
+            if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+            if (left < 12) left = 12;
+            let top = r.bottom + 6;
+            if (top + th > window.innerHeight - 12) top = r.top - th - 6;
+            tip.style.left = left + 'px';
+            tip.style.top = top + 'px';
+        }
+
+        function hideNoteTip() {
+            document.getElementById('noteTip').classList.remove('show');
+        }
+
+        function highlightRecord(id) {
+            if (!id) return;
+            const tr = document.querySelector(`tr[data-id="${id}"]`);
+            if (!tr) return;
+            tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            tr.classList.remove('flash-row');
+            void tr.offsetWidth;   // restart the animation if re-triggered
+            tr.classList.add('flash-row');
+            setTimeout(() => tr.classList.remove('flash-row'), 1700);
         }
 
         function escapeHtml(s) {
@@ -393,7 +549,7 @@
                         try { await loadRowsForMarket(m); }
                         catch (e) {
                             console.error('Load failed:', e);
-                            rowsByMarket[m] = padToCount([], m);
+                            rowsByMarket[m] = [];
                         }
                     }
                     renderRows();
@@ -407,76 +563,132 @@
             const data = await res.json();
             if (!data.ok) throw new Error(data.error || 'load failed');
             const rows = (data.rows || []).map(r => normalizeRow(r, market));
-            rowsByMarket[market] = padToCount(rows, market);
+            rowsByMarket[market] = rows;
         }
 
         function setLoadingState() {
-            const body = document.getElementById('rowsBody');
-            body.innerHTML = '<tr><td colspan="8" class="loading-state">Loading…</td></tr>';
+            document.getElementById('rowsBody').innerHTML = '<tr><td colspan="8" class="loading-state">Loading…</td></tr>';
+            document.getElementById('hotRowsBody').innerHTML = '';
+        }
+
+        function buildRow(row) {
+            const tr = document.createElement('tr');
+            tr.dataset.clientId = row.clientId;
+            if (row.id) tr.dataset.id = row.id;
+            if (row.hot_lead) tr.classList.add('hot-lead');
+            if (row.appt_booked) tr.classList.add('appt-booked');
+            if (hasNoContact(row)) tr.classList.add('no-contact');
+            const checked = row.hot_lead ? ' checked' : '';
+            const apptChecked = row.appt_booked ? ' checked' : '';
+            const isGhost = !row.id;
+            // The "Appt Booked?" column only exists in the Hot Prospects table.
+            const apptCell = row.hot_lead
+                ? `<td class="hot-cell"><label><input type="checkbox" data-field="appt_booked"${apptChecked}></label></td>`
+                : '';
+            tr.innerHTML = `
+                <td class="hot-cell"><label><input type="checkbox" data-field="hot_lead"${checked}></label></td>
+                ${apptCell}
+                <td class="cell"><input type="text" data-field="name" value="${escapeAttr(row.name)}"></td>
+                <td class="cell"><input type="tel" data-field="phone" value="${escapeAttr(row.phone)}"></td>
+                <td class="cell"><select data-field="source"><option value=""></option>${buildSourceOptions(row.source)}</select></td>
+                <td class="cell"><input type="text" inputmode="numeric" placeholder="M/D/YY" data-field="lead_date" value="${escapeAttr(formatDateDisplay(row.lead_date))}"></td>
+                <td class="cell"><input type="text" inputmode="numeric" placeholder="M/D/YY" data-field="contact_date" value="${escapeAttr(formatDateDisplay(row.contact_date))}"></td>
+                <td class="cell"><input type="text" data-field="notes" value="${escapeAttr(row.notes)}"></td>
+                <td class="actions">${isGhost ? '' : '<button class="delete-btn" title="Delete row" aria-label="Delete row">&times;</button>'}</td>
+            `;
+
+            tr.querySelectorAll('input, select').forEach(el => {
+                const field = el.dataset.field;
+                const isCheckbox = el.type === 'checkbox';
+
+                // Date cells show M/D/YY but persist ISO. Parse only on blur so
+                // half-typed values don't get saved or clobbered mid-entry.
+                if (field === 'lead_date' || field === 'contact_date') {
+                    el.addEventListener('blur', () => {
+                        const iso = parseDateInput(el.value);
+                        row[field] = iso;
+                        el.value = formatDateDisplay(iso);   // canonical display, or '' if invalid
+                        if (field === 'contact_date') tr.classList.toggle('no-contact', hasNoContact(row));
+                        schedulePersist(row);
+                    });
+                    return;
+                }
+
+                const writeBack = () => {
+                    const value = isCheckbox ? el.checked : el.value;
+                    row[field] = value;
+                    if (field === 'hot_lead') tr.classList.toggle('hot-lead', !!value);
+                    if (field === 'appt_booked') tr.classList.toggle('appt-booked', !!value);
+                    if (field === 'contact_date') tr.classList.toggle('no-contact', hasNoContact(row));
+                    schedulePersist(row);
+                    // Hot toggle regroups the row into the other table; booking
+                    // re-sorts the hot table so green rows float to the top.
+                    if (field === 'hot_lead' || field === 'appt_booked') renderRows();
+                };
+                el.addEventListener('input', writeBack);
+                el.addEventListener('change', writeBack);
+
+                if (field === 'phone') {
+                    el.addEventListener('blur', async () => {
+                        const formatted = formatPhone(el.value);
+                        if (formatted !== el.value) {
+                            el.value = formatted;
+                            row.phone = formatted;
+                            schedulePersist(row);
+                        }
+                        // Re-render delete button if this blur created a saveable row.
+                        // Skip — too much DOM churn. Delete button shows after page refresh / row promotion via re-render-from-server is handled lazily.
+                        await checkDuplicate(row);
+                        // If the row was just promoted from ghost to saved, refresh actions cell
+                        refreshActionsCell(tr, row);
+                    });
+                }
+                if (field === 'name') {
+                    el.addEventListener('blur', async () => {
+                        await checkDuplicate(row);
+                        refreshActionsCell(tr, row);
+                    });
+                }
+                if (field === 'notes') {
+                    el.addEventListener('mouseenter', () => showNoteTip(el));
+                    el.addEventListener('mouseleave', hideNoteTip);
+                    el.addEventListener('focus', hideNoteTip);
+                    el.addEventListener('input', hideNoteTip);
+                }
+            });
+
+            const delBtn = tr.querySelector('.delete-btn');
+            if (delBtn) bindDeleteButton(delBtn, row);
+
+            return tr;
         }
 
         function renderRows() {
-            const body = document.getElementById('rowsBody');
+            const mainBody = document.getElementById('rowsBody');
+            const hotBody = document.getElementById('hotRowsBody');
             const rows = rowsByMarket[activeMarket] || [];
-            body.innerHTML = '';
+            mainBody.innerHTML = '';
+            hotBody.innerHTML = '';
 
-            rows.forEach((row) => {
-                const tr = document.createElement('tr');
-                tr.dataset.clientId = row.clientId;
-                if (row.hot_lead) tr.classList.add('hot-lead');
-                const checked = row.hot_lead ? ' checked' : '';
-                const isGhost = !row.id;
-                tr.innerHTML = `
-                    <td class="hot-cell"><label><input type="checkbox" data-field="hot_lead"${checked}></label></td>
-                    <td class="cell"><input type="text" data-field="name" value="${escapeAttr(row.name)}"></td>
-                    <td class="cell"><input type="tel" data-field="phone" value="${escapeAttr(row.phone)}"></td>
-                    <td class="cell"><select data-field="source"><option value=""></option>${buildSourceOptions(row.source)}</select></td>
-                    <td class="cell"><input type="date" data-field="lead_date" value="${escapeAttr(row.lead_date)}"></td>
-                    <td class="cell"><input type="date" data-field="contact_date" value="${escapeAttr(row.contact_date)}"></td>
-                    <td class="cell"><input type="text" data-field="notes" value="${escapeAttr(row.notes)}"></td>
-                    <td class="actions">${isGhost ? '' : '<button class="delete-btn" title="Delete row" aria-label="Delete row">&times;</button>'}</td>
-                `;
+            // One shared array — split only at render time, order preserved.
+            const main = rows.filter(r => !r.hot_lead);
+            // Booked (green) rows float to the top of the hot table, separated
+            // from the not-yet-booked (yellow) ones. Stable sort keeps each
+            // group in its existing newest-first order.
+            const hot = rows.filter(r => r.hot_lead)
+                .sort((a, b) => (b.appt_booked ? 1 : 0) - (a.appt_booked ? 1 : 0));
 
-                tr.querySelectorAll('input, select').forEach(el => {
-                    const field = el.dataset.field;
-                    const isCheckbox = el.type === 'checkbox';
-                    const writeBack = () => {
-                        const value = isCheckbox ? el.checked : el.value;
-                        row[field] = value;
-                        if (field === 'hot_lead') tr.classList.toggle('hot-lead', !!value);
-                        schedulePersist(row);
-                    };
-                    el.addEventListener('input', writeBack);
-                    el.addEventListener('change', writeBack);
+            if (main.length === 0) {
+                mainBody.innerHTML = '<tr><td colspan="8" class="empty-state">No leads yet — click + Add Row to start.</td></tr>';
+            } else {
+                main.forEach(row => mainBody.appendChild(buildRow(row)));
+            }
 
-                    if (field === 'phone') {
-                        el.addEventListener('blur', async () => {
-                            const formatted = formatPhone(el.value);
-                            if (formatted !== el.value) {
-                                el.value = formatted;
-                                row.phone = formatted;
-                                schedulePersist(row);
-                            }
-                            // Re-render delete button if this blur created a saveable row.
-                            // Skip — too much DOM churn. Delete button shows after page refresh / row promotion via re-render-from-server is handled lazily.
-                            await checkDuplicate(row);
-                            // If the row was just promoted from ghost to saved, refresh actions cell
-                            refreshActionsCell(tr, row);
-                        });
-                    }
-                    if (field === 'name') {
-                        el.addEventListener('blur', async () => {
-                            await checkDuplicate(row);
-                            refreshActionsCell(tr, row);
-                        });
-                    }
-                });
-
-                const delBtn = tr.querySelector('.delete-btn');
-                if (delBtn) bindDeleteButton(delBtn, row);
-
-                body.appendChild(tr);
-            });
+            if (hot.length === 0) {
+                hotBody.innerHTML = '<tr><td colspan="9" class="empty-state">No hot prospects yet.</td></tr>';
+            } else {
+                hot.forEach(row => hotBody.appendChild(buildRow(row)));
+            }
         }
 
         function refreshActionsCell(tr, row) {
@@ -502,7 +714,6 @@
                     const list = rowsByMarket[activeMarket];
                     const i = list.findIndex(r => r.clientId === row.clientId);
                     if (i >= 0) list.splice(i, 1);
-                    padToCount(list, activeMarket);
                     renderRows();
                     showSaveIndicator('Deleted');
                 } catch (e) {
@@ -516,12 +727,11 @@
             const list = rowsByMarket[activeMarket] || (rowsByMarket[activeMarket] = []);
             const fresh = blankRow(activeMarket);
             fresh.lead_date = today();
-            list.push(fresh);
+            list.unshift(fresh);
             renderRows();
-            const trs = document.querySelectorAll('#rowsBody tr');
-            const last = trs[trs.length - 1];
-            if (last) {
-                const nameInput = last.querySelector('input[data-field="name"]');
+            const firstRow = document.querySelector('#rowsBody tr');
+            if (firstRow) {
+                const nameInput = firstRow.querySelector('input[data-field="name"]');
                 if (nameInput) nameInput.focus();
             }
         });
@@ -532,7 +742,7 @@
                 await loadRowsForMarket(activeMarket);
             } catch (e) {
                 console.error('Initial load failed:', e);
-                rowsByMarket[activeMarket] = padToCount([], activeMarket);
+                rowsByMarket[activeMarket] = [];
             }
             renderRows();
         })();

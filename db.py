@@ -71,8 +71,8 @@ KEY_MARKUP_CUSTOMER = 0.35
 # Xtime Follow Up Calls (cold_leads table). The 5 stores below are the
 # subset that run this workflow — distinct from MARKETS, which is the
 # 9-store list used elsewhere.
-COLD_LEAD_MARKETS = ['Doylestown', 'Newtown/Langhorne', 'Mechanicsburg', 'Washington', 'West Chester/Exton']
-COLD_LEAD_SOURCES = ['Xtime', 'Sales', 'Other']
+COLD_LEAD_MARKETS = ['Doylestown', 'Exton', 'Newtown', 'Mechanicsburg', 'Washington']
+COLD_LEAD_SOURCES = ['Sales', 'Service', 'Parts', 'Xtime', 'Other']
 
 _client: Client | None = None
 
@@ -614,7 +614,8 @@ def list_cold_leads(market=None):
     q = client.table('cold_leads').select('*')
     if market:
         q = q.eq('market', market)
-    res = q.order('created_at').execute()
+    # Newest first so freshly-added rows show at the top of the table.
+    res = q.order('created_at', desc=True).execute()
     return res.data or []
 
 

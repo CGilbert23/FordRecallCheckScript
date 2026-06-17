@@ -227,15 +227,16 @@ create trigger mobile_keys_updated_at
 create table cold_leads (
   id uuid primary key default gen_random_uuid(),
   market text not null check (market in (
-    'Doylestown', 'Newtown/Langhorne', 'Mechanicsburg', 'Washington', 'West Chester/Exton'
+    'Doylestown', 'Exton', 'Newtown', 'Mechanicsburg', 'Washington'
   )),
   name text,
   phone text,
-  source text check (source is null or source in ('Xtime', 'Sales', 'Other')),
+  source text check (source is null or source in ('Sales', 'Service', 'Parts', 'Xtime', 'Other')),
   lead_date date,
   contact_date date,
   notes text,
   hot_lead boolean not null default false,
+  appt_booked boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
