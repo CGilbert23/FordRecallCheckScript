@@ -19,6 +19,31 @@
         .page-head h1 { font-size: 1.6rem; color: #0a1f44; font-weight: 700; }
         .page-head .subtitle { display: block; font-size: 0.85rem; color: #888; font-weight: 400; margin-top: 4px; }
 
+        /* Cross-location pipeline summary, above the market tabs. */
+        .summary-wrap {
+            background: #fff; border: 1px solid #e3e7ed; border-radius: 10px;
+            padding: 14px 16px; margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .summary-wrap h2 {
+            font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em;
+            color: #0a1f44; margin-bottom: 12px; font-weight: 700;
+        }
+        .summary-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+        .summary-card {
+            flex: 1 1 0; min-width: 140px;
+            border: 1px solid #e3e7ed; border-radius: 8px;
+            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+        }
+        .summary-card .num { font-size: 1.7rem; font-weight: 700; line-height: 1; color: #0a1f44; }
+        .summary-card .label {
+            font-size: 0.8rem; color: #555; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        .summary-card.c-new { background: #f1f3f6; border-color: #d8dde4; }
+        .summary-card.c-hot { background: #fdf3c7; border-color: #f0e2a0; }
+        .summary-card.c-conv { background: #d6f5d0; border-color: #b8ecae; }
+
         .market-tabs { display: flex; gap: 2px; margin-bottom: 0; border-bottom: 2px solid #0068d6; }
         .market-tab {
             padding: 10px 22px; cursor: pointer; background: #d8dee8;
@@ -199,6 +224,11 @@
                 <h1>Lead Tracking</h1>
                 <span class="subtitle">Prospects worth a follow-up call &mdash; potential mobile-service leads, by market.</span>
             </div>
+        </div>
+
+        <div class="summary-wrap">
+            <h2><span id="summaryMarket"></span> Pipeline Summary</h2>
+            <div class="summary-cards" id="summaryCards"></div>
         </div>
 
         <div class="market-tabs" id="marketTabs"></div>
@@ -398,7 +428,7 @@
             saveTimers[row.clientId] = setTimeout(async () => {
                 try {
                     const saved = await persistRow(row);
-                    if (saved) showSaveIndicator('Saved');
+                    if (saved) { showSaveIndicator('Saved'); renderSummary(); }
                 } catch (e) {
                     console.error('Save failed:', e);
                     showSaveIndicator('Save failed', true);
@@ -540,22 +570,51 @@
                 const tab = document.createElement('div');
                 tab.className = 'market-tab' + (m === activeMarket ? ' active' : '');
                 tab.textContent = m;
-                tab.addEventListener('click', async () => {
-                    if (activeMarket === m) return;
-                    activeMarket = m;
-                    renderTabs();
-                    if (!rowsByMarket[m]) {
-                        setLoadingState();
-                        try { await loadRowsForMarket(m); }
-                        catch (e) {
-                            console.error('Load failed:', e);
-                            rowsByMarket[m] = [];
-                        }
-                    }
-                    renderRows();
-                });
+                tab.addEventListener('click', () => switchMarket(m));
                 container.appendChild(tab);
             });
+        }
+
+        async function switchMarket(m) {
+            if (activeMarket === m) return;
+            activeMarket = m;
+            renderTabs();
+            if (!rowsByMarket[m]) {
+                setLoadingState();
+                try { await loadRowsForMarket(m); }
+                catch (e) { console.error('Load failed:', e); rowsByMarket[m] = []; }
+            }
+            renderRows();
+        }
+
+        // Summary buckets, mirroring the row tints:
+        //   New Leads  — saved, not hot, no contact date yet (grey rows)
+        //   Hot        — hot, no appointment booked (yellow rows)
+        //   Converted  — hot, appointment booked (green rows)
+        // Only persisted rows (with an id) count — blank ghost rows are ignored.
+        function countsForMarket(market) {
+            const rows = (rowsByMarket[market] || []).filter(r => r.id);
+            let newLeads = 0, hot = 0, conv = 0;
+            rows.forEach(r => {
+                if (r.hot_lead) {
+                    if (r.appt_booked) conv++; else hot++;
+                } else if (hasNoContact(r)) {
+                    newLeads++;
+                }
+            });
+            return { newLeads, hot, conv };
+        }
+
+        function renderSummary() {
+            const cards = document.getElementById('summaryCards');
+            if (!cards) return;
+            const label = document.getElementById('summaryMarket');
+            if (label) label.textContent = activeMarket;
+            const c = countsForMarket(activeMarket);
+            cards.innerHTML = `
+                <div class="summary-card c-new"><span class="num">${c.newLeads}</span><span class="label">New Leads</span></div>
+                <div class="summary-card c-hot"><span class="num">${c.hot}</span><span class="label">Hot Prospects</span></div>
+                <div class="summary-card c-conv"><span class="num">${c.conv}</span><span class="label">Converted</span></div>`;
         }
 
         async function loadRowsForMarket(market) {
@@ -608,7 +667,10 @@
                         const iso = parseDateInput(el.value);
                         row[field] = iso;
                         el.value = formatDateDisplay(iso);   // canonical display, or '' if invalid
-                        if (field === 'contact_date') tr.classList.toggle('no-contact', hasNoContact(row));
+                        if (field === 'contact_date') {
+                            tr.classList.toggle('no-contact', hasNoContact(row));
+                            renderSummary();
+                        }
                         schedulePersist(row);
                     });
                     return;
@@ -689,6 +751,8 @@
             } else {
                 hot.forEach(row => hotBody.appendChild(buildRow(row)));
             }
+
+            renderSummary();
         }
 
         function refreshActionsCell(tr, row) {
