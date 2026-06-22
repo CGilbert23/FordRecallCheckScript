@@ -16,6 +16,7 @@ import openpyxl
 import db
 import scheduler
 import dealership_locator as dealership_locator_mod
+import appt_importer
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -537,6 +538,77 @@ def cold_leads_api_check_duplicate():
         return jsonify({'ok': True, 'matches': matches})
     except Exception as e:
         logger.error(f"cold_leads dup check failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/cold-leads/api/parse-upload', methods=['POST'])
+def cold_leads_api_parse_upload():
+    """Parse an uploaded appointments .xlsx, classify the commercial-business
+    rows, and drop any that already exist as cold leads. Returns the candidates
+    for the client-side preview/approval modal — nothing is inserted here."""
+    try:
+        f = request.files.get('excel_file')
+        if not f or not f.filename:
+            return jsonify({'ok': False, 'error': 'No file uploaded'}), 400
+        candidates, stats = appt_importer.parse_appointments(
+            f.read(), db.COLD_LEAD_MARKETS
+        )
+
+        # Dedup against existing leads in one pass (fetch once, filter in memory).
+        existing = db.list_cold_leads()
+        names = {(r.get('name') or '').strip().lower() for r in existing if r.get('name')}
+        phones = set()
+        for r in existing:
+            d = ''.join(c for c in (r.get('phone') or '') if c.isdigit())
+            if len(d) >= 10:
+                phones.add(d)
+
+        fresh = []
+        skipped_existing = 0
+        for c in candidates:
+            name_lc = (c['name'] or '').strip().lower()
+            phone_d = ''.join(ch for ch in (c['phone'] or '') if ch.isdigit())
+            if name_lc in names or (len(phone_d) >= 10 and phone_d in phones):
+                skipped_existing += 1
+                continue
+            fresh.append(c)
+
+        return jsonify({
+            'ok': True,
+            'candidates': fresh,
+            'skipped_existing': skipped_existing,
+            'skipped_people': stats['people_skipped'],
+            'skipped_dealers': stats['dealers_skipped'],
+            'unmatched_market': stats['unmatched_market'],
+        })
+    except Exception as e:
+        logger.error(f"cold_leads parse-upload failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@app.route('/cold-leads/api/import', methods=['POST'])
+def cold_leads_api_import():
+    """Bulk-insert the rows the user approved in the preview modal. Each row is
+    forced to source='Xtime' and validated/normalized via _clean_cold_lead_payload."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        rows = payload.get('rows') or []
+        created = 0
+        errors = []
+        for i, r in enumerate(rows):
+            try:
+                r = dict(r)
+                r['source'] = 'Xtime'
+                data = _clean_cold_lead_payload(r, partial=False)
+                if 'market' not in data:
+                    raise ValueError('market required')
+                db.create_cold_lead(data)
+                created += 1
+            except Exception as e:
+                errors.append({'index': i, 'name': r.get('name'), 'error': str(e)})
+        return jsonify({'ok': True, 'created': created, 'errors': errors})
+    except Exception as e:
+        logger.error(f"cold_leads import failed: {e}")
         return jsonify({'ok': False, 'error': str(e)}), 500
 
 

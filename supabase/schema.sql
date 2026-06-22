@@ -222,12 +222,12 @@ create trigger mobile_keys_updated_at
   for each row execute function set_updated_at();
 
 -- Cold leads: backs the Xtime Follow Up Calls page. One row per prospect to
--- call. The 5 markets here are the subset that actually run the Xtime
+-- call. The 6 markets here are the subset that actually run the Xtime
 -- follow-up workflow.
 create table cold_leads (
   id uuid primary key default gen_random_uuid(),
   market text not null check (market in (
-    'Doylestown', 'Exton', 'Newtown', 'Mechanicsburg', 'Washington'
+    'Doylestown', 'Exton', 'Langhorne', 'Newtown', 'Mechanicsburg', 'Washington'
   )),
   name text,
   phone text,

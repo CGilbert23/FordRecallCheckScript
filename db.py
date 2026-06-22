@@ -68,10 +68,10 @@ KEY_PROGRAMMING_COST_CUSTOMER = 100.00
 KEY_MARKUP_INTERNAL = 0.10
 KEY_MARKUP_CUSTOMER = 0.35
 
-# Xtime Follow Up Calls (cold_leads table). The 5 stores below are the
+# Xtime Follow Up Calls (cold_leads table). The 6 stores below are the
 # subset that run this workflow — distinct from MARKETS, which is the
 # 9-store list used elsewhere.
-COLD_LEAD_MARKETS = ['Doylestown', 'Exton', 'Newtown', 'Mechanicsburg', 'Washington']
+COLD_LEAD_MARKETS = ['Doylestown', 'Exton', 'Langhorne', 'Newtown', 'Mechanicsburg', 'Washington']
 COLD_LEAD_SOURCES = ['Sales', 'Service', 'Parts', 'Xtime', 'Other']
 
 _client: Client | None = None
