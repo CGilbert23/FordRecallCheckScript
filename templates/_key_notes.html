@@ -81,8 +81,9 @@
         // Bail as a unit — a half-wired modal would kill the hover handlers too.
         if (!tip || !modal || !form || !title || !state || !input || !saveBtn || !clearBtn) return;
 
-        // Same approach as the cold-leads note tip: position: fixed against the
-        // button's viewport rect, flipped above when it would run off the bottom.
+        // position: fixed against the button's viewport rect, flipped above
+        // when it would run off the bottom — so the table's overflow container
+        // can't clip it.
         function showTip(btn) {
             var text = btn.dataset.note || '';
             if (!text) return;

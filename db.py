@@ -30,13 +30,6 @@ ACCOUNT_REP_EMAILS = {
 
 SERVICE_TYPES = ['Full Service', 'Recall Only']
 
-LEAD_SOURCES = ['Sales', 'Service', 'Parts', 'Visual', 'Other']
-# Sources that capture a free-text contact name (salesperson, service advisor,
-# parts rep) on the lead form. Source-contact is hidden + cleared for any
-# source not in this set, so the column never holds stale data after the
-# dropdown changes.
-LEAD_SOURCES_WITH_CONTACT = {'Sales', 'Service', 'Parts'}
-
 LEAD_TYPES = ['cold', 'warm']
 INTEREST_LEVELS = ['R', 'Y', 'G']
 INTEREST_LEVEL_DEFAULT = 'Y'
@@ -45,8 +38,6 @@ LEAD_ATTEMPT_OUTCOMES = ['made_contact', 'left_voicemail']
 LEAD_CLOSE_REASONS = ['not_interested']
 
 CADENCES = ['daily', 'monthly', 'quarterly']
-
-ACCOUNT_CHECK_IN_DAYS = 25
 
 # Mobile Keys section. Internal cuts go to a Fred Beans-affiliated store from
 # the dropdown; customer cuts are free text. The 'Bid Lot' entry covers our
@@ -67,12 +58,6 @@ KEY_PROGRAMMING_COST_CUSTOMER = 100.00
 # Parts markup applied to the billed Total, by who's billed.
 KEY_MARKUP_INTERNAL = 0.10
 KEY_MARKUP_CUSTOMER = 0.35
-
-# Xtime Follow Up Calls (cold_leads table). The 6 stores below are the
-# subset that run this workflow — distinct from MARKETS, which is the
-# 9-store list used elsewhere.
-COLD_LEAD_MARKETS = ['Doylestown', 'Exton', 'Langhorne', 'Newtown', 'Mechanicsburg', 'Washington']
-COLD_LEAD_SOURCES = ['Sales', 'Service', 'Parts', 'Xtime', 'Other']
 
 _client: Client | None = None
 
@@ -261,34 +246,6 @@ def update_account(account_id, data):
     return res.data[0] if res.data else None
 
 
-def mark_account_checked_in(account_id, note=None):
-    """Bump last_checked_in_at to now and save the optional note.
-
-    `note` is always written so passing None clears any prior note that
-    no longer applies to the latest check-in.
-    """
-    from datetime import datetime, timezone
-    client = get_client()
-    res = client.table('accounts').update({
-        'last_checked_in_at': datetime.now(timezone.utc).isoformat(),
-        'check_in_note': note,
-    }).eq('id', account_id).execute()
-    return res.data[0] if res.data else None
-
-
-def update_account_check_in_note(account_id, note):
-    """Update only the check_in_note column without touching the date.
-
-    Powers the 'Save note' action so reps can edit context for a check-in
-    that's already green, or attach a note while leaving the X red.
-    """
-    client = get_client()
-    res = client.table('accounts').update({
-        'check_in_note': note,
-    }).eq('id', account_id).execute()
-    return res.data[0] if res.data else None
-
-
 def delete_account(account_id):
     client = get_client()
     client.table('accounts').delete().eq('id', account_id).execute()
@@ -438,27 +395,6 @@ def find_duplicate_matches(company_name=None, emails=None, phones=None):
             add('leads', l, 'phone', l.get('phone'))
 
     return matches
-
-
-# ---------------------------------------------------------------------------
-# Notepad (single-row shared scratchpad)
-# ---------------------------------------------------------------------------
-
-def get_notepad():
-    """Read the single notepad row. Returns {'content': str, 'updated_at': str|None}.
-    Falls back to an empty record if the row hasn't been seeded yet."""
-    client = get_client()
-    res = client.table('notepad').select('content, updated_at').eq('id', 1).limit(1).execute()
-    if res.data:
-        return res.data[0]
-    return {'content': '', 'updated_at': None}
-
-
-def save_notepad(content):
-    """Upsert the single notepad row with new content."""
-    client = get_client()
-    res = client.table('notepad').upsert({'id': 1, 'content': content}).execute()
-    return res.data[0] if res.data else None
 
 
 def convert_lead_to_account(lead_id, account_data):
@@ -614,89 +550,6 @@ def list_mobile_keys_in_inventory():
         .execute()
     )
     return res.data or []
-
-
-# ---------------------------------------------------------------------------
-# Cold leads (Xtime Follow Up Calls)
-# ---------------------------------------------------------------------------
-
-def list_cold_leads(market=None):
-    """Return cold_leads rows. If market is given, scope to that market;
-    otherwise return all rows (used by the duplicate check)."""
-    client = get_client()
-    q = client.table('cold_leads').select('*')
-    if market:
-        q = q.eq('market', market)
-    # Newest first so freshly-added rows show at the top of the table.
-    res = q.order('created_at', desc=True).execute()
-    return res.data or []
-
-
-def create_cold_lead(data):
-    client = get_client()
-    res = client.table('cold_leads').insert(data).execute()
-    return res.data[0] if res.data else None
-
-
-def update_cold_lead(lead_id, data):
-    client = get_client()
-    res = client.table('cold_leads').update(data).eq('id', lead_id).execute()
-    return res.data[0] if res.data else None
-
-
-def delete_cold_lead(lead_id):
-    client = get_client()
-    client.table('cold_leads').delete().eq('id', lead_id).execute()
-
-
-def find_cold_lead_duplicates(name=None, phone=None, exclude_id=None):
-    """Look across all cold_leads for soft-duplicate matches on name or phone.
-
-    Match rules:
-      - name: case-insensitive exact match (whitespace stripped)
-      - phone: digits-only exact match (10-digit minimum so partial entries
-        don't fire constant false-positives)
-
-    Returns a list of dicts: {id, market, name, phone, field, value}.
-    """
-    name_lc = (name or '').strip().lower()
-    phone_digits = _digits_only(phone)
-    if not name_lc and (not phone_digits or len(phone_digits) < 10):
-        return []
-
-    matches = []
-    seen = set()
-    for row in list_cold_leads():
-        if exclude_id and row.get('id') == exclude_id:
-            continue
-        row_name = (row.get('name') or '').strip().lower()
-        if name_lc and row_name and row_name == name_lc:
-            key = (row['id'], 'name')
-            if key not in seen:
-                seen.add(key)
-                matches.append({
-                    'id': row['id'],
-                    'market': row.get('market'),
-                    'name': row.get('name'),
-                    'phone': row.get('phone'),
-                    'field': 'name',
-                    'value': row.get('name'),
-                })
-        if phone_digits and len(phone_digits) >= 10:
-            row_phone = _digits_only(row.get('phone'))
-            if row_phone and row_phone == phone_digits:
-                key = (row['id'], 'phone')
-                if key not in seen:
-                    seen.add(key)
-                    matches.append({
-                        'id': row['id'],
-                        'market': row.get('market'),
-                        'name': row.get('name'),
-                        'phone': row.get('phone'),
-                        'field': 'phone',
-                        'value': row.get('phone'),
-                    })
-    return matches
 
 
 # ---------------------------------------------------------------------------

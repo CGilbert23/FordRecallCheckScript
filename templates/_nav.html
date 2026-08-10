@@ -3,10 +3,8 @@
 {% if path != '/' %}
 <div class="page-nav">
     <a href="/" class="nav-tab">&larr; Home</a>
-    {% if path.startswith('/accounts') or path.startswith('/notes') or path.startswith('/cold-leads') %}
-    <a href="/accounts" class="nav-tab {% if path.startswith('/accounts') %}active{% endif %}">Onboarded Accounts</a>
-    <a href="/cold-leads" class="nav-tab {% if path.startswith('/cold-leads') %}active{% endif %}">Lead Tracking</a>
-    <a href="/notes" class="nav-tab {% if path.startswith('/notes') %}active{% endif %}">Notes</a>
+    {% if path.startswith('/accounts') %}
+    <a href="/accounts" class="nav-tab active">Saved VIN Lists</a>
     {% elif path.startswith('/recall') or path.startswith('/schedules') or path == '/dashboard' %}
     <a href="/recall-checker" class="nav-tab {% if path.startswith('/recall-checker') %}active{% endif %}">One Time Check</a>
     <a href="/recall/run-log" class="nav-tab {% if path.startswith('/recall/run-log') or path == '/dashboard' %}active{% endif %}">Run Log</a>

@@ -27,10 +27,8 @@
         }
         textarea { font-family: monospace; font-size: 0.9rem; resize: vertical; }
         textarea.notes { font-family: inherit; height: 100px; }
-        textarea.other-source { font-family: inherit; height: 70px; }
         textarea.vins { height: 200px; }
         .muted-label { color: #888; font-weight: 500; font-size: 0.85rem; }
-        .hidden { display: none; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
         .row { display: flex; gap: 16px; margin-bottom: 18px; }
         .row > div { flex: 1; }
@@ -174,27 +172,6 @@
                 </button>
 
                 <div class="field">
-                    <label for="lead_source">Lead Source <span class="muted-label">(optional)</span></label>
-                    <select name="lead_source" id="lead_source">
-                        <option value="" {% if not form.lead_source %}selected{% endif %}>Select...</option>
-                        {% for s in lead_sources %}
-                        <option value="{{ s }}" {% if form.lead_source == s %}selected{% endif %}>{{ s }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="field {% if form.lead_source != 'Other' %}hidden{% endif %}" id="otherSourceField">
-                    <label for="lead_source_other">Describe the source</label>
-                    <textarea name="lead_source_other" id="lead_source_other" class="other-source" placeholder="Where did this account come from?">{{ form.lead_source_other or '' }}</textarea>
-                </div>
-
-                {% set _contact_labels = {'Sales': 'Salesperson', 'Service': 'Service Advisor', 'Parts': 'Parts Rep'} %}
-                <div class="field {% if form.lead_source not in _contact_labels %}hidden{% endif %}" id="sourceContactField">
-                    <label for="source_contact"><span id="sourceContactLabel">{{ _contact_labels.get(form.lead_source, 'Salesperson') }}</span> <span class="muted-label">(optional)</span></label>
-                    <input type="text" name="source_contact" id="source_contact" placeholder="e.g. George Wright" value="{{ form.source_contact or '' }}">
-                </div>
-
-                <div class="field">
                     <label for="vins">VIN List</label>
                     <p class="hint">Paste one VIN per line (17 alphanumeric characters). Stored on the account record.</p>
                     <textarea name="vins" id="vins" class="vins" placeholder="1FTBR1Y8XPKA12345&#10;1FAHP2KK4LG12345">{{ form.vins or '' }}</textarea>
@@ -228,20 +205,6 @@
                 addFm2Btn.style.display = 'none';
                 var firstInput = document.getElementById('fleet_manager_2');
                 if (firstInput) firstInput.focus();
-            });
-        }
-
-        var sourceSel = document.getElementById('lead_source');
-        var otherField = document.getElementById('otherSourceField');
-        var contactField = document.getElementById('sourceContactField');
-        var contactLabel = document.getElementById('sourceContactLabel');
-        var CONTACT_LABELS = { 'Sales': 'Salesperson', 'Service': 'Service Advisor', 'Parts': 'Parts Rep' };
-        if (sourceSel) {
-            sourceSel.addEventListener('change', function() {
-                var v = this.value;
-                if (otherField) otherField.classList.toggle('hidden', v !== 'Other');
-                if (contactField) contactField.classList.toggle('hidden', !CONTACT_LABELS[v]);
-                if (contactLabel && CONTACT_LABELS[v]) contactLabel.textContent = CONTACT_LABELS[v];
             });
         }
     </script>

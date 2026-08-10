@@ -94,13 +94,8 @@ create table accounts (
   fleet_manager_2_email text,
   fleet_manager_2_phone text,
   service_type text not null check (service_type in ('Full Service', 'Recall Only')),
-  lead_source text check (lead_source is null or lead_source in ('Sales', 'Service', 'Parts', 'Visual', 'Other')),
-  lead_source_other text,
-  source_contact text,
   vins text,
   notes text,
-  last_checked_in_at timestamptz,
-  check_in_note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -151,19 +146,6 @@ alter table schedules
   add constraint schedules_account_id_fkey
   foreign key (account_id) references accounts(id) on delete set null;
 create index schedules_account_id_idx on schedules(account_id);
-
--- Notepad: shared scratchpad behind the Notes page. Single-row table — the
--- CHECK constraint pins id=1 so the app always reads/writes the same row.
-create table notepad (
-  id integer primary key default 1,
-  content text not null default '',
-  updated_at timestamptz not null default now(),
-  constraint notepad_single_row check (id = 1)
-);
-insert into notepad (id, content) values (1, '') on conflict (id) do nothing;
-create trigger notepad_updated_at
-  before update on notepad
-  for each row execute function set_updated_at();
 
 -- Mobile keys: one row per key cut by the mobile service team. Tracks the
 -- vehicle, parts + costs, and offset eligibility. Derived totals (parts
@@ -223,30 +205,6 @@ create index mobile_keys_inventory_idx
 create index mobile_keys_sort_order_idx on mobile_keys(sort_order);
 create trigger mobile_keys_updated_at
   before update on mobile_keys
-  for each row execute function set_updated_at();
-
--- Cold leads: backs the Xtime Follow Up Calls page. One row per prospect to
--- call. The 6 markets here are the subset that actually run the Xtime
--- follow-up workflow.
-create table cold_leads (
-  id uuid primary key default gen_random_uuid(),
-  market text not null check (market in (
-    'Doylestown', 'Exton', 'Langhorne', 'Newtown', 'Mechanicsburg', 'Washington'
-  )),
-  name text,
-  phone text,
-  source text check (source is null or source in ('Sales', 'Service', 'Parts', 'Xtime', 'Other')),
-  lead_date date,
-  contact_date date,
-  notes text,
-  hot_lead boolean not null default false,
-  appt_booked boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-create index cold_leads_market_idx on cold_leads(market, created_at);
-create trigger cold_leads_updated_at
-  before update on cold_leads
   for each row execute function set_updated_at();
 
 -- Key code contacts: backs the "Key Code Contacts" page under Mobile Keys.

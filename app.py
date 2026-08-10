@@ -16,7 +16,6 @@ import openpyxl
 import db
 import scheduler
 import dealership_locator as dealership_locator_mod
-import appt_importer
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -430,220 +429,6 @@ def home():
 @app.route('/used-car-tracker')
 def used_car_tracker():
     return render_template('used_car_tracker.html')
-
-
-@app.route('/cold-leads')
-def cold_leads():
-    return render_template(
-        'cold_leads.html',
-        markets=db.COLD_LEAD_MARKETS,
-        sources=db.COLD_LEAD_SOURCES,
-    )
-
-
-@app.route('/cold-leads/api/list')
-def cold_leads_api_list():
-    market = (request.args.get('market') or '').strip()
-    if market not in db.COLD_LEAD_MARKETS:
-        return jsonify({'ok': False, 'error': 'Invalid market'}), 400
-    try:
-        rows = db.list_cold_leads(market=market)
-        return jsonify({'ok': True, 'rows': rows})
-    except Exception as e:
-        logger.error(f"cold_leads list failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-def _clean_cold_lead_payload(payload, partial=False):
-    """Pull cold_leads fields out of a JSON payload, normalizing blanks to None.
-    `partial` allows missing keys (for update); otherwise market is required."""
-    out = {}
-    if 'market' in payload or not partial:
-        market = (payload.get('market') or '').strip() or None
-        if not partial and market not in db.COLD_LEAD_MARKETS:
-            raise ValueError(f"market must be one of {db.COLD_LEAD_MARKETS}")
-        if market is not None:
-            out['market'] = market
-    for field in ('name', 'phone', 'notes'):
-        if field in payload:
-            v = (payload.get(field) or '').strip()
-            out[field] = v or None
-    if 'source' in payload:
-        v = (payload.get('source') or '').strip() or None
-        if v is not None and v not in db.COLD_LEAD_SOURCES:
-            raise ValueError(f"source must be one of {db.COLD_LEAD_SOURCES} or empty")
-        out['source'] = v
-    for field in ('lead_date', 'contact_date'):
-        if field in payload:
-            v = (payload.get(field) or '').strip()
-            out[field] = v or None
-    if 'hot_lead' in payload:
-        out['hot_lead'] = bool(payload.get('hot_lead'))
-    if 'appt_booked' in payload:
-        out['appt_booked'] = bool(payload.get('appt_booked'))
-    return out
-
-
-@app.route('/cold-leads/api/create', methods=['POST'])
-def cold_leads_api_create():
-    try:
-        payload = request.get_json(silent=True) or {}
-        data = _clean_cold_lead_payload(payload, partial=False)
-        if 'market' not in data:
-            return jsonify({'ok': False, 'error': 'market required'}), 400
-        row = db.create_cold_lead(data)
-        return jsonify({'ok': True, 'row': row})
-    except ValueError as e:
-        return jsonify({'ok': False, 'error': str(e)}), 400
-    except Exception as e:
-        logger.error(f"cold_leads create failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-@app.route('/cold-leads/api/update/<lead_id>', methods=['POST'])
-def cold_leads_api_update(lead_id):
-    try:
-        payload = request.get_json(silent=True) or {}
-        data = _clean_cold_lead_payload(payload, partial=True)
-        if not data:
-            return jsonify({'ok': False, 'error': 'no fields to update'}), 400
-        row = db.update_cold_lead(lead_id, data)
-        return jsonify({'ok': True, 'row': row})
-    except ValueError as e:
-        return jsonify({'ok': False, 'error': str(e)}), 400
-    except Exception as e:
-        logger.error(f"cold_leads update failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-@app.route('/cold-leads/api/delete/<lead_id>', methods=['POST'])
-def cold_leads_api_delete(lead_id):
-    try:
-        db.delete_cold_lead(lead_id)
-        return jsonify({'ok': True})
-    except Exception as e:
-        logger.error(f"cold_leads delete failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-@app.route('/cold-leads/api/check-duplicate', methods=['POST'])
-def cold_leads_api_check_duplicate():
-    try:
-        payload = request.get_json(silent=True) or {}
-        matches = db.find_cold_lead_duplicates(
-            name=payload.get('name'),
-            phone=payload.get('phone'),
-            exclude_id=payload.get('exclude_id'),
-        )
-        return jsonify({'ok': True, 'matches': matches})
-    except Exception as e:
-        logger.error(f"cold_leads dup check failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-@app.route('/cold-leads/api/parse-upload', methods=['POST'])
-def cold_leads_api_parse_upload():
-    """Parse an uploaded appointments .xlsx, classify the commercial-business
-    rows, and drop any that already exist as cold leads. Returns the candidates
-    for the client-side preview/approval modal — nothing is inserted here."""
-    try:
-        f = request.files.get('excel_file')
-        if not f or not f.filename:
-            return jsonify({'ok': False, 'error': 'No file uploaded'}), 400
-        candidates, stats = appt_importer.parse_appointments(
-            f.read(), db.COLD_LEAD_MARKETS
-        )
-
-        # Dedup against existing leads in one pass (fetch once, filter in memory).
-        existing = db.list_cold_leads()
-        names = {(r.get('name') or '').strip().lower() for r in existing if r.get('name')}
-        phones = set()
-        for r in existing:
-            d = ''.join(c for c in (r.get('phone') or '') if c.isdigit())
-            if len(d) >= 10:
-                phones.add(d)
-
-        fresh = []
-        skipped_existing = 0
-        for c in candidates:
-            name_lc = (c['name'] or '').strip().lower()
-            phone_d = ''.join(ch for ch in (c['phone'] or '') if ch.isdigit())
-            if name_lc in names or (len(phone_d) >= 10 and phone_d in phones):
-                skipped_existing += 1
-                continue
-            fresh.append(c)
-
-        return jsonify({
-            'ok': True,
-            'candidates': fresh,
-            'skipped_existing': skipped_existing,
-            'skipped_people': stats['people_skipped'],
-            'skipped_dealers': stats['dealers_skipped'],
-            'unmatched_market': stats['unmatched_market'],
-        })
-    except Exception as e:
-        logger.error(f"cold_leads parse-upload failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-@app.route('/cold-leads/api/import', methods=['POST'])
-def cold_leads_api_import():
-    """Bulk-insert the rows the user approved in the preview modal. Each row is
-    forced to source='Xtime' and validated/normalized via _clean_cold_lead_payload."""
-    try:
-        payload = request.get_json(silent=True) or {}
-        rows = payload.get('rows') or []
-        created = 0
-        errors = []
-        for i, r in enumerate(rows):
-            try:
-                r = dict(r)
-                r['source'] = 'Xtime'
-                data = _clean_cold_lead_payload(r, partial=False)
-                if 'market' not in data:
-                    raise ValueError('market required')
-                db.create_cold_lead(data)
-                created += 1
-            except Exception as e:
-                errors.append({'index': i, 'name': r.get('name'), 'error': str(e)})
-        return jsonify({'ok': True, 'created': created, 'errors': errors})
-    except Exception as e:
-        logger.error(f"cold_leads import failed: {e}")
-        return jsonify({'ok': False, 'error': str(e)}), 500
-
-
-@app.route('/notes', methods=['GET', 'POST'])
-def notes_page():
-    """Shared scratchpad. Single-row notepad table backs it; the page
-    auto-saves via fetch POST (JSON) and falls back to a normal form POST
-    if JS is off."""
-    if request.method == 'POST':
-        if request.is_json:
-            payload = request.get_json(silent=True) or {}
-            content = payload.get('content', '')
-        else:
-            content = request.form.get('content', '')
-        try:
-            row = db.save_notepad(content)
-        except Exception as e:
-            logger.error(f"Save notepad failed: {e}")
-            if request.is_json:
-                return jsonify({'ok': False, 'error': str(e)}), 500
-            return redirect(url_for('notes_page'))
-        if request.is_json:
-            return jsonify({'ok': True, 'updated_at': (row or {}).get('updated_at')})
-        return redirect(url_for('notes_page'))
-
-    try:
-        row = db.get_notepad()
-    except Exception as e:
-        logger.error(f"Load notepad failed: {e}")
-        row = {'content': '', 'updated_at': None}
-    return render_template(
-        'notes.html',
-        content=row.get('content') or '',
-        updated_at=row.get('updated_at'),
-    )
 
 
 @app.route('/dealership-locator', methods=['GET', 'POST'])
@@ -1075,9 +860,6 @@ def _read_account_form(req):
     fleet_manager_2_email = req.form.get('fleet_manager_2_email', '').strip()
     fleet_manager_2_phone = format_phone(req.form.get('fleet_manager_2_phone', '').strip())
     service_type = req.form.get('service_type', '').strip()
-    lead_source = req.form.get('lead_source', '').strip()
-    lead_source_other = req.form.get('lead_source_other', '').strip()
-    source_contact = req.form.get('source_contact', '').strip()
     vins_raw = req.form.get('vins', '').strip()
     notes = req.form.get('notes', '').strip()
 
@@ -1095,9 +877,6 @@ def _read_account_form(req):
         'fleet_manager_2_email': fleet_manager_2_email,
         'fleet_manager_2_phone': fleet_manager_2_phone,
         'service_type': service_type,
-        'lead_source': lead_source,
-        'lead_source_other': lead_source_other,
-        'source_contact': source_contact,
         'vins': vins_normalized,
         'vin_count': len(vin_list),
         'notes': notes,
@@ -1111,16 +890,10 @@ def _read_account_form(req):
         return form, 'Please pick a valid account representative.'
     if service_type not in db.SERVICE_TYPES:
         return form, 'Please pick a service type.'
-    if lead_source and lead_source not in db.LEAD_SOURCES:
-        return form, 'Please pick a valid lead source.'
-    if lead_source == 'Other' and not lead_source_other:
-        return form, 'Please describe the lead source when "Other" is selected.'
     return form, None
 
 
 def _account_payload(form):
-    lead_source = form.get('lead_source') or None
-    has_contact_source = lead_source in db.LEAD_SOURCES_WITH_CONTACT
     return {
         'company_name': form['company_name'],
         'market': form['market'],
@@ -1132,9 +905,6 @@ def _account_payload(form):
         'fleet_manager_2_email': form['fleet_manager_2_email'] or None,
         'fleet_manager_2_phone': form['fleet_manager_2_phone'] or None,
         'service_type': form['service_type'],
-        'lead_source': lead_source,
-        'lead_source_other': form.get('lead_source_other') if lead_source == 'Other' else None,
-        'source_contact': form.get('source_contact') if (has_contact_source and form.get('source_contact')) else None,
         'vins': form['vins'] or None,
         'notes': form['notes'] or None,
     }
@@ -1157,19 +927,9 @@ def accounts_list():
     except Exception as e:
         logger.error(f"Failed to load schedules for accounts page: {e}")
 
-    threshold = datetime.now(timezone.utc) - timedelta(days=db.ACCOUNT_CHECK_IN_DAYS)
     for accounts in grouped.values():
         for acct in accounts:
             acct['vin_count'] = len(parse_vin_text(acct.get('vins') or ''))
-            ts = acct.get('last_checked_in_at')
-            parsed = None
-            if ts:
-                try:
-                    parsed = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-                except ValueError:
-                    parsed = None
-            acct['is_checked_in'] = bool(parsed and parsed >= threshold)
-            acct['check_in_display'] = parsed.strftime('%b %d, %Y') if parsed else None
 
     return render_template(
         'accounts.html',
@@ -1190,7 +950,6 @@ def account_new():
             return render_template(
                 'account_form.html', account=None, form=form, error=error,
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=from_lead_id,
             )
         if not confirm_duplicate:
@@ -1210,8 +969,7 @@ def account_new():
                 return render_template(
                     'account_form.html', account=None, form=form, error=None,
                     markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-                    lead_sources=db.LEAD_SOURCES,
-                    from_lead_id=from_lead_id, duplicates=duplicates,
+                        from_lead_id=from_lead_id, duplicates=duplicates,
                 )
         try:
             if from_lead_id:
@@ -1225,7 +983,6 @@ def account_new():
             return render_template(
                 'account_form.html', account=None, form=form, error=str(e),
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=from_lead_id,
             )
         return redirect(url_for('accounts_list'))
@@ -1233,7 +990,6 @@ def account_new():
     return render_template(
         'account_form.html', account=None, form={},
         markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-        lead_sources=db.LEAD_SOURCES,
         from_lead_id=None,
     )
 
@@ -1254,7 +1010,6 @@ def account_edit(account_id):
             return render_template(
                 'account_form.html', account=existing, form=form, error=error,
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=None,
             )
         try:
@@ -1275,7 +1030,6 @@ def account_edit(account_id):
             return render_template(
                 'account_form.html', account=existing, form=form, error=str(e),
                 markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-                lead_sources=db.LEAD_SOURCES,
                 from_lead_id=None,
             )
         return redirect(url_for('accounts_list'))
@@ -1291,9 +1045,6 @@ def account_edit(account_id):
         'fleet_manager_2_email': existing.get('fleet_manager_2_email') or '',
         'fleet_manager_2_phone': existing.get('fleet_manager_2_phone') or '',
         'service_type': existing.get('service_type') or '',
-        'lead_source': existing.get('lead_source') or '',
-        'lead_source_other': existing.get('lead_source_other') or '',
-        'source_contact': existing.get('source_contact') or '',
         'vins': existing.get('vins') or '',
         'vin_count': len(parse_vin_text(existing.get('vins') or '')),
         'notes': existing.get('notes') or '',
@@ -1301,29 +1052,8 @@ def account_edit(account_id):
     return render_template(
         'account_form.html', account=existing, form=form,
         markets=db.MARKETS, reps=db.ACCOUNT_REPS, service_types=db.SERVICE_TYPES,
-        lead_sources=db.LEAD_SOURCES,
         from_lead_id=None,
     )
-
-
-@app.route('/accounts/<account_id>/check-in', methods=['POST'])
-def account_check_in(account_id):
-    note = (request.form.get('note') or '').strip() or None
-    try:
-        db.mark_account_checked_in(account_id, note=note)
-    except Exception as e:
-        logger.error(f"Mark check-in failed for {account_id}: {e}")
-    return redirect(url_for('accounts_list'))
-
-
-@app.route('/accounts/<account_id>/check-in-note', methods=['POST'])
-def account_check_in_note(account_id):
-    note = (request.form.get('note') or '').strip() or None
-    try:
-        db.update_account_check_in_note(account_id, note)
-    except Exception as e:
-        logger.error(f"Update check-in note failed for {account_id}: {e}")
-    return redirect(url_for('accounts_list'))
 
 
 @app.route('/accounts/<account_id>/delete', methods=['POST'])
