@@ -1,0 +1,142 @@
+{# Notes column for the Mobile Keys list pages (Key Database + Inventory).
+
+   Include once, just before </body>. Set `notes_return_to` to 'inventory' on
+   the Inventory page so saving comes back there instead of the Key Database.
+
+   Each row's cell renders a .note-btn button carrying data-key-id, data-label
+   and data-note. Hover reads the note, click opens the modal to edit it.
+   The style block lives here rather than in each page's <head> so the two
+   pages can't drift apart (the old popover CSS was already duplicated). #}
+<style>
+    .note-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 20px; height: 20px; padding: 0;
+        border: 1px solid #e5e7eb; background: #fff; color: #cbd5e1;
+        border-radius: 4px; vertical-align: middle; cursor: pointer;
+    }
+    .note-btn:hover { background: #eff6ff; border-color: #cfd8e3; color: #60a5fa; }
+    .note-btn svg { width: 11px; height: 13px; display: block; }
+    .note-btn-filled { color: #0068d6; border-color: #cfd8e3; }
+    .note-btn-filled:hover { color: #0050a8; }
+    /* Fixed position so the tip escapes the table's overflow container —
+       an absolutely-positioned one gets clipped on the bottom rows. */
+    .note-tip {
+        position: fixed; z-index: 1100; display: none;
+        background: #0a1f44; color: #fff;
+        padding: 8px 11px; border-radius: 6px;
+        font-size: 0.85rem; line-height: 1.35;
+        max-width: 320px; white-space: pre-wrap; word-break: break-word;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25); pointer-events: none;
+    }
+    .note-tip.show { display: block; }
+    .note-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .note-modal-overlay.hidden { display: none; }
+    .note-modal-card { background: #fff; padding: 22px 24px; border-radius: 8px; min-width: 360px; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+    .note-modal-card h3 { font-size: 1.05rem; margin-bottom: 4px; }
+    .note-modal-card .modal-state { color: #6b7280; font-size: 0.85rem; margin-bottom: 12px; }
+    .note-modal-card label { display: block; font-size: 0.85rem; color: #374151; margin-bottom: 4px; font-weight: 500; }
+    .note-modal-card textarea {
+        width: 100%; min-height: 96px; padding: 8px 10px;
+        border: 1px solid #cfd8e3; border-radius: 6px;
+        font-size: 0.9rem; font-family: inherit; resize: vertical;
+    }
+    .note-modal-card textarea:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+    .note-modal-card .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+    .note-modal-card .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .note-modal-card .btn-light { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .note-modal-card .btn-light:hover { background: #e5e7eb; color: #1f2937; }
+</style>
+
+<div id="noteTip" class="note-tip"></div>
+
+<div id="noteModal" class="note-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="noteTitle">
+    <div class="note-modal-card">
+        <h3 id="noteTitle">Note</h3>
+        <p id="noteState" class="modal-state"></p>
+        <form method="POST" id="noteForm">
+            <input type="hidden" name="return_to" value="{{ notes_return_to or '' }}">
+            <label for="note_text">Note:</label>
+            <textarea name="notes" id="note_text" placeholder="Anything worth remembering about this key…"></textarea>
+            <div class="modal-actions">
+                <button type="button" data-note-modal-close class="btn btn-sm btn-light">Cancel</button>
+                <button type="submit" id="noteClearBtn" class="btn btn-sm btn-outline">Clear note</button>
+                <button type="submit" id="noteSaveBtn" class="btn btn-sm">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Notes column: hover a row's notepad button to read the note, click it to
+    // add/edit one in a modal without leaving the list.
+    (function () {
+        var tip = document.getElementById('noteTip');
+        var modal = document.getElementById('noteModal');
+        var form = document.getElementById('noteForm');
+        var title = document.getElementById('noteTitle');
+        var state = document.getElementById('noteState');
+        var input = document.getElementById('note_text');
+        var saveBtn = document.getElementById('noteSaveBtn');
+        var clearBtn = document.getElementById('noteClearBtn');
+        // Bail as a unit — a half-wired modal would kill the hover handlers too.
+        if (!tip || !modal || !form || !title || !state || !input || !saveBtn || !clearBtn) return;
+
+        // Same approach as the cold-leads note tip: position: fixed against the
+        // button's viewport rect, flipped above when it would run off the bottom.
+        function showTip(btn) {
+            var text = btn.dataset.note || '';
+            if (!text) return;
+            tip.textContent = text;
+            tip.classList.add('show');
+            var r = btn.getBoundingClientRect();
+            var tw = tip.offsetWidth, th = tip.offsetHeight;
+            var left = r.left;
+            if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+            if (left < 12) left = 12;
+            var top = r.bottom + 6;
+            if (top + th > window.innerHeight - 12) top = r.top - th - 6;
+            tip.style.left = left + 'px';
+            tip.style.top = top + 'px';
+        }
+
+        function hideTip() { tip.classList.remove('show'); }
+        function closeModal() { modal.classList.add('hidden'); }
+
+        function openModal(btn) {
+            var note = btn.dataset.note || '';
+            hideTip();
+            form.action = '/mobile-keys/' + btn.dataset.keyId + '/notes';
+            title.textContent = 'Note: ' + (btn.dataset.label || '');
+            state.textContent = note
+                ? 'Edit the note below, or clear it.'
+                : 'No note yet — type one below.';
+            input.value = note;
+            // Only offer "Clear note" once there's something to clear.
+            clearBtn.style.display = note ? '' : 'none';
+            modal.classList.remove('hidden');
+            setTimeout(function () { input.focus(); }, 0);
+        }
+
+        // "Clear note" submits the same form with an empty textarea; the server
+        // treats blank/whitespace as NULL.
+        clearBtn.addEventListener('click', function () { input.value = ''; });
+
+        document.querySelectorAll('.note-btn').forEach(function (btn) {
+            btn.addEventListener('mouseenter', function () { showTip(btn); });
+            btn.addEventListener('mouseleave', hideTip);
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                openModal(btn);
+            });
+        });
+        document.querySelectorAll('[data-note-modal-close]').forEach(function (el) {
+            el.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+    })();
+</script>

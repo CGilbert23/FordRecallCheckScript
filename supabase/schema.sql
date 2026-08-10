@@ -173,6 +173,10 @@ create table mobile_keys (
   cut_date date,
   end_user text not null check (end_user in ('Internal', 'Customer')),
   customer_name text not null,
+  -- Optional person attached to an Internal key (car already sold, key cut at
+  -- the buyer's house). Only meaningful when end_user = 'Internal'; rendered as
+  -- "FB Chevrolet - Mark Macy" on the list pages, blank falls back to the store.
+  internal_contact text,
   ro_number text,
   vin text not null,
   year integer not null check (year between 2000 and 2100),

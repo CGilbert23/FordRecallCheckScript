@@ -591,6 +591,19 @@ def set_mobile_key_key_code(key_id, key_code, key_code_value=None):
     return res.data[0] if res.data else None
 
 
+def set_mobile_key_notes(key_id, notes):
+    """Set the per-row free-text note (None clears it).
+
+    Written by the Notes column modal on the list pages; the add/edit form
+    writes the same column through update_mobile_key.
+    """
+    client = get_client()
+    res = client.table('mobile_keys').update({
+        'notes': notes,
+    }).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
 def list_mobile_keys_in_inventory():
     client = get_client()
     res = (

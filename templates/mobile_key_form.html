@@ -87,6 +87,10 @@
                         <option value="{{ c }}" {% if form.customer_name_internal == c %}selected{% endif %}>{{ c }}</option>
                         {% endfor %}
                     </select>
+
+                    <label for="internal_contact" style="margin-top: 14px;">Contact Name <span style="color: #9ca3af; font-weight: 400; font-size: 0.85rem;">(optional)</span></label>
+                    <div class="hint">If the car was sold, who we're meeting &mdash; shows as &ldquo;FB Chevrolet - Mark Macy&rdquo;.</div>
+                    <input type="text" name="internal_contact" id="internal_contact" placeholder="e.g. Mark Macy" value="{{ form.internal_contact or '' }}">
                 </div>
 
                 <div class="field" id="customerExternalField" {% if form.end_user != 'Customer' %}style="display: none;"{% endif %}>

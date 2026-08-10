@@ -6,7 +6,11 @@
       "Bash(Get-ChildItem *)",
       "Bash(python -m py_compile app.py db.py)",
       "WebSearch",
-      "WebFetch(domain:nominatim.openstreetmap.org)"
+      "WebFetch(domain:nominatim.openstreetmap.org)",
+      "WebFetch(domain:dashboard.fredbeans-mobileservice.com)",
+      "Bash(curl *)",
+      "Bash(python -c ' *)",
+      "Bash(ssh -o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=accept-new root@143.244.154.122 'echo OK')"
     ]
   }
 }

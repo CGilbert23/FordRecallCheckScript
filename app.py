@@ -1388,6 +1388,11 @@ def _compute_key_totals(row):
                    else db.KEY_MARKUP_INTERNAL)
     row['total_parts_cost'] = parts_total
     row['total_cost'] = parts_total * (1 + markup_rate) + programming
+    # Internal keys may carry a person (car already sold, key cut at their
+    # house). Shown as "FB Chevrolet - Mark Macy"; blank falls back to the store.
+    contact = (row.get('internal_contact') or '').strip()
+    name = row.get('customer_name') or ''
+    row['customer_display'] = f"{name} - {contact}" if contact else name
     return row
 
 
@@ -1404,6 +1409,7 @@ def _parse_mobile_key_form(req):
         'end_user': (req.form.get('end_user') or '').strip(),
         'customer_name_internal': (req.form.get('customer_name_internal') or '').strip(),
         'customer_name_external': (req.form.get('customer_name_external') or '').strip(),
+        'internal_contact': (req.form.get('internal_contact') or '').strip(),
         'ro_number': (req.form.get('ro_number') or '').strip(),
         'vin': (req.form.get('vin') or '').strip().upper(),
         'year': (req.form.get('year') or '').strip(),
@@ -1435,10 +1441,14 @@ def _parse_mobile_key_form(req):
         customer_name = form['customer_name_internal']
         if customer_name not in db.KEY_INTERNAL_CUSTOMERS:
             return form, 'Pick an internal customer from the list.', None
+        # Optional free text — the person we're meeting when the car was sold.
+        internal_contact = form['internal_contact']
     else:
         customer_name = form['customer_name_external']
         if not customer_name:
             return form, 'Customer Name is required.', None
+        # Internal-only field; drop any stale value when billing flips.
+        internal_contact = ''
 
     if len(form['vin']) != 17 or not form['vin'].isalnum():
         return form, 'VIN must be exactly 17 alphanumeric characters.', None
@@ -1483,6 +1493,7 @@ def _parse_mobile_key_form(req):
         'cut_date': cut_date.isoformat() if cut_date else None,
         'end_user': form['end_user'],
         'customer_name': customer_name,
+        'internal_contact': internal_contact or None,
         'ro_number': ro_number or None,
         'vin': form['vin'],
         'year': year,
@@ -1592,6 +1603,7 @@ def mobile_key_edit(key_id):
         'end_user': existing.get('end_user') or 'Internal',
         'customer_name_internal': existing.get('customer_name') if is_internal else '',
         'customer_name_external': existing.get('customer_name') if not is_internal else '',
+        'internal_contact': existing.get('internal_contact') or '',
         'ro_number': existing.get('ro_number') or '',
         'vin': existing.get('vin') or '',
         'year': str(existing.get('year') or ''),
@@ -1653,6 +1665,20 @@ def mobile_key_set_key_code(key_id):
         db.set_mobile_key_key_code(key_id, checked, code_value)
     except Exception as e:
         logger.error(f"Set key code failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/notes', methods=['POST'])
+def mobile_key_set_notes(key_id):
+    # Driven by the Notes column modal on the list pages. Empty text clears it.
+    notes = (request.form.get('notes') or '').strip() or None
+    try:
+        db.set_mobile_key_notes(key_id, notes)
+    except Exception as e:
+        logger.error(f"Set notes failed for {key_id}: {e}")
+    # The same modal is used from the Inventory page — go back where we came from.
+    if request.form.get('return_to') == 'inventory':
+        return redirect(url_for('mobile_keys_inventory'))
     return redirect(url_for('mobile_keys_list'))
 
 
