@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Invoice - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1400px; margin: 60px auto; padding: 0 20px 120px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card h2 { font-size: 1.05rem; margin-bottom: 4px; }
+        .card .hint { color: #666; font-size: 0.85rem; margin-bottom: 14px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
+        .btn-outline:hover { background: #eff6ff; }
+        .btn-link { background: none; border: none; color: #0068d6; font-size: 0.8rem; cursor: pointer; text-decoration: underline; padding: 0; font-weight: 500; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: center; padding: 10px 8px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; text-align: center; white-space: nowrap; }
+        tr:last-child td { border-bottom: none; }
+        .num { text-align: center; font-variant-numeric: tabular-nums; }
+        .muted { color: #9ca3af; }
+        .left { text-align: left; }
+        input[type="text"] { width: 120px; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.82rem; text-align: center; font-family: inherit; }
+        input[type="text"]:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
+        input.money { width: 84px; }
+        input[type="checkbox"] { width: 17px; height: 17px; cursor: pointer; accent-color: #0068d6; }
+        .badge { display: inline-block; font-size: 0.68rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; white-space: normal; }
+        .badge-warn { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #e0e7ff; color: #3730a3; }
+        .note { font-size: 0.72rem; color: #92400e; white-space: normal; max-width: 240px; margin: 0 auto; line-height: 1.4; }
+        .was { display: block; font-size: 0.68rem; color: #9ca3af; margin-top: 3px; }
+        .warnings { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 14px; border-radius: 6px; margin-bottom: 20px; font-size: 0.85rem; }
+        .warnings ul { margin: 6px 0 0 18px; }
+        .conflict-head { background: #fffbeb; border-color: #fde68a; }
+        .arrow { color: #9ca3af; }
+        .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e5e7eb; box-shadow: 0 -2px 10px rgba(0,0,0,0.06); padding: 14px 20px; display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; z-index: 10; }
+        .footer-note { font-size: 0.78rem; color: #9ca3af; }
+        .ordered-opt { font-size: 0.85rem; display: flex; align-items: center; gap: 7px; cursor: pointer; }
+        .empty { text-align: center; color: #888; padding: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Read <strong>{{ filename }}</strong> &mdash; {{ (matched | length) + (conflicts | length) + (unmatched | length) }} part group{{ '' if (matched | length) + (conflicts | length) + (unmatched | length) == 1 else 's' }} totalling {{ parsed_total | format_money }}. Check what's right and apply.</p>
+
+        {% if warnings %}
+        <div class="warnings">
+            <strong>Worth a look before you apply:</strong>
+            <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/mobile-keys/import/apply" id="applyForm">
+
+        {% if matched %}
+        <div class="card">
+            <h2>Will update ({{ matched | length }})</h2>
+            <p class="hint">These keys have no part numbers yet. Edit anything that looks off before applying. <button type="button" class="btn-link" data-toggle-all="matched">Select none</button></p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>RO</th>
+                            <th>VIN</th>
+                            <th>Vehicle</th>
+                            <th>Customer</th>
+                            <th>Fob P/N</th>
+                            <th class="num">Fob $</th>
+                            <th>Blank P/N</th>
+                            <th class="num">Blank $</th>
+                            <th class="num">Total $</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for p in matched %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="apply" value="{{ p.token }}" data-group="matched" checked>
+                                <input type="hidden" name="key_id__{{ p.token }}" value="{{ p.key_id }}">
+                                <input type="hidden" name="label__{{ p.token }}" value="RO {{ p.key.ro_number or p.ro_number }}">
+                            </td>
+                            <td>
+                                {{ p.key.ro_number or '—' }}
+                                {% if p.in_inventory %}<br><span class="badge badge-info">in inventory</span>{% endif %}
+                                {% if p.match_note %}<div class="note">{{ p.match_note }}</div>{% endif %}
+                            </td>
+                            <td>{{ p.key.vin or '—' }}</td>
+                            <td>{{ p.key.year }} {{ p.key.make }} {{ p.key.model }}</td>
+                            <td>{{ p.before.customer_display or '—' }}</td>
+                            <td><input type="text" name="fob_pn__{{ p.token }}" value="{{ p.proposed.key_fob_part_number or '' }}"></td>
+                            <td class="num"><input type="text" class="money" inputmode="decimal" name="fob_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_fob_cost if p.proposed.key_fob_cost is not none else '' }}"></td>
+                            <td><input type="text" name="blank_pn__{{ p.token }}" value="{{ p.proposed.key_blank_part_number or '' }}"></td>
+                            <td class="num"><input type="text" class="money" inputmode="decimal" name="blank_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_blank_cost if p.proposed.key_blank_cost is not none else '' }}"></td>
+                            <td class="num">
+                                <span class="muted">{{ p.before.total_cost | format_money }}</span>
+                                <span class="arrow">&rarr;</span>
+                                <strong>{{ p.after.total_cost | format_money }}</strong>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if conflicts %}
+        <div class="card">
+            <h2>Already has part data ({{ conflicts | length }})</h2>
+            <p class="hint">These keys already have part numbers or costs saved. Ticking one <strong>replaces</strong> what's there. <button type="button" class="btn-link" data-toggle-all="conflicts">Select all</button></p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>RO</th>
+                            <th>VIN</th>
+                            <th>Vehicle</th>
+                            <th>Customer</th>
+                            <th>Fob P/N</th>
+                            <th class="num">Fob $</th>
+                            <th>Blank P/N</th>
+                            <th class="num">Blank $</th>
+                            <th class="num">Total $</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for p in conflicts %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="apply" value="{{ p.token }}" data-group="conflicts" data-conflict="1">
+                                <input type="hidden" name="key_id__{{ p.token }}" value="{{ p.key_id }}">
+                                <input type="hidden" name="label__{{ p.token }}" value="RO {{ p.key.ro_number or p.ro_number }}">
+                            </td>
+                            <td>
+                                {{ p.key.ro_number or '—' }}
+                                {% if p.in_inventory %}<br><span class="badge badge-info">in inventory</span>{% endif %}
+                                {% if p.match_note %}<div class="note">{{ p.match_note }}</div>{% endif %}
+                            </td>
+                            <td>{{ p.key.vin or '—' }}</td>
+                            <td>{{ p.key.year }} {{ p.key.make }} {{ p.key.model }}</td>
+                            <td>{{ p.before.customer_display or '—' }}</td>
+                            <td>
+                                <input type="text" name="fob_pn__{{ p.token }}" value="{{ p.proposed.key_fob_part_number or '' }}">
+                                <span class="was">was: {{ p.existing.key_fob_part_number or '—' }}</span>
+                            </td>
+                            <td class="num">
+                                <input type="text" class="money" inputmode="decimal" name="fob_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_fob_cost if p.proposed.key_fob_cost is not none else '' }}">
+                                <span class="was">was: {{ p.existing.key_fob_cost | format_money }}</span>
+                            </td>
+                            <td>
+                                <input type="text" name="blank_pn__{{ p.token }}" value="{{ p.proposed.key_blank_part_number or '' }}">
+                                <span class="was">was: {{ p.existing.key_blank_part_number or '—' }}</span>
+                            </td>
+                            <td class="num">
+                                <input type="text" class="money" inputmode="decimal" name="blank_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_blank_cost if p.proposed.key_blank_cost is not none else '' }}">
+                                <span class="was">was: {{ p.existing.key_blank_cost | format_money }}</span>
+                            </td>
+                            <td class="num">
+                                <span class="muted">{{ p.before.total_cost | format_money }}</span>
+                                <span class="arrow">&rarr;</span>
+                                <strong>{{ p.after.total_cost | format_money }}</strong>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if unmatched %}
+        <div class="card">
+            <h2>No matching key ({{ unmatched | length }})</h2>
+            <p class="hint">Nothing in the Key Database lines up with these. Add the key first, then upload the invoice again.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>RO</th>
+                            <th>VIN</th>
+                            <th class="left">Parts on the invoice</th>
+                            <th class="left">Why</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for p in unmatched %}
+                        <tr>
+                            <td>{{ p.ro_number or '—' }}</td>
+                            <td>{{ p.vin or '—' }}</td>
+                            <td class="left">
+                                {% for item in p.group['items'] %}
+                                    {{ item.part_number }} &mdash; {{ item.net | format_money }}{% if item.qty > 1 %} <span class="badge badge-warn">&times;{{ item.qty }}</span>{% endif %}<br>
+                                {% endfor %}
+                            </td>
+                            <td class="left muted">{{ p.reason }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not matched and not conflicts %}
+        <div class="card">
+            <p class="empty">Nothing on this invoice matches a key in the database.</p>
+        </div>
+        {% endif %}
+
+        <div class="footer-bar">
+            <label class="ordered-opt">
+                <input type="checkbox" name="mark_ordered" value="1">
+                Also mark these keys as Ordered
+            </label>
+            <a href="/mobile-keys/import" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn" id="applyBtn">Apply {{ matched | length }} update{{ '' if matched | length == 1 else 's' }}</button>
+            <span class="footer-note">Blank boxes are left as they are &mdash; nothing gets cleared.</span>
+        </div>
+
+        </form>
+    </div>
+
+    <script>
+    (function () {
+        var form = document.getElementById('applyForm');
+        var btn = document.getElementById('applyBtn');
+        if (!form || !btn) return;
+
+        var boxes = form.querySelectorAll('input[name="apply"]');
+
+        function refresh() {
+            var n = 0;
+            for (var i = 0; i < boxes.length; i++) { if (boxes[i].checked) n++; }
+            btn.textContent = 'Apply ' + n + ' update' + (n === 1 ? '' : 's');
+            btn.disabled = n === 0;
+        }
+
+        for (var i = 0; i < boxes.length; i++) {
+            boxes[i].addEventListener('change', refresh);
+        }
+
+        var toggles = form.querySelectorAll('[data-toggle-all]');
+        for (var t = 0; t < toggles.length; t++) {
+            toggles[t].addEventListener('click', function () {
+                var group = this.getAttribute('data-toggle-all');
+                var groupBoxes = form.querySelectorAll('input[data-group="' + group + '"]');
+                // Flip to whatever the group isn't already: all on, unless they all are.
+                var allChecked = true;
+                for (var j = 0; j < groupBoxes.length; j++) {
+                    if (!groupBoxes[j].checked) { allChecked = false; break; }
+                }
+                for (var k = 0; k < groupBoxes.length; k++) { groupBoxes[k].checked = !allChecked; }
+                this.textContent = allChecked ? 'Select all' : 'Select none';
+                refresh();
+            });
+        }
+
+        form.addEventListener('submit', function (e) {
+            var overwrites = 0;
+            for (var i = 0; i < boxes.length; i++) {
+                if (boxes[i].checked && boxes[i].getAttribute('data-conflict')) overwrites++;
+            }
+            if (overwrites && !window.confirm(
+                overwrites + ' key' + (overwrites === 1 ? ' already has' : 's already have') +
+                ' part data that will be replaced. Go ahead?')) {
+                e.preventDefault();
+            }
+        });
+
+        refresh();
+    })();
+    </script>
+</body>
+</html>

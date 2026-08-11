@@ -16,6 +16,7 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - **DB:** Supabase Postgres (via `supabase-py`)
 - **Scraping:** Selenium (headless Chromium)
 - **Excel:** openpyxl
+- **PDF:** pypdf (parts-invoice import only; pure Python, no system deps)
 - **Email:** Resend API
 - **Scheduler:** APScheduler (cron triggers, single-process)
 - **Hosting:** DigitalOcean (Docker, Gunicorn)
@@ -38,6 +39,8 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `/mobile-keys/inventory` — Inventory list (parts that were ordered but the customer no longer needs them; shows Date/Year/Make/Model + part numbers and costs only)
 - `/mobile-keys/contacts` — Key Code Contacts page. A small inline-edit reference table (Store / Name / Email / Notes) of who to reach out to at each store for a key code. Spreadsheet-style: type directly in cells, rows auto-save (debounced 600ms), "+ Add Contact" appends a blank row, the × deletes. The Store column header is click-to-sort (alpha, toggles asc/desc; blank-store rows sink to the bottom). Backed by the `key_code_contacts` table.
 - `/mobile-keys/contacts/api/create` / `update/<id>` / `delete/<id>` (POST, JSON) — JSON API powering the Key Code Contacts table.
+- `/mobile-keys/import` (GET/POST) — **Import Invoice**. Upload a CDK parts invoice PDF; POST parses it, matches each part group to a `mobile_keys` row, and renders the review page. No DB writes on this route.
+- `/mobile-keys/import/apply` (POST) — writes the checked rows. Reads `request.form.getlist('apply')` and pulls each row's edited values by token (`fob_pn__<token>` etc.). Blank inputs are **omitted** from the update, never written as NULL, so a single-part invoice can't wipe a hand-typed blank part number. Optional `mark_ordered=1` also sets `ordered`. No migration was needed — it writes the four existing part columns.
 - `/test-supabase`, `/test-chrome` — health checks
 
 ## Key Files
@@ -52,6 +55,8 @@ Recall data is scraped via Selenium, results are written to Excel and emailed vi
 - `templates/index.html`, `status.html`, `dashboard.html`, `schedules.html`, `schedule_form.html` — recall checker pages
 - `templates/mobile_keys.html`, `templates/mobile_key_form.html`, `templates/mobile_keys_inventory.html`, `templates/mobile_key_contacts.html` — Key Database list, add/edit form, Inventory list, and the Key Code Contacts inline-edit table
 - `templates/_key_notes.html` — shared partial powering the Notes column on both Mobile Keys list pages. Self-contained: its own `<style>`, the fixed-position `#noteTip` hover bubble, the edit modal, and the JS. Included once before `</body>`; the Inventory page wraps it in `{% with notes_return_to = 'inventory' %}` so saving redirects back there. Each page supplies the per-row `.note-btn` (carrying `data-key-id` / `data-label` / `data-note`). Kept as a partial so the two pages can't drift — the older `.notes-popover` CSS it replaced was copy-pasted into three templates and had already diverged.
+- `key_invoice_parser.py` — parses CDK parts invoices (PDF bytes → part groups). Pure module, no Flask import, so it can be run straight from the shell. Sample invoices live in `KeyDash/`. Three things it has to survive: CDK prints a CUSTOMER COPY and an OFFICE COPY of the same content on each physical page (so every block extracts twice — deduped by pairing an `ACCOUNT NO.` sentinel count with an exact positional 2× check); one RO can cover several VINs; and one (VIN, RO) group can straddle a page break. Requires `extraction_mode='layout'` — pypdf's default mode collapses the item line, VIN and RO onto a single line. NET is the cost recorded, LIST (MSRP) is discarded, and the part number always comes from the PART NUMBER column, never the number that appears inside a Ford description (`5923694 | 164R8134 KEY`).
+- `templates/mobile_keys_import.html`, `templates/mobile_keys_import_review.html` — the invoice upload card and the review/confirm table
 - `supabase/schema.sql` — full base schema for setting up a NEW Supabase project
 - `supabase/<date>_*.sql` — one file per migration; run on existing projects in chronological order
 - `supabase/seed_mobile_keys.sql` — one-time INSERT seed for `mobile_keys` (the 14 historical rows from `Mocks/Key_DB.xlsx`, normalized to the official dropdowns). Run once after the `2026-05-12_mobile_keys.sql` migration. Not idempotent.
@@ -107,6 +112,8 @@ docker run -d --name ford-checker -p 5000:10000 --env-file .env ford-checker
 ```
 
 ## Notes
+- Invoice import matching runs in **tiers across all groups**, and a key row can only be claimed once: (1) VIN + RO both match, (2) VIN matches but the RO differs, (3) RO matches but the VIN differs. **VIN wins over RO** — a parts clerk once billed two Rav-4 keys under the Tacoma's RO and the dashboard was the correct one, so a tier-2 match is applied with a yellow note rather than skipped. Tier order matters: the Tacoma's own exact match claims its row first, which is what lets the mis-ROed group fall through to the Rav-4 by VIN. More than one candidate at any tier is reported as ambiguous, never auto-picked (4 VINs currently repeat in the data — same vehicle, two keys). Unmatched groups are listed only; the import never creates rows.
+- Two parts on the same (VIN, RO) means a key with an insert: the cheaper NET is the blank, the dearer is the fob. Three or more is flagged and routed to the unmatched list rather than guessed at. Every parse also reconciles the sum of parsed line amounts against the invoice's printed total and warns on a mismatch — that one check is what catches a dropped line, a failed dedupe, or an unexpected column.
 - One-time recall jobs run in background threads and results are stored in `outputs/`. Live job state (progress %, in-flight status, output_file) is in-memory only — restart wipes the `jobs` dict and the `/job/<id>` and `/status/<id>` endpoints will show "Job not found" for old IDs. The historical *run log* itself is persisted to the Supabase `one_time_runs` table and survives restarts (scheduled runs continue to log to `schedule_runs` separately).
 - `/submit` is rate-limited to 200 VINs per rolling 6 hours (`RATE_LIMIT_MAX_VINS`/`RATE_LIMIT_WINDOW` in `app.py`). The check is "is the window already full?" — submissions aren't capped by size, so a 400-VIN job goes through if the window had room, then locks out further submits until enough of those 400 ages past 6 hours. State is in-memory only (lost on restart) and scheduled runs are exempt.
 - Single Gunicorn worker (see `gunicorn.conf.py`) keeps APScheduler to one instance — don't bump worker count without revisiting that.

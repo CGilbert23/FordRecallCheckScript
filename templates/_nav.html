@@ -11,6 +11,7 @@
     <a href="/schedules" class="nav-tab {% if path.startswith('/schedules') %}active{% endif %}">Scheduled Recall Checks</a>
     {% elif path.startswith('/mobile-keys') %}
     <a href="/mobile-keys" class="nav-tab {% if path == '/mobile-keys' or path.startswith('/mobile-keys/new') or '/edit' in path %}active{% endif %}">Key Database</a>
+    <a href="/mobile-keys/import" class="nav-tab {% if path.startswith('/mobile-keys/import') %}active{% endif %}">Import Invoice</a>
     <a href="/mobile-keys/inventory" class="nav-tab {% if path.startswith('/mobile-keys/inventory') %}active{% endif %}">Inventory</a>
     <a href="/mobile-keys/contacts" class="nav-tab {% if path.startswith('/mobile-keys/contacts') %}active{% endif %}">Key Code Contacts</a>
     {% elif path.startswith('/dealership-locator') %}

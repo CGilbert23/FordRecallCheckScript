@@ -471,6 +471,34 @@ def update_mobile_key(key_id, data):
     return res.data[0] if res.data else None
 
 
+def bulk_update_mobile_keys(updates):
+    """Apply a list of {'id': ..., **fields} partial updates.
+
+    Returns (applied_count, errors) where errors is [(id, message), ...]. A row
+    that fails doesn't stop the rest — the invoice import reports per-row.
+    Loop of single-row updates, same shape as reorder_mobile_keys: Supabase has
+    no per-row bulk update and these batches are a handful of rows.
+    """
+    client = get_client()
+    applied = 0
+    errors = []
+    for update in updates:
+        data = {k: v for k, v in update.items() if k != 'id'}
+        if not data:
+            continue
+        try:
+            res = client.table('mobile_keys').update(data).eq('id', update['id']).execute()
+            # An update against an id that no longer exists succeeds but changes
+            # nothing, so count what actually came back rather than attempts.
+            if res.data:
+                applied += 1
+            else:
+                errors.append((update['id'], 'key no longer exists'))
+        except Exception as e:
+            errors.append((update['id'], str(e)))
+    return applied, errors
+
+
 def delete_mobile_key(key_id):
     client = get_client()
     client.table('mobile_keys').delete().eq('id', key_id).execute()

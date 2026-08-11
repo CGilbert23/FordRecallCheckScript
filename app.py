@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import uuid
 import queue
@@ -16,6 +17,7 @@ import openpyxl
 import db
 import scheduler
 import dealership_locator as dealership_locator_mod
+import key_invoice_parser
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -1511,6 +1513,264 @@ def mobile_key_contacts_api_delete(contact_id):
     except Exception as e:
         logger.error(f"key code contact delete failed: {e}")
         return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Mobile Keys — parts invoice import
+# ---------------------------------------------------------------------------
+
+MAX_INVOICE_BYTES = 10 * 1024 * 1024
+
+# The four columns an invoice can fill in.
+INVOICE_FIELDS = (
+    ('fob_pn', 'key_fob_part_number'),
+    ('fob_cost', 'key_fob_cost'),
+    ('blank_pn', 'key_blank_part_number'),
+    ('blank_cost', 'key_blank_cost'),
+)
+
+
+def _read_invoice_upload(req):
+    """Pull the invoice PDF off the request as bytes. Returns (data, error).
+
+    Mirrors parse_excel_upload: the file is read fully into memory and never
+    touches disk. Size is checked here rather than via MAX_CONTENT_LENGTH,
+    which would also constrain the Excel upload on /submit.
+    """
+    upload = req.files.get('invoice')
+    if not upload or not upload.filename:
+        return None, 'Pick an invoice PDF to upload.'
+    if not upload.filename.lower().endswith('.pdf'):
+        return None, 'That file isn\'t a PDF. Save the invoice as a PDF and try again.'
+    data = upload.read()
+    if not data:
+        return None, 'That file was empty.'
+    if len(data) > MAX_INVOICE_BYTES:
+        return None, 'That PDF is larger than 10 MB.'
+    if not data.startswith(b'%PDF'):
+        return None, 'That file has a .pdf name but isn\'t a PDF.'
+    return data, None
+
+
+def _invoice_match_keys(row):
+    """(vin, ro) for a mobile_keys row, normalised for comparison."""
+    return (
+        (row.get('vin') or '').strip().upper(),
+        re.sub(r'\D', '', row.get('ro_number') or ''),
+    )
+
+
+def _match_invoice_groups(groups, keys):
+    """Attach a mobile_keys row to each parsed invoice group.
+
+    Returns (matched, conflicts, unmatched). Matching runs in tiers across all
+    groups — every exact VIN+RO hit claims its row before any looser tier gets
+    a look — and a row can only be claimed once:
+
+      1. VIN and RO both match          (clean)
+      2. VIN matches, RO differs        (the invoice's RO was typed wrong)
+      3. RO matches, VIN differs/blank
+
+    VIN wins over RO because that's what's been true in practice: a parts clerk
+    put two Rav-4 keys on the Tacoma's RO, and the dashboard was the correct one.
+    """
+    by_vin_ro, by_vin, by_ro = {}, {}, {}
+    for row in keys:
+        vin, ro = _invoice_match_keys(row)
+        if vin and ro:
+            by_vin_ro.setdefault((vin, ro), []).append(row)
+        if vin:
+            by_vin.setdefault(vin, []).append(row)
+        if ro:
+            by_ro.setdefault(ro, []).append(row)
+
+    proposals = []
+    for index, group in enumerate(groups):
+        proposals.append({
+            'token': str(index),
+            'group': group,
+            'vin': group['vin'],
+            'ro_number': group['ro_number'],
+            'key': None,
+            'match_note': None,
+            'reason': None,
+        })
+
+    claimed = set()
+
+    def candidates(bucket, lookup):
+        return [r for r in bucket.get(lookup, []) if r['id'] not in claimed]
+
+    def resolve(tier):
+        for p in proposals:
+            if p['key'] is not None or p['group']['too_many_parts']:
+                continue
+            vin, ro = p['vin'], re.sub(r'\D', '', p['ro_number'] or '')
+            if tier == 1:
+                found = candidates(by_vin_ro, (vin, ro))
+                note = None
+            elif tier == 2:
+                found = candidates(by_vin, vin)
+                note = None
+            else:
+                found = candidates(by_ro, ro)
+                note = None
+
+            if len(found) == 1:
+                row = found[0]
+                row_vin, row_ro = _invoice_match_keys(row)
+                if tier == 2:
+                    note = (f"Invoice says RO {p['ro_number']}, this key is RO "
+                            f"{row.get('ro_number') or '(none)'} — matched on VIN.")
+                elif tier == 3:
+                    note = (f"VIN on the invoice ({vin}) doesn't match this key's VIN "
+                            f"({row_vin or '(none)'}) — matched on RO.")
+                p['key'] = row
+                p['match_note'] = note
+                claimed.add(row['id'])
+            elif len(found) > 1:
+                p['reason'] = (f"{len(found)} keys share that "
+                               f"{'VIN' if tier == 2 else 'RO'} — pick one by hand.")
+
+    for tier in (1, 2, 3):
+        resolve(tier)
+
+    matched, conflicts, unmatched = [], [], []
+    for p in proposals:
+        group = p['group']
+        if group['too_many_parts']:
+            p['reason'] = (f"{len(group['items'])} parts billed against this RO/VIN — "
+                           f"too many to split into a fob and a blank.")
+            unmatched.append(p)
+            continue
+        if p['key'] is None:
+            p['reason'] = p['reason'] or 'No key in the database with that VIN or RO.'
+            unmatched.append(p)
+            continue
+
+        row = p['key']
+        p['key_id'] = row['id']
+        p['in_inventory'] = bool(row.get('moved_to_inventory_at'))
+        p['existing'] = {col: row.get(col) for _, col in INVOICE_FIELDS}
+        p['proposed'] = {col: group.get(col) for _, col in INVOICE_FIELDS}
+
+        before = _compute_key_totals(dict(row))
+        after = dict(row)
+        for _, col in INVOICE_FIELDS:
+            if group.get(col) is not None:
+                after[col] = group[col]
+        p['before'] = before
+        p['after'] = _compute_key_totals(after)
+
+        if any(v not in (None, '') for v in p['existing'].values()):
+            conflicts.append(p)
+        else:
+            matched.append(p)
+
+    return matched, conflicts, unmatched
+
+
+@app.route('/mobile-keys/import', methods=['GET', 'POST'])
+def mobile_key_import():
+    if request.method == 'GET':
+        return render_template('mobile_keys_import.html')
+
+    data, error = _read_invoice_upload(request)
+    if error:
+        return render_template('mobile_keys_import.html', error=error)
+
+    try:
+        parsed = key_invoice_parser.parse_invoice_pdf(data)
+    except ValueError as e:
+        return render_template('mobile_keys_import.html', error=str(e))
+    except Exception as e:
+        logger.error(f"Invoice parse failed: {e}")
+        return render_template(
+            'mobile_keys_import.html',
+            error='Could not read that invoice. It may be an unusual layout.',
+        )
+
+    if not parsed['groups']:
+        return render_template(
+            'mobile_keys_import.html',
+            error='No parts found on that invoice — it may be a scan with no text layer.',
+        )
+
+    try:
+        keys = db.list_mobile_keys() + db.list_mobile_keys_in_inventory()
+    except Exception as e:
+        logger.error(f"Failed to load keys for invoice match: {e}")
+        return render_template(
+            'mobile_keys_import.html',
+            error='Could not load the Key Database to match against. Try again.',
+        )
+
+    matched, conflicts, unmatched = _match_invoice_groups(parsed['groups'], keys)
+    return render_template(
+        'mobile_keys_import_review.html',
+        matched=matched,
+        conflicts=conflicts,
+        unmatched=unmatched,
+        warnings=parsed['warnings'],
+        parsed_total=parsed['parsed_total'],
+        invoice_total=parsed['invoice_total'],
+        filename=request.files['invoice'].filename,
+    )
+
+
+@app.route('/mobile-keys/import/apply', methods=['POST'])
+def mobile_key_import_apply():
+    tokens = request.form.getlist('apply')
+    mark_ordered = request.form.get('mark_ordered') == '1'
+
+    updates = []
+    errors = []
+    for token in tokens:
+        key_id = (request.form.get(f'key_id__{token}') or '').strip()
+        if not key_id:
+            continue
+        update = {'id': key_id}
+        label = (request.form.get(f'label__{token}') or key_id)
+        for field, column in INVOICE_FIELDS:
+            raw = (request.form.get(f'{field}__{token}') or '').strip()
+            # Blank means "leave it alone", never "clear it" — a single-part
+            # invoice must not wipe a hand-typed blank part number.
+            if not raw:
+                continue
+            if column.endswith('_cost'):
+                value, err = _parse_money(raw)
+                if err:
+                    errors.append(f"{label}: {err}")
+                    update = None
+                    break
+                update[column] = value
+            else:
+                update[column] = raw
+        if update is None:
+            continue
+        if mark_ordered:
+            update['ordered'] = True
+        if len(update) > 1:
+            updates.append(update)
+
+    applied = 0
+    if updates:
+        try:
+            applied, failures = db.bulk_update_mobile_keys(updates)
+            errors.extend(f"{key_id}: {msg}" for key_id, msg in failures)
+        except Exception as e:
+            logger.error(f"Invoice apply failed: {e}")
+            return render_template(
+                'mobile_keys_import.html',
+                error=f'Could not save those keys: {e}',
+            )
+
+    return render_template('mobile_keys_import.html', result={
+        'applied': applied,
+        'selected': len(tokens),
+        'errors': errors,
+        'marked_ordered': mark_ordered,
+    })
 
 
 if __name__ == '__main__':

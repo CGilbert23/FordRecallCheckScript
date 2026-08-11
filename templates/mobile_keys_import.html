@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Invoice - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 900px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
+        .btn-outline:hover { background: #eff6ff; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; color: #374151; }
+        input[type="file"] { display: block; width: 100%; padding: 14px; border: 2px dashed #cbd5e1; border-radius: 6px; background: #f9fafb; font-size: 0.9rem; margin-bottom: 18px; cursor: pointer; }
+        input[type="file"]:hover { border-color: #0068d6; background: #f0f7ff; }
+        .how { font-size: 0.85rem; color: #666; line-height: 1.7; }
+        .how h2 { font-size: 0.95rem; color: #374151; margin-bottom: 8px; }
+        .how ul { margin: 0 0 0 18px; }
+        .muted { color: #9ca3af; }
+        a.nav-link { color: #0068d6; text-decoration: none; }
+        a.nav-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Upload a parts invoice and it'll fill in the part numbers and costs on the matching keys.</p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        {% if result %}
+        <div class="{{ 'success' if result.applied else 'error' }}">
+            {% if result.applied %}
+            Updated {{ result.applied }} key{{ '' if result.applied == 1 else 's' }}{% if result.marked_ordered %} and marked {{ 'it' if result.applied == 1 else 'them' }} as Ordered{% endif %}.
+            <a href="/mobile-keys" class="nav-link">Back to the Key Database &rarr;</a>
+            {% else %}
+            Nothing was applied — no keys were checked off.
+            {% endif %}
+            {% if result.errors %}
+            <ul style="margin: 8px 0 0 18px;">
+                {% for e in result.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <form method="POST" enctype="multipart/form-data">
+                <label for="invoice">Parts invoice (PDF)</label>
+                <input type="file" id="invoice" name="invoice" accept="application/pdf,.pdf" required>
+                <button type="submit" class="btn">Read invoice</button>
+                <a href="/mobile-keys" class="btn btn-outline">Cancel</a>
+            </form>
+        </div>
+
+        <div class="card how">
+            <h2>How this works</h2>
+            <ul>
+                <li>Every part on the invoice is read with its VIN, RO number and <strong>Net</strong> cost. List price is ignored.</li>
+                <li>Two parts on the same VIN and RO means a key with an insert — the cheaper one is recorded as the blank.</li>
+                <li>Keys are matched on VIN first, then RO. If the RO on the invoice was typed wrong, the match is still made on the VIN and flagged for you.</li>
+                <li>Nothing is saved until you look over the list and confirm it. Keys that already have part numbers are left unchecked so they can't be overwritten by accident.</li>
+                <li class="muted">Needs a real PDF from the parts system — a photo or a scan won't have text to read.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
