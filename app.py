@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import html
 import uuid
 import queue
 import threading
@@ -195,6 +196,19 @@ def enqueue_scheduled_run(schedule_id, triggered_by='scheduled'):
     recipients = list(schedule.get('recipients') or [])
     subject = f"Automated Recall Check For {company}: {cadence.capitalize()}"
 
+    # Fleet manager call-to-action, built from the account as it stands right
+    # now. account_id is nullable (accounts can be deleted out from under a
+    # schedule), and a Supabase hiccup must never stop the email going out.
+    intro_html = ''
+    account_id = schedule.get('account_id')
+    if account_id:
+        try:
+            account = db.get_account(account_id)
+            if account:
+                intro_html = _fleet_manager_intro_html(account)
+        except Exception as e:
+            logger.error(f"Schedule {schedule_id}: fleet manager lookup failed: {e}")
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_name = ''.join(c for c in company if c.isalnum() or c in ' _-').strip().replace(' ', '_')
     filename = f'{safe_name or "Scheduled"}_{cadence}_{timestamp}.xlsx'
@@ -224,6 +238,7 @@ def enqueue_scheduled_run(schedule_id, triggered_by='scheduled'):
         'subject': subject,
         'recipients': recipients,
         'schedule_run_id': run_id,
+        'intro_html': intro_html,
     }
     job_queue.put((job_id, vins, output_file, None, meta))
     logger.info(f"Enqueued schedule {schedule_id} ({triggered_by}) as job {job_id}")
@@ -280,7 +295,48 @@ def _ensure_always_cc(recipients):
     return list(recipients)
 
 
-def send_results_email(output_file, result, subject, recipients):
+def _fleet_manager_intro_html(account):
+    """Build the 'reach out to the fleet manager' line for a scheduled email.
+
+    Returns '' when the account has no usable contact, so the email renders
+    exactly as it did before. Note the sentinels: account_create stores '--'
+    in fleet_manager_email when the field is left blank, while the name column
+    and both _2 columns store NULL.
+    """
+    def _clean(value):
+        v = (value or '').strip()
+        return '' if v in ('--', '-') else v
+
+    def _fragment(name, email, book=False):
+        """`book` inserts the 'to book' call to action — only the primary
+        contact carries it, so the secondary line doesn't repeat the phrase."""
+        name, email = _clean(name), _clean(email)
+        who = html.escape(name or email)
+        if not who:
+            return ''
+        out = f"{who} to book" if book else who
+        if name and email:
+            out += f" (Email: {html.escape(email)})"
+        return out
+
+    primary = _fragment(account.get('fleet_manager'), account.get('fleet_manager_email'), book=True)
+    secondary = _fragment(account.get('fleet_manager_2'), account.get('fleet_manager_2_email'))
+
+    # No primary on file but a second contact is — promote it rather than
+    # emitting a "Secondary" line with nothing above it.
+    if not primary:
+        primary = _fragment(account.get('fleet_manager_2'), account.get('fleet_manager_2_email'), book=True)
+        secondary = ''
+    if not primary:
+        return ''
+
+    out = f"<p>If there are active recalls with remedies, reach out to Fleet Manager: {primary}</p>"
+    if secondary:
+        out += f"<p>Secondary Fleet Manager: {secondary}</p>"
+    return out
+
+
+def send_results_email(output_file, result, subject, recipients, intro_html=''):
     """Send the Excel results file to the given recipients via Resend."""
     try:
         filename = os.path.basename(output_file)
@@ -297,6 +353,7 @@ def send_results_email(output_file, result, subject, recipients):
             "to": to_list,
             "subject": subject,
             "html": (
+                f"{intro_html}"
                 f"<h2>Ford Recall Check Complete</h2>"
                 f"<p>Your recall check has finished processing.</p>"
                 f"<ul>"
@@ -359,7 +416,8 @@ def run_job(job_id, vins, output_file, vin_units=None, meta=None):
             # Scheduled runs always send email (always-CC handles empty recipient lists).
             subject = meta.get('subject') or f"Ford Recall Results - {recalls_found} recall(s) found"
             recipients = meta.get('recipients') or []
-            sent = send_results_email(output_file, result, subject, recipients)
+            sent = send_results_email(output_file, result, subject, recipients,
+                                      intro_html=meta.get('intro_html', ''))
         else:
             email = jobs[job_id].get('email')
             if email:
