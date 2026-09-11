@@ -54,7 +54,9 @@ def _format_short_date(value):
 
 
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
-RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'fordrecalls@voxapp.co')
+RESEND_FROM_EMAIL = os.environ.get(
+    'RESEND_FROM_EMAIL', 'recallchecks@fredbeans-reporting.com'
+)
 
 # In-memory job store and queue
 jobs = {}

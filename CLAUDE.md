@@ -83,7 +83,8 @@ python app.py
 ## Environment Variables
 - `SUPABASE_URL`, `SUPABASE_KEY` — required; the app fails fast on first DB call without them.
 - `RESEND_API_KEY` — API key for Resend email service
-- `RESEND_FROM_EMAIL` — From address for email (default: `fordrecalls@voxapp.co`)
+- `RESEND_FROM_EMAIL` — From address for email (default: `recallchecks@fredbeans-reporting.com`).
+  The domain must be verified in Resend (DKIM/SPF DNS records) or sends fail.
 - `USE_GH_ACTIONS_FOR_RECALLS` — set to `1` on hosts whose egress IP is blocked
   by Ford's Akamai (DigitalOcean prod, Fly, etc.). Routes recall checks through
   the `recall_check_on_demand` workflow in this same repo (which runs on
