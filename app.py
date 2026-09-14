@@ -53,6 +53,40 @@ def _format_short_date(value):
         return str(value)
 
 
+def _key_copy_line(row):
+    """One-line, email-ready summary of a key row for the copy-to-clipboard button.
+
+    '316615 - 5YFT4MCE5PP164716 - 23 Toyota Corolla - FB Toyota 9/16'. Blank fields
+    keep an em dash placeholder so the segments stay lined up when several rows are
+    pasted together. Expects customer_display to already be set on the row.
+    """
+    dash = '—'
+
+    def val(key):
+        v = row.get(key)
+        v = '' if v is None else str(v).strip()
+        return v or dash
+
+    year = row.get('year')
+    yy = str(year)[-2:] if year not in (None, '') else dash
+    make = val('make')
+    model = val('model')
+    customer = (row.get('customer_display') or '').strip() or dash
+
+    # Appt date as M/D, no leading zeros. Built from the parts rather than
+    # strftime('%-m/%-d') -- that flag doesn't exist on Windows.
+    cut = row.get('cut_date')
+    when = dash
+    if cut not in (None, ''):
+        try:
+            d = datetime.strptime(str(cut)[:10], '%Y-%m-%d').date() if isinstance(cut, str) else cut
+            when = f"{d.month}/{d.day}"
+        except (ValueError, TypeError, AttributeError):
+            when = dash
+
+    return f"{val('ro_number')} - {val('vin')} - {yy} {make} {model} - {customer} {when}"
+
+
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 RESEND_FROM_EMAIL = os.environ.get(
     'RESEND_FROM_EMAIL', 'recallchecks@fredbeans-reporting.com'
@@ -1185,6 +1219,8 @@ def _compute_key_totals(row):
     contact = (row.get('internal_contact') or '').strip()
     name = row.get('customer_name') or ''
     row['customer_display'] = f"{name} - {contact}" if contact else name
+    # Pre-rendered line for the Key Database "Copy Selected" button.
+    row['copy_line'] = _key_copy_line(row)
     return row
 
 

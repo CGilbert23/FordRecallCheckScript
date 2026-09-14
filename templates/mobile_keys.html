@@ -23,6 +23,9 @@
         .btn-danger:hover { background: #991b1b; }
         .btn-outline { background: #fff; color: #0068d6; border: 1px solid #0068d6; }
         .btn-outline:hover { background: #eff6ff; }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        .btn-outline:disabled:hover { background: #fff; }
+        .copy-check { cursor: pointer; margin: 0; }
         .btn-inventory { background: #fff; color: #b45309; border: 1px solid #b45309; }
         .btn-inventory:hover { background: #fffbeb; }
         .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; cursor: default; opacity: 0.85; }
@@ -109,6 +112,7 @@
                 <input type="text" id="keySearch" class="search-input" placeholder="Search by year, make, or model…" autocomplete="off">
             </div>
             <div style="flex: 1; text-align: right;">
+                <button type="button" id="copySelectedBtn" class="btn btn-outline" disabled>Copy Selected</button>
                 <a href="/mobile-keys/import" class="btn btn-outline">Import Invoice</a>
                 <a href="/mobile-keys/new" class="btn">+ Add Key</a>
             </div>
@@ -124,6 +128,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th class="center"><input type="checkbox" id="selectAllKeys" class="copy-check" title="Select all" aria-label="Select all keys to copy"></th>
                             <th aria-label="Drag to reorder"></th>
                             <th class="center">Notes</th>
                             <th class="center">Ordered</th>
@@ -161,7 +166,8 @@
                     </thead>
                     <tbody id="keyRows">
                     {% for k in keys %}
-                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}"{% if not k.status_done %} class="row-pending"{% endif %}>
+                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.status_done %} class="row-pending"{% endif %}>
+                            <td class="center"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
                             <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
                             <td class="center">
                                 <button type="button" class="note-btn {% if k.notes %}note-btn-filled{% endif %}"
@@ -235,7 +241,7 @@
                         </tr>
                     {% endfor %}
                         <tr class="no-results-row" id="noResultsRow" style="display: none;">
-                            <td colspan="22">No keys match that search.</td>
+                            <td colspan="23">No keys match that search.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -267,6 +273,110 @@
     <script>
         var keySortable = null;
         var searchFiltering = false;
+
+        // Copy Selected: tick rows, get one email-ready line per key on the
+        // clipboard. Each line is pre-rendered server-side into data-copy.
+        (function () {
+            var btn = document.getElementById('copySelectedBtn');
+            var selectAll = document.getElementById('selectAllKeys');
+            var tbody = document.getElementById('keyRows');
+            if (!btn || !tbody) return;
+
+            var boxes = Array.prototype.slice.call(
+                tbody.querySelectorAll('input.row-copy-check')
+            );
+            var flashTimer = null;
+
+            function rowOf(box) { return box.closest('tr'); }
+            function isVisible(tr) { return tr && tr.style.display !== 'none'; }
+            function checked() { return boxes.filter(function (b) { return b.checked; }); }
+
+            function refresh() {
+                if (flashTimer) return;  // don't stomp on a "Copied!" flash
+                var n = checked().length;
+                btn.textContent = n ? 'Copy Selected (' + n + ')' : 'Copy Selected';
+                btn.disabled = n === 0;
+            }
+
+            // Called by the search filter after it shows/hides rows: a row the
+            // rep can no longer see must not ride along in the next copy.
+            window.keyCopySyncToFilter = function () {
+                boxes.forEach(function (b) {
+                    if (b.checked && !isVisible(rowOf(b))) b.checked = false;
+                });
+                if (selectAll) selectAll.checked = false;
+                refresh();
+            };
+
+            function flash(text) {
+                btn.textContent = text;
+                if (flashTimer) clearTimeout(flashTimer);
+                flashTimer = setTimeout(function () {
+                    flashTimer = null;
+                    refresh();
+                }, 1500);
+            }
+
+            // Production is served over plain HTTP, where navigator.clipboard is
+            // undefined (not a secure context) -- so the execCommand fallback is
+            // the path that actually runs on the dashboard, not a nicety.
+            function legacyCopy(text) {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, text.length);
+                var ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+                document.body.removeChild(ta);
+                return ok;
+            }
+
+            function copyText(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        flash('Copied!');
+                    }).catch(function () {
+                        flash(legacyCopy(text) ? 'Copied!' : 'Copy failed');
+                    });
+                    return;
+                }
+                flash(legacyCopy(text) ? 'Copied!' : 'Copy failed');
+            }
+
+            boxes.forEach(function (b) {
+                b.addEventListener('change', function () {
+                    if (!b.checked && selectAll) selectAll.checked = false;
+                    refresh();
+                });
+            });
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    var on = selectAll.checked;
+                    boxes.forEach(function (b) {
+                        if (isVisible(rowOf(b))) b.checked = on;
+                    });
+                    refresh();
+                });
+            }
+
+            btn.addEventListener('click', function () {
+                // DOM order, so the lines come out top-to-bottom as displayed.
+                var lines = checked().map(function (b) {
+                    return rowOf(b).getAttribute('data-copy') || '';
+                }).filter(function (t) { return t; });
+                if (!lines.length) return;
+                copyText(lines.join('\n'));
+            });
+
+            refresh();
+        })();
+
         (function () {
             var search = document.getElementById('keySearch');
             var rowsContainer = document.getElementById('keyRows');
@@ -305,6 +415,8 @@
                     if (searchFiltering) row.classList.add('drag-disabled');
                     else row.classList.remove('drag-disabled');
                 });
+                // Rows that just scrolled out of view must not stay selected for copy.
+                if (window.keyCopySyncToFilter) window.keyCopySyncToFilter();
             }
             search.addEventListener('input', applyFilter);
         })();
