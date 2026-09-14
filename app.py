@@ -1219,7 +1219,7 @@ def _compute_key_totals(row):
     contact = (row.get('internal_contact') or '').strip()
     name = row.get('customer_name') or ''
     row['customer_display'] = f"{name} - {contact}" if contact else name
-    # Pre-rendered line for the Key Database "Copy Selected" button.
+    # Pre-rendered line for the Key Database "Copy Tool" button.
     row['copy_line'] = _key_copy_line(row)
     return row
 

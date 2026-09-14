@@ -26,6 +26,8 @@
         .btn:disabled { opacity: 0.5; cursor: default; }
         .btn-outline:disabled:hover { background: #fff; }
         .copy-check { cursor: pointer; margin: 0; }
+        .copy-cell { display: none; }
+        body.copy-mode .copy-cell { display: table-cell; }
         .btn-inventory { background: #fff; color: #b45309; border: 1px solid #b45309; }
         .btn-inventory:hover { background: #fffbeb; }
         .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; cursor: default; opacity: 0.85; }
@@ -112,7 +114,7 @@
                 <input type="text" id="keySearch" class="search-input" placeholder="Search by year, make, or model…" autocomplete="off">
             </div>
             <div style="flex: 1; text-align: right;">
-                <button type="button" id="copySelectedBtn" class="btn btn-outline" disabled>Copy Selected</button>
+                <button type="button" id="copySelectedBtn" class="btn btn-outline">Copy Tool</button>
                 <a href="/mobile-keys/import" class="btn btn-outline">Import Invoice</a>
                 <a href="/mobile-keys/new" class="btn">+ Add Key</a>
             </div>
@@ -128,7 +130,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th class="center"><input type="checkbox" id="selectAllKeys" class="copy-check" title="Select all" aria-label="Select all keys to copy"></th>
+                            <th class="center copy-cell"><input type="checkbox" id="selectAllKeys" class="copy-check" title="Select all" aria-label="Select all keys to copy"></th>
                             <th aria-label="Drag to reorder"></th>
                             <th class="center">Notes</th>
                             <th class="center">Ordered</th>
@@ -167,7 +169,7 @@
                     <tbody id="keyRows">
                     {% for k in keys %}
                         <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.status_done %} class="row-pending"{% endif %}>
-                            <td class="center"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
+                            <td class="center copy-cell"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
                             <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
                             <td class="center">
                                 <button type="button" class="note-btn {% if k.notes %}note-btn-filled{% endif %}"
@@ -274,8 +276,11 @@
         var keySortable = null;
         var searchFiltering = false;
 
-        // Copy Selected: tick rows, get one email-ready line per key on the
-        // clipboard. Each line is pre-rendered server-side into data-copy.
+        // Copy Tool: two states. Idle shows "Copy Tool" and no checkbox column;
+        // clicking arms it, revealing the checkboxes and switching the button to
+        // "Copy". Clicking "Copy" puts one email-ready line per ticked row on the
+        // clipboard and disarms back to idle. Lines are pre-rendered server-side
+        // into each row's data-copy.
         (function () {
             var btn = document.getElementById('copySelectedBtn');
             var selectAll = document.getElementById('selectAllKeys');
@@ -286,6 +291,7 @@
                 tbody.querySelectorAll('input.row-copy-check')
             );
             var flashTimer = null;
+            var armed = false;
 
             function rowOf(box) { return box.closest('tr'); }
             function isVisible(tr) { return tr && tr.style.display !== 'none'; }
@@ -293,9 +299,24 @@
 
             function refresh() {
                 if (flashTimer) return;  // don't stomp on a "Copied!" flash
+                if (!armed) { btn.textContent = 'Copy Tool'; return; }
                 var n = checked().length;
-                btn.textContent = n ? 'Copy Selected (' + n + ')' : 'Copy Selected';
-                btn.disabled = n === 0;
+                btn.textContent = n ? 'Copy (' + n + ')' : 'Copy';
+            }
+
+            function arm() {
+                armed = true;
+                document.body.classList.add('copy-mode');
+                refresh();
+            }
+
+            // Disarm clears every tick, so arming again always starts clean.
+            function disarm() {
+                armed = false;
+                document.body.classList.remove('copy-mode');
+                boxes.forEach(function (b) { b.checked = false; });
+                if (selectAll) selectAll.checked = false;
+                refresh();
             }
 
             // Called by the search filter after it shows/hides rows: a row the
@@ -366,12 +387,21 @@
             }
 
             btn.addEventListener('click', function () {
+                if (!armed) { arm(); return; }
                 // DOM order, so the lines come out top-to-bottom as displayed.
                 var lines = checked().map(function (b) {
                     return rowOf(b).getAttribute('data-copy') || '';
                 }).filter(function (t) { return t; });
-                if (!lines.length) return;
-                copyText(lines.join('\n'));
+                // Clicking Copy with nothing ticked is the way back out --
+                // otherwise an armed tool with no selection has no escape.
+                if (!lines.length) { disarm(); return; }
+                copyText(lines.join('\n'));  // sets the flash, which refresh() protects
+                disarm();
+            });
+
+            // Escape backs out of the armed tool, matching the modals on this page.
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && armed) disarm();
             });
 
             refresh();
