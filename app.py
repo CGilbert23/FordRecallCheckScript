@@ -1883,8 +1883,12 @@ def _month_label(period_start):
     return datetime.strptime(str(period_start)[:10], '%Y-%m-%d').strftime('%B %Y')
 
 
-def _xtime_report_page(month=None, error=None, notice=None, status=200):
-    """Render the report for `month` ('YYYY-MM'), defaulting to the newest upload."""
+def _xtime_report_page(month=None, error=None, notice=None, status=200, store=None):
+    """Render the report for `month` ('YYYY-MM'), defaulting to the newest upload.
+
+    `store` (one of the roster's display stores) narrows the table and its
+    total row to that store's techs; anything else shows every store.
+    """
     months, report, rows, total = [], None, [], None
     try:
         months = db.list_xtime_report_months()
@@ -1898,11 +1902,17 @@ def _xtime_report_page(month=None, error=None, notice=None, status=200):
         logger.error(f"Xtime report load failed: {e}")
         error = error or 'Could not load saved reports from the database.'
         selected = None
+    stores = xtime_tech_report.roster_stores()
+    if store not in stores:
+        store = None
     if report:
         rows = xtime_tech_report.mobile_tech_rows(report.get('techs') or [])
+        if store:
+            rows = [r for r in rows if r['store'] == store]
         total = xtime_tech_report.team_total(rows)
     return render_template('xtime_tech_report.html', months=months, selected=selected,
                            report=report, rows=rows, total=total,
+                           stores=stores, store=store,
                            error=error, notice=notice), status
 
 
@@ -1914,7 +1924,8 @@ def tech_performance():
 @app.route('/tech-performance/xtime-report')
 def xtime_tech_report_view():
     month = (request.args.get('month') or '').strip()
-    return _xtime_report_page(month if _MONTH_RE.match(month) else None)
+    store = (request.args.get('store') or '').strip()
+    return _xtime_report_page(month if _MONTH_RE.match(month) else None, store=store)
 
 
 @app.route('/tech-performance/xtime-report/upload', methods=['POST'])

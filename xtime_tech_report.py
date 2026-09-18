@@ -40,6 +40,7 @@ MOBILE_TECHS = [
     {'name': 'Antonio Dixon', 'store': 'Ford Mechanicsburg', 'store_words': ('ford', 'mechanicsburg')},
     {'name': 'Bryan Burgos', 'store': 'Ford Mechanicsburg', 'store_words': ('ford', 'mechanicsburg')},
     {'name': 'Grant Carlson', 'store': 'Ford Boyertown', 'store_words': ('ford', 'boyertown')},
+    {'name': 'Michael Magargal', 'store': 'Ford Boyertown', 'store_words': ('ford', 'boyertown')},
 ]
 
 METRIC_KEYS = ('total_ro', 'mpi_completed', 'avg_miles', 'asr', 'lines_requested', 'lines_sold')
@@ -172,6 +173,11 @@ def _with_rates(row):
     row['mpi_pct'] = _pct(row.get('mpi_completed'), row.get('total_ro'))
     row['asr_pct'] = _pct(row.get('asr'), row.get('total_ro'))
     return row
+
+
+def roster_stores(roster=MOBILE_TECHS):
+    """Distinct roster stores, alphabetical — the report page's store filter."""
+    return sorted({r['store'] for r in roster})
 
 
 def mobile_tech_rows(techs, roster=MOBILE_TECHS):

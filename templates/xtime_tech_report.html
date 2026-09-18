@@ -26,10 +26,10 @@
         .upload-row input[type="file"] { flex: 1; min-width: 240px; padding: 8px; border: 2px dashed #cbd5e1; border-radius: 6px; background: #f9fafb; font-size: 0.85rem; cursor: pointer; }
         .upload-row input[type="file"]:hover { border-color: #0068d6; background: #f0f7ff; }
         .hint { font-size: 0.8rem; color: #888; margin-top: 8px; }
-        .months { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
-        .month { padding: 7px 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #374151; text-decoration: none; font-size: 0.85rem; font-weight: 500; }
-        .month:hover { border-color: #0068d6; color: #0068d6; }
-        .month.active { background: #0068d6; border-color: #0068d6; color: #fff; font-weight: 600; }
+        .filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+        .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 200px; cursor: pointer; }
+        .filters select:focus { outline: none; border-color: #0068d6; }
         .report-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
         .report-head h2 { font-size: 1.2rem; color: #0a1f44; }
         .report-head .meta { font-size: 0.8rem; color: #888; }
@@ -69,16 +69,31 @@
 
         <div class="card">
             {% if months %}
-            <div class="months">
-                {% for m in months %}
-                <a href="/tech-performance/xtime-report?month={{ m.key }}" class="month {% if selected and m.key == selected.key %}active{% endif %}">{{ m.label }}</a>
-                {% endfor %}
-            </div>
+            <form method="GET" action="/tech-performance/xtime-report" class="filters">
+                <div>
+                    <label for="month">Month</label>
+                    <select id="month" name="month" onchange="this.form.submit()">
+                        {% for m in months %}
+                        <option value="{{ m.key }}" {% if selected and m.key == selected.key %}selected{% endif %}>{{ m.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="store">Store</label>
+                    <select id="store" name="store" onchange="this.form.submit()">
+                        <option value="">All stores</option>
+                        {% for s in stores %}
+                        <option value="{{ s }}" {% if s == store %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <noscript><button type="submit" class="btn">Show</button></noscript>
+            </form>
             {% endif %}
 
             {% if report %}
             <div class="report-head">
-                <h2>{{ selected.label }}</h2>
+                <h2>{{ selected.label }}{% if store %} &middot; {{ store }}{% endif %}</h2>
                 <div class="meta">
                     {{ report.filename or '' }}
                     <form method="POST" action="/tech-performance/xtime-report/{{ selected.key }}/delete" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Delete the {{ selected.label }} report? You can upload it again later.');">
@@ -129,7 +144,7 @@
                     {% endfor %}
                     {% if total %}
                     <tr class="total">
-                        <td>{{ total.name }}</td>
+                        <td>{{ store ~ ' Total' if store else total.name }}</td>
                         <td>{{ total.store }}</td>
                         <td>{{ num(total.total_ro) }}</td>
                         <td>{{ num(total.mpi_completed) }}</td>
@@ -151,7 +166,7 @@
         <div class="card how">
             <ul>
                 <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR %</strong> = ASR &divide; Total RO.</li>
-                <li>The Mobile Team row adds up every tech in the month; its Avg Miles is weighted by each tech's RO count.</li>
+                <li>The total row adds up every tech shown (all stores, or just the one picked); its Avg Miles is weighted by each tech's RO count.</li>
             </ul>
         </div>
     </div>
