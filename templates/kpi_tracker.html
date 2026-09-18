@@ -47,23 +47,20 @@
         .table-wrap { overflow-x: auto; }
         /* Every data column is the same width; long headers wrap onto two lines. */
         table.kpi { margin: 0 auto; border-collapse: collapse; font-size: 0.85rem; }
-        table.kpi th, table.kpi td { width: 88px; border: 1px solid #d1d5db; text-align: center; padding: 7px 6px; white-space: nowrap; }
+        table.kpi th, table.kpi td { width: 88px; border: 1px solid #c8ced6; text-align: center; padding: 7px 6px; white-space: nowrap; }
         table.kpi th.w-name, table.kpi td.store { width: 150px; }
         table.kpi th { color: #fff; font-size: 0.75rem; font-weight: 600; vertical-align: middle; white-space: normal; line-height: 1.25; }
         table.kpi caption { background: #0f2a47; color: #fff; font-size: 1rem; font-weight: 700; padding: 8px; border: 1px solid #d1d5db; border-bottom: none; }
-        table.kpi th.g-navy { background: #0f2a47; }
-        table.kpi th.g-blue { background: #2563a6; }
-        table.kpi th.g-purple { background: #7030a0; }
-        table.kpi th.g-orange { background: #ed7d31; }
+        table.kpi thead th { background: #1f4e79; }
         table.kpi td { font-variant-numeric: tabular-nums; }
-        table.kpi td.store { background: #f3f4f6; font-weight: 600; color: #0a1f44; }
-        table.kpi td.track { background: #fffbd1; }
+        table.kpi td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; }
+        table.kpi td.track { background: #fff8cc; }
         table.kpi.core .ext { display: none; }
         /* Editing shows only Store + the two editable columns. */
         table.kpi.editing th:not(.edit-col), table.kpi.editing td:not(.edit-col), table.kpi.editing tfoot { display: none; }
         table.kpi.editing .edit-col { display: table-cell; }
         table.kpi.editing caption { white-space: nowrap; }
-        table.kpi tr.total td { background: #f3f4f6; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
+        table.kpi tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
         th.sortable:hover { text-decoration: underline; }
@@ -183,7 +180,7 @@
                 <thead>
                     <tr>
                         {% for c in columns %}
-                        <th class="g-{{ c.group }} sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}{% if c.key == 'name' or c.setting %} edit-col{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
+                        <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}{% if c.key == 'name' or c.setting %} edit-col{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -315,9 +312,20 @@
         // execCommand('copy') path is the one that actually runs.
         var copyBtn = document.getElementById('copyBtn');
         if (!copyBtn) return;
-        var FONT = 'font-family:Arial,Helvetica,sans-serif;font-size:12px;';
-        var CELL = FONT + 'padding:5px 8px;border:1px solid #d1d5db;text-align:center;white-space:nowrap;';
-        var GROUP = { 'g-navy': '#0f2a47', 'g-blue': '#2563a6', 'g-purple': '#7030a0', 'g-orange': '#ed7d31' };
+        // Email-safe markup: email clients restyle <th> (Outlook turned the
+        // white header text black), strip classes and often ignore CSS
+        // colours, so every cell is a <td> whose colours are set three ways —
+        // bgcolor attribute, inline style, and a <font color> wrapper — and
+        // borders come from the table's border attribute.
+        var BORDER = '#c8ced6';
+        var STYLE = {
+            title: { bg: '#0f2a47', fg: '#ffffff', bold: true, size: 14 },
+            head:  { bg: '#1f4e79', fg: '#ffffff', bold: true },
+            body:  { bg: '#ffffff', fg: '#111827' },
+            store: { bg: '#f1f3f6', fg: '#0f2a47', bold: true },
+            track: { bg: '#fff8cc', fg: '#111827' },
+            total: { bg: '#e5e9ef', fg: '#111827', bold: true, italic: true }
+        };
 
         function esc(s) {
             return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -325,41 +333,54 @@
         function shown(c) { return getComputedStyle(c).display !== 'none'; }
         function cellText(c) {
             var v = c.querySelector('.val');
-            return (v ? v.textContent : c.textContent).replace(/\s+/g, ' ').replace(/[↕▲▼]/g, '').trim();
+            return (v ? v.textContent : c.textContent).replace(/\s+/g, ' ').trim();
         }
-        function cellStyle(c, kind) {
-            if (kind === 'head') {
-                var g = Object.keys(GROUP).filter(function (k) { return c.classList.contains(k); })[0];
-                return 'background:' + (GROUP[g] || '#0f2a47') + ';color:#ffffff;font-weight:bold;white-space:normal;';
-            }
-            if (kind === 'total') return 'background:#f3f4f6;font-weight:bold;font-style:italic;color:#111827;';
-            if (kind === 'perday') return 'border:none;color:#16a34a;font-style:italic;font-size:11px;';
-            if (c.classList.contains('store')) return 'background:#f3f4f6;font-weight:bold;color:#0a1f44;';
-            if (c.classList.contains('track')) return 'background:#fffbd1;color:#111827;';
-            return 'color:#111827;';
+        function cell(text, s, attrs) {
+            var size = s.size || 12;
+            var css = 'background-color:' + s.bg + ';color:' + s.fg + ';border:1px solid ' + BORDER + ';'
+                + 'padding:5px 8px;text-align:center;vertical-align:middle;'
+                + 'font-family:Arial,Helvetica,sans-serif;font-size:' + size + 'px;'
+                + 'font-weight:' + (s.bold ? 'bold' : 'normal') + ';font-style:' + (s.italic ? 'italic' : 'normal') + ';';
+            var inner = esc(text) || '&nbsp;';
+            if (s.bold) inner = '<b>' + inner + '</b>';
+            if (s.italic) inner = '<i>' + inner + '</i>';
+            inner = '<font face="Arial, Helvetica, sans-serif" color="' + s.fg + '">'
+                + '<span style="color:' + s.fg + ';font-size:' + size + 'px;">' + inner + '</span></font>';
+            return '<td bgcolor="' + s.bg + '" align="center" valign="middle" ' + (attrs || '')
+                + ' style="' + css + '">' + inner + '</td>';
         }
         function rowHtml(tr, kind) {
-            var tag = kind === 'head' ? 'th' : 'td';
             var out = '<tr>';
             Array.prototype.forEach.call(tr.cells, function (c) {
                 if (!shown(c)) return;
-                out += '<' + tag + ' style="' + CELL + cellStyle(c, kind) + '">' + esc(cellText(c)) + '</' + tag + '>';
+                var s = STYLE[kind];
+                if (kind === 'body') s = c.classList.contains('store') ? STYLE.store
+                                       : c.classList.contains('track') ? STYLE.track : STYLE.body;
+                var attrs = kind === 'head'
+                    ? 'width="' + (c.classList.contains('w-name') ? 150 : 88) + '"' : 'nowrap';
+                out += cell(cellText(c), s, attrs);
             });
             return out + '</tr>';
         }
         function buildHtml() {
             var cols = Array.prototype.filter.call(table.tHead.rows[0].cells, shown).length;
-            var html = '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;' + FONT + '">'
-                + '<tr><th colspan="' + cols + '" style="' + CELL + 'background:#0f2a47;color:#ffffff;font-size:14px;font-weight:bold;">'
-                + esc(table.caption.textContent.trim()) + '</th></tr>';
+            var html = '<table border="1" cellpadding="5" cellspacing="0" bordercolor="' + BORDER + '"'
+                + ' style="border-collapse:collapse;border:1px solid ' + BORDER + ';font-family:Arial,Helvetica,sans-serif;">'
+                + '<tr>' + cell(table.caption.textContent.trim(), STYLE.title, 'colspan="' + cols + '"') + '</tr>';
             html += rowHtml(table.tHead.rows[0], 'head');
             Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
+            var perDay = '';
             if (table.tFoot) {
-                Array.prototype.forEach.call(table.tFoot.rows, function (tr) {
-                    html += rowHtml(tr, tr.classList.contains('perday') ? 'perday' : 'total');
-                });
+                html += rowHtml(table.tFoot.rows[0], 'total');
+                var pd = table.tFoot.querySelector('tr.perday');
+                perDay = pd ? pd.textContent.replace(/\s+/g, ' ').trim() : '';
             }
-            return html + '</table>';
+            html += '</table>';
+            if (perDay) {
+                html += '<p style="margin:4px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#16a34a;">'
+                    + '<font face="Arial, Helvetica, sans-serif" color="#16a34a"><i>' + esc(perDay.replace('/Day', 'ROs / Day')) + '</i></font></p>';
+            }
+            return html;
         }
         function copyViaSelection(html) {
             var holder = document.createElement('div');

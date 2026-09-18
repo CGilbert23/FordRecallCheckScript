@@ -1989,29 +1989,29 @@ def xtime_tech_report_delete(month):
 MAX_KPI_REPORT_BYTES = 10 * 1024 * 1024
 
 # Report columns, left to right. `ext` columns only show in the Extended
-# view; `group` picks the header colour (matching the team's spreadsheet).
+# view.
 KPI_COLUMNS = [
-    {'key': 'name', 'label': 'Store', 'fmt': 'text', 'group': 'navy'},
-    {'key': 'units', 'label': 'Units Launched', 'fmt': 'int', 'group': 'navy'},
-    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'group': 'navy', 'setting': 'active_techs'},
-    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'group': 'navy', 'ext': True, 'setting': 'offset_value'},
-    {'key': 'available', 'label': 'Available', 'fmt': 'int', 'group': 'navy', 'ext': True},
-    {'key': 'ro', 'label': 'RO Count', 'fmt': 'int', 'group': 'blue'},
-    {'key': 'tracking', 'label': 'Tracking', 'fmt': 'int', 'group': 'blue'},
-    {'key': 'hours', 'label': 'Hours Billed', 'fmt': 'int', 'group': 'blue', 'ext': True},
-    {'key': 'cp_hours', 'label': 'CP Hours', 'fmt': 'int', 'group': 'blue', 'ext': True},
-    {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct', 'group': 'blue'},
-    {'key': 'avg_ro', 'label': 'Avg RO Value', 'fmt': 'money', 'group': 'purple'},
-    {'key': 'hours_tech_day', 'label': 'Hours / Active Tech / Day', 'fmt': 'dec', 'group': 'purple', 'ext': True},
-    {'key': 'ro_value', 'label': 'Total RO Value', 'fmt': 'money', 'group': 'purple', 'ext': True},
-    {'key': 'pct_total_ro', 'label': '% of Total RO', 'fmt': 'pct', 'group': 'purple', 'ext': True},
-    {'key': 'total_offset', 'label': 'Total Offset', 'fmt': 'money', 'group': 'purple', 'ext': True},
-    {'key': 'total_revenue', 'label': 'Total Revenue', 'fmt': 'money', 'group': 'purple', 'ext': True},
-    {'key': 'ros_tech_day', 'label': 'ROs / Active Tech / Day', 'fmt': 'dec', 'group': 'purple'},
-    {'key': 'rev_tech_day', 'label': 'Revenue / Active Tech / Day', 'fmt': 'money', 'group': 'purple', 'ext': True},
-    {'key': 'offset_earned', 'label': 'Eligible Offset Earned', 'fmt': 'pct', 'group': 'orange'},
-    {'key': 'offset_left', 'label': 'Offset Left On Table', 'fmt': 'money', 'group': 'orange'},
-    {'key': 'visit_spend', 'label': '60 Day Visit Spend', 'fmt': 'money', 'group': 'orange', 'ext': True},
+    {'key': 'name', 'label': 'Store', 'fmt': 'text'},
+    {'key': 'units', 'label': 'Units Launched', 'fmt': 'int'},
+    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'setting': 'active_techs'},
+    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'ext': True, 'setting': 'offset_value'},
+    {'key': 'available', 'label': 'Available', 'fmt': 'int', 'ext': True},
+    {'key': 'ro', 'label': 'RO Count', 'fmt': 'int'},
+    {'key': 'tracking', 'label': 'Tracking', 'fmt': 'int'},
+    {'key': 'hours', 'label': 'Hours Billed', 'fmt': 'int', 'ext': True},
+    {'key': 'cp_hours', 'label': 'CP Hours', 'fmt': 'int', 'ext': True},
+    {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct'},
+    {'key': 'avg_ro', 'label': 'Avg RO Value', 'fmt': 'money'},
+    {'key': 'hours_tech_day', 'label': 'Hours / Active Tech / Day', 'fmt': 'dec', 'ext': True},
+    {'key': 'ro_value', 'label': 'Total RO Value', 'fmt': 'money', 'ext': True},
+    {'key': 'pct_total_ro', 'label': '% of Total RO', 'fmt': 'pct', 'ext': True},
+    {'key': 'total_offset', 'label': 'Total Offset', 'fmt': 'money', 'ext': True},
+    {'key': 'total_revenue', 'label': 'Total Revenue', 'fmt': 'money', 'ext': True},
+    {'key': 'ros_tech_day', 'label': 'ROs / Active Tech / Day', 'fmt': 'dec'},
+    {'key': 'rev_tech_day', 'label': 'Revenue / Active Tech / Day', 'fmt': 'money', 'ext': True},
+    {'key': 'offset_earned', 'label': 'Eligible Offset Earned', 'fmt': 'pct'},
+    {'key': 'offset_left', 'label': 'Offset Left On Table', 'fmt': 'money'},
+    {'key': 'visit_spend', 'label': '60 Day Visit Spend', 'fmt': 'money', 'ext': True},
 ]
 
 
