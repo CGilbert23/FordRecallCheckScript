@@ -36,15 +36,23 @@
         .report-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
         .report-head .meta { font-size: 0.85rem; color: #666; }
         .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .toggle { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
-        .toggle button { background: #fff; border: none; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; color: #555; cursor: pointer; }
-        .toggle button + button { border-left: 1px solid #cbd5e1; }
-        .toggle button.on { background: #0a1f44; color: #fff; }
+        .toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .toolbar .filters { margin-bottom: 0; }
+        .btn-view { background: #0a1f44; min-width: 120px; }
+        .btn-view:hover { background: #1e3a6b; }
+        .btn-copy { min-width: 100px; }
+        .btn-copy.copied { background: #059669; }
         .table-wrap { overflow-x: auto; }
-        table.kpi { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        /* Fixed layout: Store / Ford name get set widths, every other column
+           shares the rest evenly. Extended scrolls sideways below 1700px. */
+        table.kpi { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+        table.kpi:not(.core) { min-width: 1700px; }
+        table.kpi th.w-name { width: 150px; }
+        table.kpi th.w-dlr_name { width: 230px; }
         table.kpi th, table.kpi td { border: 1px solid #d1d5db; text-align: center; padding: 8px 8px; white-space: nowrap; }
-        table.kpi th { color: #fff; font-size: 0.75rem; font-weight: 600; vertical-align: middle; white-space: normal; min-width: 70px; }
-        table.kpi th.title { background: #0f2a47; font-size: 1rem; padding: 8px; }
+        table.kpi td { overflow: hidden; text-overflow: ellipsis; }
+        table.kpi th { color: #fff; font-size: 0.75rem; font-weight: 600; vertical-align: middle; white-space: normal; }
+        table.kpi caption { background: #0f2a47; color: #fff; font-size: 1rem; font-weight: 700; padding: 8px; border: 1px solid #d1d5db; border-bottom: none; }
         table.kpi th.g-navy { background: #0f2a47; }
         table.kpi th.g-blue { background: #2563a6; }
         table.kpi th.g-purple { background: #7030a0; }
@@ -55,13 +63,14 @@
         table.kpi td.track { background: #fffbd1; }
         table.kpi.core .ext { display: none; }
         table.kpi:not(.core) th, table.kpi:not(.core) td { padding: 6px 5px; font-size: 0.8rem; }
-        table.kpi:not(.core) th { font-size: 0.7rem; min-width: 56px; }
+        table.kpi:not(.core) th { font-size: 0.7rem; }
         table.kpi tr.total td { background: #f3f4f6; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
         th.sortable:hover { text-decoration: underline; }
-        th.sortable.asc::after { content: ' \25B2'; }
-        th.sortable.desc::after { content: ' \25BC'; }
+        th.sortable::after { content: ' \2195'; opacity: 0.55; }
+        th.sortable.asc::after { content: ' \25B2'; opacity: 1; }
+        th.sortable.desc::after { content: ' \25BC'; opacity: 1; }
         .edit { display: none; width: 64px; padding: 3px 4px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.85rem; text-align: center; }
         table.kpi.editing .edit { display: inline-block; }
         table.kpi.editing .val { display: none; }
@@ -105,6 +114,7 @@
 
         <div class="card">
             {% if months %}
+            <div class="toolbar">
             <form method="GET" action="/tech-performance/kpi-tracker" class="filters">
                 <div>
                     <label for="year">Year</label>
@@ -134,6 +144,17 @@
                 </div>
                 <noscript><button type="submit" class="btn">Show</button></noscript>
             </form>
+            {% if rows %}
+            <div class="actions">
+                <button type="button" class="btn btn-sm btn-view" id="viewBtn">Core View</button>
+                {% if report %}
+                <button type="button" class="btn btn-sm btn-light not-editing" id="editBtn">Edit Techs &amp; Offset</button>
+                <button type="submit" form="settingsForm" class="btn btn-sm editing-only">Save</button>
+                <button type="button" class="btn btn-sm btn-light editing-only" id="cancelBtn">Cancel</button>
+                {% endif %}
+            </div>
+            {% endif %}
+            </div>
             {% endif %}
 
             {% if rows %}
@@ -153,14 +174,9 @@
             <div class="report-head">
                 <div class="meta">{{ meta }}{% if report and report.filename %} &middot; {{ report.filename }}{% endif %}</div>
                 <div class="actions">
-                    <div class="toggle" role="group" aria-label="View">
-                        <button type="button" data-view="core" class="on">Core</button>
-                        <button type="button" data-view="extended">Extended</button>
-                    </div>
+                    <button type="button" class="btn btn-sm btn-copy not-editing" id="copyBtn"
+                            data-title="Mobile Service KPIs &ndash; {{ title }}{% if store_name %} &middot; {{ store_name }}{% endif %}">Copy Table</button>
                     {% if report %}
-                    <button type="button" class="btn btn-sm btn-light not-editing" id="editBtn">Edit techs &amp; offset</button>
-                    <button type="submit" form="settingsForm" class="btn btn-sm editing-only">Save</button>
-                    <button type="button" class="btn btn-sm btn-light editing-only" id="cancelBtn">Cancel</button>
                     <form method="POST" action="/tech-performance/kpi-tracker/{{ selected.key }}/delete" style="display:inline;" onsubmit="return confirm('Delete the {{ selected.label }} KPI report? You can upload it again later (edited techs and offset values will be lost).');">
                         <button type="submit" class="btn btn-danger not-editing">Delete month</button>
                     </form>
@@ -175,11 +191,11 @@
 
             <div class="table-wrap">
             <table class="kpi core" id="kpiTable">
+                <caption>{{ title }}{% if store_name %} &middot; {{ store_name }}{% endif %}</caption>
                 <thead>
-                    <tr><th class="title" colspan="{{ columns | length }}">{{ title }}{% if store_name %} &middot; {{ store_name }}{% endif %}</th></tr>
                     <tr>
                         {% for c in columns %}
-                        <th class="g-{{ c.group }} sortable{% if c.ext %} ext{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
+                        <th class="g-{{ c.group }} sortable{% if c.ext %} ext{% endif %}{% if c.key in ('name', 'dlr_name') %} w-{{ c.key }}{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -233,7 +249,7 @@
         <div class="card how">
             <ul>
                 <li><strong>Units Launched</strong> comes from Ford's Launched Vans. <strong>Active Technicians</strong> and <strong>Offset Value</strong> are ours: edit them per month with "Edit techs &amp; offset". A new month starts with the previous month's values.</li>
-                <li><strong>Tracking</strong> = RO Count &divide; working days so far &times; working days in the month, rounded to 10. The day count comes from Ford's own ROs/Van/Day.</li>
+                <li><strong>Tracking</strong> (only while a month is in progress) = RO Count &divide; working days so far &times; working days in the month, rounded to 10. The day count comes from Ford's own ROs/Van/Day.</li>
                 <li><strong>Commercial Mix</strong> = Ford Pro Count &divide; RO Count + 5 points (Ford's figure understates it).</li>
                 <li><strong>Per Active Tech / Day</strong> columns divide by Active Technicians &times; working days so far. Revenue / Tech / Day uses Total RO Value (no offset).</li>
                 <li><strong>Available</strong> = 138 &times; Units Launched for the full month. <strong>Eligible Offset Earned</strong> = RO Count &divide; Available. <strong>Offset Left On Table</strong> = (Available &minus; RO Count) &times; Offset Value. <strong>Total Revenue</strong> = Total RO Value + Total Offset.</li>
@@ -246,18 +262,19 @@
         var table = document.getElementById('kpiTable');
         if (!table) return;
 
-        // Core / Extended toggle, remembered per browser.
-        var buttons = document.querySelectorAll('.toggle button');
+        // Core / Extended: one button that names the current view and flips
+        // it on click. Remembered per browser.
+        var viewBtn = document.getElementById('viewBtn');
         function setView(view) {
             table.classList.toggle('core', view !== 'extended');
-            buttons.forEach(function (b) { b.classList.toggle('on', b.dataset.view === view); });
+            if (viewBtn) viewBtn.textContent = view === 'extended' ? 'Extended View' : 'Core View';
             try { localStorage.setItem('kpiView', view); } catch (e) {}
         }
         var saved = null;
         try { saved = localStorage.getItem('kpiView'); } catch (e) {}
         setView(saved === 'extended' ? 'extended' : 'core');
-        buttons.forEach(function (b) {
-            b.addEventListener('click', function () { setView(b.dataset.view); });
+        if (viewBtn) viewBtn.addEventListener('click', function () {
+            setView(table.classList.contains('core') ? 'extended' : 'core');
         });
 
         // Edit techs & offset: swap those cells for inputs.
@@ -279,7 +296,7 @@
 
         // Click a header to sort; click again to flip. Numbers start
         // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>.
-        var ths = table.tHead.rows[1].cells;
+        var ths = table.tHead.rows[0].cells;
         Array.prototype.forEach.call(ths, function (th, col) {
             th.addEventListener('click', function () {
                 var num = th.dataset.type === 'num';
@@ -303,6 +320,98 @@
                 });
                 rows.forEach(function (tr) { tbody.appendChild(tr); });
             });
+        });
+
+        // "Copy Table": rebuild the visible table (current view and sort
+        // order) with every style inlined — Outlook/Gmail drop <style> blocks —
+        // and copy it as rich HTML. Production is plain HTTP, so
+        // navigator.clipboard is undefined there and the select +
+        // execCommand('copy') path is the one that actually runs.
+        var copyBtn = document.getElementById('copyBtn');
+        if (!copyBtn) return;
+        var FONT = 'font-family:Arial,Helvetica,sans-serif;font-size:12px;';
+        var CELL = FONT + 'padding:5px 8px;border:1px solid #d1d5db;text-align:center;white-space:nowrap;';
+        var GROUP = { 'g-navy': '#0f2a47', 'g-blue': '#2563a6', 'g-purple': '#7030a0', 'g-orange': '#ed7d31' };
+
+        function esc(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function shown(c) { return getComputedStyle(c).display !== 'none'; }
+        function cellText(c) {
+            var v = c.querySelector('.val');
+            return (v ? v.textContent : c.textContent).replace(/\s+/g, ' ').replace(/[↕▲▼]/g, '').trim();
+        }
+        function cellStyle(c, kind) {
+            if (kind === 'head') {
+                var g = Object.keys(GROUP).filter(function (k) { return c.classList.contains(k); })[0];
+                return 'background:' + (GROUP[g] || '#0f2a47') + ';color:#ffffff;font-weight:bold;white-space:normal;';
+            }
+            if (kind === 'total') return 'background:#f3f4f6;font-weight:bold;font-style:italic;color:#111827;';
+            if (kind === 'perday') return 'border:none;color:#16a34a;font-style:italic;font-size:11px;';
+            if (c.classList.contains('store')) return 'background:#f3f4f6;font-weight:bold;color:#0a1f44;';
+            if (c.classList.contains('track')) return 'background:#fffbd1;color:#111827;';
+            if (c.classList.contains('dlr')) return 'color:#666666;text-align:left;';
+            return 'color:#111827;';
+        }
+        function rowHtml(tr, kind) {
+            var tag = kind === 'head' ? 'th' : 'td';
+            var out = '<tr>';
+            Array.prototype.forEach.call(tr.cells, function (c) {
+                if (!shown(c)) return;
+                out += '<' + tag + ' style="' + CELL + cellStyle(c, kind) + '">' + esc(cellText(c)) + '</' + tag + '>';
+            });
+            return out + '</tr>';
+        }
+        function buildHtml() {
+            var cols = Array.prototype.filter.call(table.tHead.rows[0].cells, shown).length;
+            var html = '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;' + FONT + '">'
+                + '<tr><th colspan="' + cols + '" style="' + CELL + 'background:#0f2a47;color:#ffffff;font-size:14px;font-weight:bold;">'
+                + esc(copyBtn.dataset.title) + '</th></tr>';
+            html += rowHtml(table.tHead.rows[0], 'head');
+            Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
+            if (table.tFoot) {
+                Array.prototype.forEach.call(table.tFoot.rows, function (tr) {
+                    html += rowHtml(tr, tr.classList.contains('perday') ? 'perday' : 'total');
+                });
+            }
+            return html + '</table>';
+        }
+        function copyViaSelection(html) {
+            var holder = document.createElement('div');
+            holder.contentEditable = 'true';
+            holder.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;';
+            holder.innerHTML = html;
+            document.body.appendChild(holder);
+            var range = document.createRange();
+            range.selectNodeContents(holder);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            sel.removeAllRanges();
+            document.body.removeChild(holder);
+            return ok;
+        }
+        function flash(ok) {
+            copyBtn.textContent = ok ? 'Copied!' : 'Copy failed';
+            copyBtn.classList.toggle('copied', ok);
+            setTimeout(function () {
+                copyBtn.textContent = 'Copy Table';
+                copyBtn.classList.remove('copied');
+            }, 1600);
+        }
+        copyBtn.addEventListener('click', function () {
+            var html = buildHtml();
+            if (navigator.clipboard && window.ClipboardItem) {
+                var text = copyBtn.dataset.title + '\n' + table.innerText;
+                navigator.clipboard.write([new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([text], { type: 'text/plain' })
+                })]).then(function () { flash(true); }, function () { flash(copyViaSelection(html)); });
+            } else {
+                flash(copyViaSelection(html));
+            }
         });
     })();
     </script>

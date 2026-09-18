@@ -155,8 +155,8 @@ def _reference_date(filename, today):
     its month labels and to tell finished months from the one in progress.
 
     A full date in the name ('Untitled - August 3, 2026') is the send date. A
-    bare year ('FredBeans_2025') is a full-year file: every month is that
-    year and every month is finished.
+    bare year ('FredBeans_2025') is a year file: every month is that year, and
+    a month counts as finished once it has ended.
     """
     m = _FILENAME_DATE_RE.search(filename or '')
     if m and m.group(1)[:3].lower() in _MONTHS:
@@ -241,7 +241,8 @@ def parse_report(data, filename='', today=None):
                 'raw': {headers[i]: _value(r[i]) for i in b['cols']},
             })
         month_end = date(year, month, calendar.monthrange(year, month)[1])
-        complete = full_year or ref > month_end
+        # A year file (FredBeans_2026) may end with the month still in progress.
+        complete = (month_end < today) if full_year else ref > month_end
         full = work_days(year, month)
         days = _days_elapsed(stores)
         if days is None:

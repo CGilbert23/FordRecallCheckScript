@@ -2056,10 +2056,14 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
         rows, total = kpi_tracker.month_view(report, codes)
     elif year_reports:
         rows, total = kpi_tracker.year_view(year_reports, codes)
+    # Tracking projects a month in progress to month end; a finished month or
+    # a full year has nothing to project, so the column is dropped.
+    in_progress = bool(report) and report['days_elapsed'] < report['work_days']
+    columns = [c for c in KPI_COLUMNS if c['key'] != 'tracking' or in_progress]
     return render_template('kpi_tracker.html', months=months, years=years, year=year,
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
-                           rows=rows, total=total, columns=KPI_COLUMNS,
+                           rows=rows, total=total, columns=columns,
                            stores=kpi_tracker.STORES, store=store,
                            store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
                            error=error, notice=notice), status
