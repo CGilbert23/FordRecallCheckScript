@@ -55,11 +55,15 @@
         table.kpi td { font-variant-numeric: tabular-nums; }
         table.kpi td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; }
         table.kpi td.track { background: #fff8cc; }
+        table.kpi td.inp { background: #e8f1fb; }
+        /* Core fills the card (columns stay even); Extended sizes to its columns. */
+        table.kpi.core { width: 100%; table-layout: fixed; }
         table.kpi.core .ext { display: none; }
         /* Editing shows only Store + the two editable columns. */
         table.kpi.editing th:not(.edit-col), table.kpi.editing td:not(.edit-col), table.kpi.editing tfoot { display: none; }
         table.kpi.editing .edit-col { display: table-cell; }
         table.kpi.editing caption { white-space: nowrap; }
+        table.kpi.core.editing { width: auto; table-layout: auto; }
         table.kpi tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
@@ -189,7 +193,7 @@
                     <tr>
                         {% for c in columns %}
                         {% set v = r[c.key] %}
-                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' or c.setting %}edit-col {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'tracking' %}track{% endif %}"
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' or c.setting %}edit-col {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'tracking' %}track{% elif c.input %}inp{% endif %}"
                             data-v="{{ '' if v is none else v }}">
                             {%- if c.setting and report -%}
                             <span class="val">{{ fmtv(v, c.fmt) }}</span>
@@ -318,12 +322,16 @@
         // bgcolor attribute, inline style, and a <font color> wrapper — and
         // borders come from the table's border attribute.
         var BORDER = '#c8ced6';
+        // Title and headers are light with dark text in the email copy:
+        // Outlook's default paste ("Merge Formatting") keeps cell shading but
+        // resets text to black, so white-on-navy came out black-on-navy.
         var STYLE = {
-            title: { bg: '#0f2a47', fg: '#ffffff', bold: true, size: 14 },
-            head:  { bg: '#1f4e79', fg: '#ffffff', bold: true },
+            title: { bg: '#bcd2e8', fg: '#0f2a47', bold: true, size: 14 },
+            head:  { bg: '#dbe7f3', fg: '#0f2a47', bold: true },
             body:  { bg: '#ffffff', fg: '#111827' },
             store: { bg: '#f1f3f6', fg: '#0f2a47', bold: true },
             track: { bg: '#fff8cc', fg: '#111827' },
+            inp:   { bg: '#e8f1fb', fg: '#111827' },
             total: { bg: '#e5e9ef', fg: '#111827', bold: true, italic: true }
         };
 
@@ -355,7 +363,8 @@
                 if (!shown(c)) return;
                 var s = STYLE[kind];
                 if (kind === 'body') s = c.classList.contains('store') ? STYLE.store
-                                       : c.classList.contains('track') ? STYLE.track : STYLE.body;
+                                       : c.classList.contains('track') ? STYLE.track
+                                       : c.classList.contains('inp') ? STYLE.inp : STYLE.body;
                 var attrs = kind === 'head'
                     ? 'width="' + (c.classList.contains('w-name') ? 150 : 88) + '"' : 'nowrap';
                 out += cell(cellText(c), s, attrs);

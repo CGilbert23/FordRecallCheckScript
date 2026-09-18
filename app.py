@@ -1989,12 +1989,12 @@ def xtime_tech_report_delete(month):
 MAX_KPI_REPORT_BYTES = 10 * 1024 * 1024
 
 # Report columns, left to right. `ext` columns only show in the Extended
-# view.
+# view; `input` columns (the numbers the team sets) get a shaded background.
 KPI_COLUMNS = [
     {'key': 'name', 'label': 'Store', 'fmt': 'text'},
-    {'key': 'units', 'label': 'Units Launched', 'fmt': 'int'},
-    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'setting': 'active_techs'},
-    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'ext': True, 'setting': 'offset_value'},
+    {'key': 'units', 'label': 'Units Launched', 'fmt': 'int', 'input': True},
+    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'setting': 'active_techs', 'input': True},
+    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'ext': True, 'setting': 'offset_value', 'input': True},
     {'key': 'available', 'label': 'Available', 'fmt': 'int', 'ext': True},
     {'key': 'ro', 'label': 'RO Count', 'fmt': 'int'},
     {'key': 'tracking', 'label': 'Tracking', 'fmt': 'int'},
