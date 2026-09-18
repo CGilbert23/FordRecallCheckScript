@@ -17,6 +17,8 @@
         .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #0050a8; }
+        .btn-copy { padding: 6px 12px; font-size: 0.8rem; min-width: 118px; }
+        .btn-copy.copied { background: #059669; }
         .btn-danger { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; font-size: 0.8rem; }
         .btn-danger:hover { background: #fef2f2; }
         .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
@@ -103,6 +105,8 @@
                 <h2>{{ selected.label }}{% if store %} &middot; {{ store }}{% endif %}</h2>
                 <div class="meta">
                     {{ report.filename or '' }}
+                    <button type="button" class="btn btn-copy" id="copyEmailBtn" style="margin-left: 10px;"
+                            data-title="Mobile Tech Xtime Report &ndash; {{ selected.label }}{% if store %} &middot; {{ store }}{% endif %}">Copy for Email</button>
                     <form method="POST" action="/tech-performance/xtime-report/{{ selected.key }}/delete" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Delete the {{ selected.label }} report? You can upload it again later.');">
                         <button type="submit" class="btn btn-danger">Delete month</button>
                     </form>
@@ -223,6 +227,103 @@
                 });
                 rows.forEach(function (tr) { tbody.appendChild(tr); });
             });
+        });
+    })();
+
+    // "Copy for Email": rebuild the table (in its current on-screen sort order)
+    // with every style inlined — Outlook/Gmail drop <style> blocks — and put it
+    // on the clipboard as rich HTML so it pastes as a formatted table.
+    // Production is plain HTTP (not a secure context), so navigator.clipboard
+    // is undefined there; the select + execCommand('copy') path is the one
+    // that actually runs on the dashboard.
+    (function () {
+        var btn = document.getElementById('copyEmailBtn');
+        var table = document.querySelector('table');
+        if (!btn || !table) return;
+
+        var FONT = 'font-family:Arial,Helvetica,sans-serif;font-size:13px;';
+        var CELL = FONT + 'padding:6px 10px;border:1px solid #d1d5db;text-align:center;white-space:nowrap;';
+        var ROW_STYLE = {
+            head: 'background:#0a1f44;color:#ffffff;font-weight:bold;',
+            body: 'color:#111827;',
+            missing: 'color:#9ca3af;',
+            total: 'background:#f3f4f6;color:#111827;font-weight:bold;',
+            benchmark: 'background:#eff6ff;color:#0068d6;font-weight:bold;'
+        };
+
+        function esc(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function rowHtml(tr, kind) {
+            var out = '<tr>';
+            Array.prototype.forEach.call(tr.cells, function (c, i) {
+                // Drop the "Listed under ..." note; keep just the store.
+                var text = c.firstChild && c.querySelector('.note')
+                    ? c.firstChild.textContent : c.textContent;
+                text = text.replace(/\s+/g, ' ').trim();
+                var style = CELL + ROW_STYLE[kind] + (i === 0 && kind === 'body' ? 'font-weight:bold;' : '');
+                var tag = kind === 'head' ? 'th' : 'td';
+                var span = c.colSpan > 1 ? ' colspan="' + c.colSpan + '"' : '';
+                out += '<' + tag + span + ' style="' + style + '">' + esc(text) + '</' + tag + '>';
+            });
+            return out + '</tr>';
+        }
+
+        function buildHtml() {
+            var html = '<p style="' + FONT + 'font-size:15px;font-weight:bold;color:#0a1f44;margin:0 0 8px 0;">'
+                + esc(btn.dataset.title) + '</p>'
+                + '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;' + FONT + '">';
+            html += rowHtml(table.tHead.rows[0], 'head');
+            Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) {
+                html += rowHtml(tr, tr.classList.contains('missing') ? 'missing' : 'body');
+            });
+            if (table.tFoot) {
+                Array.prototype.forEach.call(table.tFoot.rows, function (tr) {
+                    html += rowHtml(tr, tr.classList.contains('benchmark') ? 'benchmark' : 'total');
+                });
+            }
+            return html + '</table>';
+        }
+
+        function copyViaSelection(html) {
+            var holder = document.createElement('div');
+            holder.contentEditable = 'true';
+            holder.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;';
+            holder.innerHTML = html;
+            document.body.appendChild(holder);
+            var range = document.createRange();
+            range.selectNodeContents(holder);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            sel.removeAllRanges();
+            document.body.removeChild(holder);
+            return ok;
+        }
+
+        function flash(ok) {
+            btn.textContent = ok ? 'Copied!' : 'Copy failed';
+            btn.classList.toggle('copied', ok);
+            setTimeout(function () {
+                btn.textContent = 'Copy for Email';
+                btn.classList.remove('copied');
+            }, 1600);
+        }
+
+        btn.addEventListener('click', function () {
+            var html = buildHtml();
+            if (navigator.clipboard && window.ClipboardItem) {
+                var text = btn.dataset.title + '\n' + table.innerText;
+                navigator.clipboard.write([new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([text], { type: 'text/plain' })
+                })]).then(function () { flash(true); }, function () { flash(copyViaSelection(html)); });
+            } else {
+                flash(copyViaSelection(html));
+            }
         });
     })();
     </script>
