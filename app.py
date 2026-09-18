@@ -20,6 +20,7 @@ import scheduler
 import dealership_locator as dealership_locator_mod
 import key_invoice_parser
 import xtime_tech_report
+import kpi_tracker
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -1979,6 +1980,191 @@ def xtime_tech_report_delete(month):
         logger.error(f"Xtime report delete failed: {e}")
         return _xtime_report_page(month, error=f'Could not delete that month: {e}', status=500)
     return redirect(url_for('xtime_tech_report_view'))
+
+
+# ---------------------------------------------------------------------------
+# Tech Performance — KPI Tracker (Ford's weekly KPI export)
+# ---------------------------------------------------------------------------
+
+MAX_KPI_REPORT_BYTES = 10 * 1024 * 1024
+
+# Report columns, left to right. `ext` columns only show in the Extended
+# view; `group` picks the header colour (matching the team's spreadsheet).
+KPI_COLUMNS = [
+    {'key': 'dlr_name', 'label': 'Ford Dealer Name', 'fmt': 'text', 'group': 'navy', 'ext': True},
+    {'key': 'name', 'label': 'Store', 'fmt': 'text', 'group': 'navy'},
+    {'key': 'units', 'label': 'Units Launched', 'fmt': 'int', 'group': 'navy'},
+    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'group': 'navy', 'setting': 'active_techs'},
+    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'group': 'navy', 'ext': True, 'setting': 'offset_value'},
+    {'key': 'available', 'label': 'Available', 'fmt': 'int', 'group': 'navy', 'ext': True},
+    {'key': 'ro', 'label': 'RO Count', 'fmt': 'int', 'group': 'blue'},
+    {'key': 'tracking', 'label': 'Tracking', 'fmt': 'int', 'group': 'blue'},
+    {'key': 'hours', 'label': 'Hours Billed', 'fmt': 'int', 'group': 'blue', 'ext': True},
+    {'key': 'cp_hours', 'label': 'CP Hours', 'fmt': 'int', 'group': 'blue', 'ext': True},
+    {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct', 'group': 'blue'},
+    {'key': 'avg_ro', 'label': 'Avg RO Value', 'fmt': 'money', 'group': 'purple'},
+    {'key': 'hours_tech_day', 'label': 'Hours / Active Tech / Day', 'fmt': 'dec', 'group': 'purple', 'ext': True},
+    {'key': 'ro_value', 'label': 'Total RO Value', 'fmt': 'money', 'group': 'purple', 'ext': True},
+    {'key': 'pct_total_ro', 'label': '% of Total RO', 'fmt': 'pct', 'group': 'purple', 'ext': True},
+    {'key': 'total_offset', 'label': 'Total Offset', 'fmt': 'money', 'group': 'purple', 'ext': True},
+    {'key': 'total_revenue', 'label': 'Total Revenue', 'fmt': 'money', 'group': 'purple', 'ext': True},
+    {'key': 'ros_tech_day', 'label': 'ROs / Active Tech / Day', 'fmt': 'dec', 'group': 'purple'},
+    {'key': 'rev_tech_day', 'label': 'Revenue / Active Tech / Day', 'fmt': 'money', 'group': 'purple', 'ext': True},
+    {'key': 'offset_earned', 'label': 'Eligible Offset Earned', 'fmt': 'pct', 'group': 'orange'},
+    {'key': 'offset_left', 'label': 'Offset Left On Table', 'fmt': 'money', 'group': 'orange'},
+    {'key': 'visit_spend', 'label': '60 Day Visit Spend', 'fmt': 'money', 'group': 'orange', 'ext': True},
+]
+
+
+def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status=200):
+    """Render the KPI Tracker.
+
+    `month` is 'YYYY-MM' or 'full' (every saved month of `year` rolled up);
+    anything else falls back to the newest month of the year. `store` is a
+    Ford P&A code and narrows the table to that store.
+    """
+    months, years, report, rows, total = [], [], None, [], None
+    selected, full_year, year_reports = None, False, []
+    try:
+        months = db.list_kpi_report_months()
+        for m in months:
+            m['key'] = m['period_start'][:7]
+            m['label'] = _month_label(m['period_start'])
+            m['year'] = int(m['period_start'][:4])
+        years = sorted({m['year'] for m in months}, reverse=True)
+        if month and _MONTH_RE.match(month) and not year:
+            year = int(month[:4])
+        year = year if year in years else (years[0] if years else None)
+        year_months = [m for m in months if m['year'] == year]
+        if month == 'full' and year_months:
+            full_year = True
+            year_reports = db.get_kpi_reports_for_year(year)
+        else:
+            selected = next((m for m in year_months if m['key'] == month),
+                            year_months[0] if year_months else None)
+            if selected:
+                report = db.get_kpi_report(selected['period_start'])
+    except Exception as e:
+        logger.error(f"KPI report load failed: {e}")
+        error = error or 'Could not load saved KPI reports from the database.'
+        year_months = []
+
+    if store not in kpi_tracker.STORE_BY_CODE:
+        store = None
+    codes = {store} if store else None
+    if report:
+        rows, total = kpi_tracker.month_view(report, codes)
+    elif year_reports:
+        rows, total = kpi_tracker.year_view(year_reports, codes)
+    return render_template('kpi_tracker.html', months=months, years=years, year=year,
+                           year_months=year_months, selected=selected, full_year=full_year,
+                           report=report, year_reports=year_reports,
+                           rows=rows, total=total, columns=KPI_COLUMNS,
+                           stores=kpi_tracker.STORES, store=store,
+                           store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
+                           error=error, notice=notice), status
+
+
+@app.route('/tech-performance/kpi-tracker')
+def kpi_tracker_view():
+    year = (request.args.get('year') or '').strip()
+    month = (request.args.get('month') or '').strip()
+    store = (request.args.get('store') or '').strip()
+    return _kpi_page(int(year) if year.isdigit() else None, month, store)
+
+
+@app.route('/tech-performance/kpi-tracker/upload', methods=['POST'])
+def kpi_tracker_upload():
+    upload = request.files.get('report')
+    if not upload or not upload.filename:
+        return _kpi_page(error='Pick a KPI report file to upload.', status=400)
+    if not upload.filename.lower().endswith('.xlsx'):
+        return _kpi_page(error="Upload the .xlsx file exactly as Ford sends it.", status=400)
+    data = upload.read(MAX_KPI_REPORT_BYTES + 1)
+    if not data:
+        return _kpi_page(error='That file was empty.', status=400)
+    if len(data) > MAX_KPI_REPORT_BYTES:
+        return _kpi_page(error='That file is larger than 10 MB.', status=400)
+    try:
+        parsed = kpi_tracker.parse_report(data, upload.filename)
+    except ValueError as e:
+        return _kpi_page(error=str(e), status=400)
+    except Exception as e:
+        logger.error(f"KPI report parse failed: {e}")
+        return _kpi_page(error='Could not read that report.', status=400)
+
+    saved, replaced = [], 0
+    try:
+        # Oldest first, so each new month can copy the settings of the one before.
+        for m in sorted(parsed, key=lambda m: m['period_start']):
+            start = m['period_start'].isoformat()
+            existing = db.get_kpi_report(start)
+            settings = None
+            if not existing:
+                settings = db.latest_kpi_settings_before(start) or kpi_tracker.default_settings()
+            db.upsert_kpi_report(start, m['days_elapsed'], m['work_days'], upload.filename,
+                                 m['columns'], m['stores'], settings)
+            replaced += bool(existing)
+            saved.append(m)
+    except Exception as e:
+        logger.error(f"KPI report save failed: {e}")
+        return _kpi_page(error=f'Could not save the report: {e}', status=500)
+
+    last = saved[-1]
+    if len(saved) == 1:
+        days = (f"{last['days_elapsed']} working days" if last['complete']
+                else f"through {last['days_elapsed']} of {last['work_days']} working days")
+        notice = (f"{'Replaced' if replaced else 'Saved'} "
+                  f"{_month_label(last['period_start'])} ({days}).")
+    else:
+        years = sorted({m['period_start'].year for m in saved})
+        notice = (f"Saved {len(saved)} months of {', '.join(map(str, years))}"
+                  f"{f' ({replaced} replaced)' if replaced else ''}.")
+    return _kpi_page(last['period_start'].year, last['period_start'].strftime('%Y-%m'), notice=notice)
+
+
+@app.route('/tech-performance/kpi-tracker/<month>/settings', methods=['POST'])
+def kpi_tracker_settings(month):
+    if not _MONTH_RE.match(month):
+        return redirect(url_for('kpi_tracker_view'))
+    store = (request.form.get('store') or '').strip()
+    try:
+        report = db.get_kpi_report(f'{month}-01')
+        if not report:
+            return _kpi_page(error='That month is no longer saved.', status=404)
+        settings = dict(report.get('settings') or {})
+        for s in kpi_tracker.STORES:
+            techs = (request.form.get(f"techs__{s['code']}") or '').strip()
+            offset = (request.form.get(f"offset__{s['code']}") or '').replace('$', '').replace(',', '').strip()
+            if not techs and not offset:
+                continue
+            cur = dict(settings.get(s['code']) or {})
+            try:
+                if techs:
+                    cur['active_techs'] = max(0, int(float(techs)))
+                if offset:
+                    cur['offset_value'] = max(0.0, float(offset))
+            except ValueError:
+                return _kpi_page(int(month[:4]), month, store,
+                                 error=f"{s['name']}: techs and offset value must be numbers.", status=400)
+            settings[s['code']] = cur
+        db.update_kpi_settings(f'{month}-01', settings)
+    except Exception as e:
+        logger.error(f"KPI settings save failed: {e}")
+        return _kpi_page(int(month[:4]), month, store, error=f'Could not save the settings: {e}', status=500)
+    return redirect(url_for('kpi_tracker_view', year=month[:4], month=month, store=store or None))
+
+
+@app.route('/tech-performance/kpi-tracker/<month>/delete', methods=['POST'])
+def kpi_tracker_delete(month):
+    if not _MONTH_RE.match(month):
+        return redirect(url_for('kpi_tracker_view'))
+    try:
+        db.delete_kpi_report(f'{month}-01')
+    except Exception as e:
+        logger.error(f"KPI report delete failed: {e}")
+        return _kpi_page(int(month[:4]), month, error=f'Could not delete that month: {e}', status=500)
+    return redirect(url_for('kpi_tracker_view', year=month[:4]))
 
 
 if __name__ == '__main__':

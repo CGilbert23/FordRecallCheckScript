@@ -645,3 +645,73 @@ def upsert_xtime_report(period_start, period_end, filename, techs):
 def delete_xtime_report(period_start):
     client = get_client()
     client.table('xtime_tech_reports').delete().eq('period_start', period_start).execute()
+
+
+# ---------------------------------------------------------------------------
+# KPI Tracker (Tech Performance)
+# ---------------------------------------------------------------------------
+
+def list_kpi_report_months():
+    """Uploaded months, newest first — without the (large) stores payload."""
+    client = get_client()
+    res = (client.table('kpi_reports')
+           .select('id, period_start, days_elapsed, work_days, filename, uploaded_at')
+           .order('period_start', desc=True).execute())
+    return res.data or []
+
+
+def get_kpi_report(period_start):
+    client = get_client()
+    res = (client.table('kpi_reports').select('*')
+           .eq('period_start', period_start).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def get_kpi_reports_for_year(year):
+    client = get_client()
+    res = (client.table('kpi_reports').select('*')
+           .gte('period_start', f'{year}-01-01').lt('period_start', f'{int(year) + 1}-01-01')
+           .order('period_start').execute())
+    return res.data or []
+
+
+def latest_kpi_settings_before(period_start):
+    """Settings of the newest month before `period_start`, or None."""
+    client = get_client()
+    res = (client.table('kpi_reports').select('settings')
+           .lt('period_start', period_start)
+           .order('period_start', desc=True).limit(1).execute())
+    return res.data[0]['settings'] if res.data else None
+
+
+def upsert_kpi_report(period_start, days_elapsed, work_days, filename, columns, stores,
+                      settings=None):
+    """Save a month, replacing any earlier upload for the same month.
+
+    `settings` is only sent for a brand-new month: a weekly re-upload leaves
+    the techs / offset values edited on the page alone.
+    """
+    client = get_client()
+    row = {
+        'period_start': period_start,
+        'days_elapsed': days_elapsed,
+        'work_days': work_days,
+        'filename': filename,
+        'columns': columns,
+        'stores': stores,
+        'uploaded_at': datetime.now(timezone.utc).isoformat(),
+    }
+    if settings is not None:
+        row['settings'] = settings
+    res = client.table('kpi_reports').upsert(row, on_conflict='period_start').execute()
+    return res.data[0] if res.data else None
+
+
+def update_kpi_settings(period_start, settings):
+    client = get_client()
+    client.table('kpi_reports').update({'settings': settings}).eq('period_start', period_start).execute()
+
+
+def delete_kpi_report(period_start):
+    client = get_client()
+    client.table('kpi_reports').delete().eq('period_start', period_start).execute()

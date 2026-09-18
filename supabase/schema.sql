@@ -235,3 +235,19 @@ create table xtime_tech_reports (
   techs jsonb not null default '[]'::jsonb,
   uploaded_at timestamptz not null default now()
 );
+
+-- KPI Tracker: one row per month of Ford's weekly mobile-service KPI export.
+-- Weekly files are month-to-date; re-uploading a month replaces its data
+-- (upsert on period_start) but keeps `settings` ({store code: {active_techs,
+-- offset_value}}, edited on the page). `stores` keeps every Ford column raw.
+create table kpi_reports (
+  id uuid primary key default gen_random_uuid(),
+  period_start date not null unique,
+  days_elapsed int not null,
+  work_days int not null,
+  filename text,
+  columns jsonb not null default '{}'::jsonb,
+  stores jsonb not null default '[]'::jsonb,
+  settings jsonb not null default '{}'::jsonb,
+  uploaded_at timestamptz not null default now()
+);

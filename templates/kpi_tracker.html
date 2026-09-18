@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Tracker - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1800px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-light { background: #fff; color: #0068d6; border: 1px solid #93c5fd; }
+        .btn-light:hover { background: #eff6ff; }
+        .btn-danger { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; font-size: 0.8rem; }
+        .btn-danger:hover { background: #fef2f2; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .upload-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .upload-row label { font-weight: 600; font-size: 0.85rem; color: #374151; }
+        .upload-row input[type="file"] { flex: 1; min-width: 240px; padding: 8px; border: 2px dashed #cbd5e1; border-radius: 6px; background: #f9fafb; font-size: 0.85rem; cursor: pointer; }
+        .upload-row input[type="file"]:hover { border-color: #0068d6; background: #f0f7ff; }
+        .hint { font-size: 0.8rem; color: #888; margin-top: 8px; }
+        .filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+        .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 160px; cursor: pointer; }
+        .filters select:focus { outline: none; border-color: #0068d6; }
+        .report-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .report-head .meta { font-size: 0.85rem; color: #666; }
+        .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .toggle { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
+        .toggle button { background: #fff; border: none; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; color: #555; cursor: pointer; }
+        .toggle button + button { border-left: 1px solid #cbd5e1; }
+        .toggle button.on { background: #0a1f44; color: #fff; }
+        .table-wrap { overflow-x: auto; }
+        table.kpi { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table.kpi th, table.kpi td { border: 1px solid #d1d5db; text-align: center; padding: 8px 8px; white-space: nowrap; }
+        table.kpi th { color: #fff; font-size: 0.75rem; font-weight: 600; vertical-align: middle; white-space: normal; min-width: 70px; }
+        table.kpi th.title { background: #0f2a47; font-size: 1rem; padding: 8px; }
+        table.kpi th.g-navy { background: #0f2a47; }
+        table.kpi th.g-blue { background: #2563a6; }
+        table.kpi th.g-purple { background: #7030a0; }
+        table.kpi th.g-orange { background: #ed7d31; }
+        table.kpi td { font-variant-numeric: tabular-nums; }
+        table.kpi td.store { background: #f3f4f6; font-weight: 600; color: #0a1f44; }
+        table.kpi td.dlr { color: #666; font-size: 0.75rem; text-align: left; }
+        table.kpi td.track { background: #fffbd1; }
+        table.kpi.core .ext { display: none; }
+        table.kpi:not(.core) th, table.kpi:not(.core) td { padding: 6px 5px; font-size: 0.8rem; }
+        table.kpi:not(.core) th { font-size: 0.7rem; min-width: 56px; }
+        table.kpi tr.total td { background: #f3f4f6; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
+        table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { text-decoration: underline; }
+        th.sortable.asc::after { content: ' \25B2'; }
+        th.sortable.desc::after { content: ' \25BC'; }
+        .edit { display: none; width: 64px; padding: 3px 4px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.85rem; text-align: center; }
+        table.kpi.editing .edit { display: inline-block; }
+        table.kpi.editing .val { display: none; }
+        .editing-only { display: none; }
+        body.editing .editing-only { display: inline-block; }
+        body.editing .not-editing { display: none; }
+        .empty { text-align: center; color: #888; padding: 36px 12px; }
+        .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
+        .how ul { margin-left: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Ford's weekly mobile service KPIs by store, one month (or a full year) at a time.</p>
+
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        {% if notice %}<div class="success">{{ notice }}</div>{% endif %}
+
+        <div class="card">
+            <form method="POST" action="/tech-performance/kpi-tracker/upload" enctype="multipart/form-data">
+                <div class="upload-row">
+                    <label for="report">Upload Ford's KPI report</label>
+                    <input type="file" id="report" name="report" accept=".xlsx" required>
+                    <button type="submit" class="btn">Upload report</button>
+                </div>
+                <p class="hint">Upload the .xlsx exactly as Ford sends it, without renaming it: the date in the name ("August 24, 2026") tells the app which year it is. Each weekly file replaces that month's numbers, and the techs and offset values you've edited are kept.</p>
+            </form>
+        </div>
+
+        {% macro fmtv(v, fmt) -%}
+            {%- if v is none or v == '' -%}&mdash;
+            {%- elif fmt == 'text' -%}{{ v }}
+            {%- elif fmt == 'money' -%}${{ '{:,.0f}'.format(v) }}
+            {%- elif fmt == 'pct' -%}{{ '%.0f' % (v * 100) }}%
+            {%- elif fmt == 'dec' -%}{{ '%.1f' % v }}
+            {%- else -%}{{ '{:,.0f}'.format(v) }}
+            {%- endif -%}
+        {%- endmacro %}
+
+        <div class="card">
+            {% if months %}
+            <form method="GET" action="/tech-performance/kpi-tracker" class="filters">
+                <div>
+                    <label for="year">Year</label>
+                    <select id="year" name="year" onchange="this.form.submit()">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="month">Month</label>
+                    <select id="month" name="month" onchange="this.form.submit()">
+                        <option value="full" {% if full_year %}selected{% endif %}>Full Year</option>
+                        {% for m in year_months %}
+                        <option value="{{ m.key }}" {% if selected and m.key == selected.key %}selected{% endif %}>{{ m.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="store">Store</label>
+                    <select id="store" name="store" onchange="this.form.submit()">
+                        <option value="">All stores</option>
+                        {% for s in stores %}
+                        <option value="{{ s.code }}" {% if s.code == store %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <noscript><button type="submit" class="btn">Show</button></noscript>
+            </form>
+            {% endif %}
+
+            {% if rows %}
+            {% if full_year %}
+                {% set title = 'Full Year ' ~ year %}
+                {% set days_total = year_reports | sum(attribute='days_elapsed') %}
+                {% set meta = year_reports | length ~ ' month' ~ ('' if year_reports | length == 1 else 's') ~ ' uploaded · ' ~ days_total ~ ' working days' %}
+            {% else %}
+                {% set title = selected.label %}
+                {% if report.days_elapsed >= report.work_days %}
+                    {% set meta = 'Full month · ' ~ report.days_elapsed ~ ' working days' %}
+                {% else %}
+                    {% set meta = 'Month to date · ' ~ report.days_elapsed ~ ' of ' ~ report.work_days ~ ' working days' %}
+                {% endif %}
+            {% endif %}
+
+            <div class="report-head">
+                <div class="meta">{{ meta }}{% if report and report.filename %} &middot; {{ report.filename }}{% endif %}</div>
+                <div class="actions">
+                    <div class="toggle" role="group" aria-label="View">
+                        <button type="button" data-view="core" class="on">Core</button>
+                        <button type="button" data-view="extended">Extended</button>
+                    </div>
+                    {% if report %}
+                    <button type="button" class="btn btn-sm btn-light not-editing" id="editBtn">Edit techs &amp; offset</button>
+                    <button type="submit" form="settingsForm" class="btn btn-sm editing-only">Save</button>
+                    <button type="button" class="btn btn-sm btn-light editing-only" id="cancelBtn">Cancel</button>
+                    <form method="POST" action="/tech-performance/kpi-tracker/{{ selected.key }}/delete" style="display:inline;" onsubmit="return confirm('Delete the {{ selected.label }} KPI report? You can upload it again later (edited techs and offset values will be lost).');">
+                        <button type="submit" class="btn btn-danger not-editing">Delete month</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% if report %}
+            <form method="POST" id="settingsForm" action="/tech-performance/kpi-tracker/{{ selected.key }}/settings">
+                <input type="hidden" name="store" value="{{ store or '' }}">
+            </form>
+            {% endif %}
+
+            <div class="table-wrap">
+            <table class="kpi core" id="kpiTable">
+                <thead>
+                    <tr><th class="title" colspan="{{ columns | length }}">{{ title }}{% if store_name %} &middot; {{ store_name }}{% endif %}</th></tr>
+                    <tr>
+                        {% for c in columns %}
+                        <th class="g-{{ c.group }} sortable{% if c.ext %} ext{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        {% for c in columns %}
+                        {% set v = r[c.key] %}
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'dlr_name' %}dlr{% elif c.key == 'tracking' %}track{% endif %}"
+                            data-v="{{ '' if v is none else v }}">
+                            {%- if c.setting and report -%}
+                            <span class="val">{{ fmtv(v, c.fmt) }}</span>
+                            <input class="edit" type="number" min="0" step="{{ 1 if c.setting == 'active_techs' else 'any' }}"
+                                   form="settingsForm" name="{{ 'techs' if c.setting == 'active_techs' else 'offset' }}__{{ r.code }}"
+                                   value="{{ v if v is not none else '' }}" aria-label="{{ r.name }} {{ c.label }}">
+                            {%- else -%}
+                            {{ fmtv(v, c.fmt) }}
+                            {%- endif -%}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if total and not store %}
+                <tfoot>
+                    <tr class="total">
+                        {% for c in columns %}
+                        <td class="{% if c.ext %}ext{% endif %}">
+                            {%- if c.key == 'name' -%}TOTALS:
+                            {%- elif c.key in ('dlr_name', 'offset_value') -%}
+                            {%- else -%}{{ fmtv(total[c.key], c.fmt) }}{%- endif -%}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr class="perday">
+                        {% for c in columns %}
+                        <td class="{% if c.ext %}ext{% endif %}">{% if c.key == 'ro' and total.ros_per_day is not none %}{{ '%.0f' % total.ros_per_day }} /Day{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+            </div>
+            {% elif months %}
+            <div class="empty">No data for that selection.</div>
+            {% else %}
+            <div class="empty">No KPI reports uploaded yet. Upload Ford's weekly file above to get started.</div>
+            {% endif %}
+        </div>
+
+        <div class="card how">
+            <ul>
+                <li><strong>Units Launched</strong> comes from Ford's Launched Vans. <strong>Active Technicians</strong> and <strong>Offset Value</strong> are ours: edit them per month with "Edit techs &amp; offset". A new month starts with the previous month's values.</li>
+                <li><strong>Tracking</strong> = RO Count &divide; working days so far &times; working days in the month, rounded to 10. The day count comes from Ford's own ROs/Van/Day.</li>
+                <li><strong>Commercial Mix</strong> = Ford Pro Count &divide; RO Count + 5 points (Ford's figure understates it).</li>
+                <li><strong>Per Active Tech / Day</strong> columns divide by Active Technicians &times; working days so far. Revenue / Tech / Day uses Total RO Value (no offset).</li>
+                <li><strong>Available</strong> = 138 &times; Units Launched for the full month. <strong>Eligible Offset Earned</strong> = RO Count &divide; Available. <strong>Offset Left On Table</strong> = (Available &minus; RO Count) &times; Offset Value. <strong>Total Revenue</strong> = Total RO Value + Total Offset.</li>
+                <li><strong>Full Year</strong> adds up every uploaded month of the year. Units, techs and offset value show the latest month, and Available and Tracking are summed month by month.</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var table = document.getElementById('kpiTable');
+        if (!table) return;
+
+        // Core / Extended toggle, remembered per browser.
+        var buttons = document.querySelectorAll('.toggle button');
+        function setView(view) {
+            table.classList.toggle('core', view !== 'extended');
+            buttons.forEach(function (b) { b.classList.toggle('on', b.dataset.view === view); });
+            try { localStorage.setItem('kpiView', view); } catch (e) {}
+        }
+        var saved = null;
+        try { saved = localStorage.getItem('kpiView'); } catch (e) {}
+        setView(saved === 'extended' ? 'extended' : 'core');
+        buttons.forEach(function (b) {
+            b.addEventListener('click', function () { setView(b.dataset.view); });
+        });
+
+        // Edit techs & offset: swap those cells for inputs.
+        var editBtn = document.getElementById('editBtn');
+        var cancelBtn = document.getElementById('cancelBtn');
+        function setEditing(on) {
+            table.classList.toggle('editing', on);
+            document.body.classList.toggle('editing', on);
+        }
+        if (editBtn) editBtn.addEventListener('click', function () {
+            setView('extended');  // Offset Value is an Extended column
+            setEditing(true);
+        });
+        if (cancelBtn) cancelBtn.addEventListener('click', function () {
+            document.getElementById('settingsForm').reset();
+            table.querySelectorAll('input.edit').forEach(function (i) { i.value = i.defaultValue; });
+            setEditing(false);
+        });
+
+        // Click a header to sort; click again to flip. Numbers start
+        // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>.
+        var ths = table.tHead.rows[1].cells;
+        Array.prototype.forEach.call(ths, function (th, col) {
+            th.addEventListener('click', function () {
+                var num = th.dataset.type === 'num';
+                var dir = th.classList.contains('desc') ? 'asc'
+                        : th.classList.contains('asc') ? 'desc'
+                        : (num ? 'desc' : 'asc');
+                Array.prototype.forEach.call(ths, function (h) { h.classList.remove('asc', 'desc'); });
+                th.classList.add(dir);
+                var sign = dir === 'asc' ? 1 : -1;
+                var tbody = table.tBodies[0];
+                var rows = Array.prototype.slice.call(tbody.rows);
+                var val = function (tr) {
+                    var raw = tr.cells[col].dataset.v;
+                    if (raw === '' || raw === undefined) return null;
+                    return num ? parseFloat(raw) : raw.toLowerCase();
+                };
+                rows.sort(function (a, b) {
+                    var x = val(a), y = val(b);
+                    if (x === null || y === null) return (x === null) - (y === null);
+                    return (x < y ? -1 : x > y ? 1 : 0) * sign;
+                });
+                rows.forEach(function (tr) { tbody.appendChild(tr); });
+            });
+        });
+    })();
+    </script>
+</body>
+</html>
