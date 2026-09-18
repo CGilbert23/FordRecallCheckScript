@@ -363,6 +363,11 @@ def _derive(c):
     }
 
 
+def _store_name(code, ford_name=None):
+    """Our short name for the store; Ford's name title-cased for one we don't know."""
+    return (STORE_BY_CODE.get(code) or {}).get('name') or (ford_name or code).title()
+
+
 def _ordered(stores):
     """The file's stores in STORES order; stores we don't know go last."""
     order = {s['code']: i for i, s in enumerate(STORES)}
@@ -379,7 +384,7 @@ def month_view(report, codes=None):
         c = _components(s, report.get('settings'), days, total_days)
         parts.append(c)
         rows.append({'code': s['code'], 'dlr_name': s.get('name'),
-                     'name': (STORE_BY_CODE.get(s['code']) or {}).get('name') or (s.get('name') or s['code']).title(),
+                     'name': _store_name(s['code'], s.get('name')),
                      **_derive(c)})
     total = _derive(_combine(parts, days)) if parts else None
     return rows, total
@@ -405,10 +410,82 @@ def year_view(reports, codes=None):
                      units=last['units'], techs=last['techs'], offset_value=last['offset_value'])
         store_totals.append(c)
         rows.append({'code': s['code'], 'dlr_name': names[s['code']],
-                     'name': (STORE_BY_CODE.get(s['code']) or {}).get('name') or (names[s['code']] or s['code']).title(),
+                     'name': _store_name(s['code'], names[s['code']]),
                      **_derive(c)})
     total = _derive(_combine(store_totals, days)) if store_totals else None
     return rows, total
+
+
+YOY_METRICS = ('ro', 'avg_ro', 'commercial_mix', 'total_revenue')
+
+
+def _is_complete(report):
+    return report['days_elapsed'] >= report['work_days']
+
+
+def _scaled(c, factor):
+    return {k: (v * factor if k in _SUMMED else v) for k, v in c.items()}
+
+
+def _yoy_metrics(parts):
+    d = _derive(_combine(parts, 0))
+    return {k: d[k] for k in YOY_METRICS}
+
+
+def _yoy_changes(cur, prev):
+    out = {}
+    for k in YOY_METRICS:
+        a, b = cur.get(k), prev.get(k)
+        if a is None or b is None:
+            out[k] = None
+        elif k == 'commercial_mix':
+            out[k] = a - b  # percentage points
+        else:
+            out[k] = (a - b) / b if b else None
+    return out
+
+
+def yoy_view(cur_reports, prior_reports, codes=None):
+    """Year-over-year for the months in `cur_reports` that the prior year also
+    has. Returns (rows, total, months_compared, pace) or None when there's
+    nothing to compare.
+
+    A month still in progress is compared at the same pace: the prior year's
+    additive numbers (RO count, revenue, ...) are scaled by days elapsed /
+    working days, so 8 of 21 days is measured against 8/21 of last year's
+    month. `pace` is (days_elapsed, work_days) when that happened.
+    """
+    prior_by_month = {str(r['period_start'])[5:7]: r for r in prior_reports}
+    cur, prev, names, months, pace = {}, {}, {}, 0, None
+    for rep in cur_reports:
+        p = prior_by_month.get(str(rep['period_start'])[5:7])
+        if not p:
+            continue
+        months += 1
+        factor = 1.0
+        if not _is_complete(rep):
+            factor = rep['days_elapsed'] / rep['work_days']
+            pace = (rep['days_elapsed'], rep['work_days'])
+        for side, r, f in ((cur, rep, 1.0), (prev, p, factor)):
+            for s in r.get('stores') or []:
+                if codes and s['code'] not in codes:
+                    continue
+                c = _components(s, r.get('settings'), r['days_elapsed'], r['work_days'])
+                side.setdefault(s['code'], []).append(_scaled(c, f))
+                names.setdefault(s['code'], s.get('name'))
+    if not months:
+        return None
+    rows, cur_all, prev_all = [], [], []
+    for s in _ordered([{'code': c} for c in set(cur) | set(prev)]):
+        code = s['code']
+        cur_all += cur.get(code, [])
+        prev_all += prev.get(code, [])
+        now, then = _yoy_metrics(cur.get(code, [])), _yoy_metrics(prev.get(code, []))
+        rows.append({'code': code, 'name': _store_name(code, names.get(code)),
+                     'cur': now, 'prev': then, 'change': _yoy_changes(now, then)})
+    now, then = _yoy_metrics(cur_all), _yoy_metrics(prev_all)
+    total = {'cur': now, 'prev': then, 'change': _yoy_changes(now, then)}
+    return rows, total, months, pace
 
 
 if __name__ == '__main__':

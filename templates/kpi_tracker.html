@@ -56,6 +56,18 @@
         table.kpi td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; }
         table.kpi td.track { background: #fff8cc; }
         table.kpi td.inp { background: #e8f1fb; }
+        /* YoY table: always full width; each metric is a group of three. */
+        .yoy-wrap { margin-top: 28px; }
+        table.kpi.yoy { width: 100%; table-layout: fixed; }
+        table.kpi.yoy tr.grp th { background: #0f2a47; font-size: 0.8rem; }
+        table.kpi.yoy tr.grp th:first-child { background: #fff; border-color: #fff #c8ced6 #c8ced6 #fff; }
+        table.kpi.yoy td.prev { color: #6b7280; }
+        table.kpi.yoy td.chg { background: #f8fafc; font-weight: 600; }
+        table.kpi.yoy tr:not(.grp) > :nth-child(3n+1):not(:first-child) { border-right: 2px solid #9ca3af; }
+        .up { color: #047857; }
+        .down { color: #b91c1c; }
+        .flat { color: #6b7280; }
+        .yoy-none { margin-top: 24px; }
         /* Core fills the card (columns stay even); Extended sizes to its columns. */
         table.kpi.core { width: 100%; table-layout: fixed; }
         table.kpi.core .ext { display: none; }
@@ -229,6 +241,67 @@
             </table>
             </div>
             {% if report and report.filename %}<div class="source">Source: {{ report.filename }}</div>{% endif %}
+
+            {# Year over year: same month (or same months) last year. Shown in both views. #}
+            {% macro chg(v, key) -%}
+                {%- if v is none -%}<span class="flat">&mdash;</span>
+                {%- elif key == 'commercial_mix' -%}<span class="{{ 'up' if v > 0.0005 else 'down' if v < -0.0005 else 'flat' }}">{{ '%+.0f' % (v * 100) }} pts</span>
+                {%- else -%}<span class="{{ 'up' if v > 0.0005 else 'down' if v < -0.0005 else 'flat' }}">{{ '%+.0f' % (v * 100) }}%</span>
+                {%- endif -%}
+            {%- endmacro %}
+            {% set yoy_cols = [('ro', 'RO Count', 'int'), ('avg_ro', 'Avg RO Value', 'money'), ('commercial_mix', 'Commercial Mix', 'pct'), ('total_revenue', 'Total Revenue', 'money')] %}
+            {% if yoy %}
+            {% set yrows, ytotal, ymonths, ypace = yoy %}
+            <div class="yoy-wrap table-wrap">
+            <table class="kpi yoy" id="yoyTable">
+                <caption>{% if store_name %}{{ store_name }} &middot; {% endif %}YoY Comparison &ndash;
+                    {% if full_year %}{{ year - 1 }} / {{ year }} ({{ ymonths }} month{{ '' if ymonths == 1 else 's' }})
+                    {% else %}{{ selected.label.split(' ')[0] }} {{ year - 1 }} / {{ year }}{% endif %}</caption>
+                <thead>
+                    <tr class="grp">
+                        <th></th>
+                        {% for key, label, fmt in yoy_cols %}<th colspan="3">{{ label }}</th>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th class="sortable w-name" data-type="text">Store</th>
+                        {% for key, label, fmt in yoy_cols %}
+                        <th class="sortable" data-type="num">{{ year - 1 }}</th>
+                        <th class="sortable" data-type="num">{{ year }}</th>
+                        <th class="sortable" data-type="num">{{ 'Change' if key == 'commercial_mix' else '% Change' }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in yrows %}
+                    <tr>
+                        <td class="store" data-v="{{ r.name }}">{{ r.name }}</td>
+                        {% for key, label, fmt in yoy_cols %}
+                        {% set a, b, c = r.prev[key], r.cur[key], r.change[key] %}
+                        <td class="prev" data-v="{{ '' if a is none else a }}">{{ fmtv(a, fmt) }}</td>
+                        <td data-v="{{ '' if b is none else b }}">{{ fmtv(b, fmt) }}</td>
+                        <td class="chg" data-v="{{ '' if c is none else c }}">{{ chg(c, key) }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if not store %}
+                <tfoot>
+                    <tr class="total">
+                        <td>TOTALS:</td>
+                        {% for key, label, fmt in yoy_cols %}
+                        <td>{{ fmtv(ytotal.prev[key], fmt) }}</td>
+                        <td>{{ fmtv(ytotal.cur[key], fmt) }}</td>
+                        <td class="chg">{{ chg(ytotal.change[key], key) }}</td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+            </div>
+            {% if ypace %}<div class="source">{{ 'The month still in progress is' if full_year else 'This month is still in progress, so' }} compared at the same pace: {{ year - 1 }}'s RO Count and Total Revenue are scaled to {{ ypace[0] }} of {{ ypace[1] }} working days.</div>{% endif %}
+            {% elif rows %}
+            <div class="source yoy-none">No {{ year - 1 }} data uploaded for {{ 'this year' if full_year else selected.label.split(' ')[0] }}, so there's no year-over-year comparison.</div>
+            {% endif %}
             {% elif months %}
             <div class="empty">No data for that selection.</div>
             {% else %}
@@ -281,10 +354,18 @@
             setEditing(false);
         });
 
+        makeSortable(table);
+        var yoyTable = document.getElementById('yoyTable');
+        if (yoyTable) makeSortable(yoyTable);
+
         // Click a header to sort; click again to flip. Numbers start
-        // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>.
-        var ths = table.tHead.rows[0].cells;
+        // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>. The
+        // last header row lines up 1:1 with the body cells.
+        function makeSortable(table) {
+        var head = table.tHead.rows;
+        var ths = head[head.length - 1].cells;
         Array.prototype.forEach.call(ths, function (th, col) {
+            if (!th.classList.contains('sortable')) return;
             th.addEventListener('click', function () {
                 var num = th.dataset.type === 'num';
                 var dir = th.classList.contains('desc') ? 'asc'
@@ -308,6 +389,7 @@
                 rows.forEach(function (tr) { tbody.appendChild(tr); });
             });
         });
+        }
 
         // "Copy Table": rebuild the visible table (current view and sort
         // order) with every style inlined — Outlook/Gmail drop <style> blocks —

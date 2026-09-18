@@ -2055,6 +2055,18 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
         rows, total = kpi_tracker.month_view(report, codes)
     elif year_reports:
         rows, total = kpi_tracker.year_view(year_reports, codes)
+
+    # Year-over-year against the same month (or the same months) last year.
+    yoy = None
+    if rows and year:
+        try:
+            if report:
+                prior = db.get_kpi_report(f"{year - 1}{report['period_start'][4:10]}")
+                yoy = kpi_tracker.yoy_view([report], [prior] if prior else [], codes)
+            else:
+                yoy = kpi_tracker.yoy_view(year_reports, db.get_kpi_reports_for_year(year - 1), codes)
+        except Exception as e:
+            logger.error(f"KPI YoY load failed: {e}")
     # Tracking projects a month in progress to month end; a finished month or
     # a full year has nothing to project, so the column is dropped.
     in_progress = bool(report) and report['days_elapsed'] < report['work_days']
@@ -2062,7 +2074,7 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     return render_template('kpi_tracker.html', months=months, years=years, year=year,
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
-                           rows=rows, total=total, columns=columns,
+                           rows=rows, total=total, columns=columns, yoy=yoy,
                            stores=kpi_tracker.STORES, store=store,
                            store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
                            error=error, notice=notice), status
