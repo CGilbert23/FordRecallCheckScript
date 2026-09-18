@@ -57,7 +57,8 @@
         table.kpi td.track { background: #fff8cc; }
         table.kpi td.inp { background: #e8f1fb; }
         /* YoY table: always full width; each metric is a group of three. */
-        .yoy-wrap { margin-top: 28px; }
+        .yoy-head { display: flex; justify-content: flex-end; margin: 28px 0 8px; }
+        #copyYoyBtn { min-width: 96px; }
         table.kpi.yoy { width: 100%; table-layout: fixed; }
         /* Lighter blues than the main table so the two are easy to tell apart. */
         table.kpi.yoy thead th { background: #4a8bc9; }
@@ -251,10 +252,13 @@
                 {%- else -%}<span class="{{ 'up' if v > 0.0005 else 'down' if v < -0.0005 else 'flat' }}">{{ '%+.0f' % (v * 100) }}%</span>
                 {%- endif -%}
             {%- endmacro %}
-            {% set yoy_cols = [('ro', 'RO Count', 'int'), ('avg_ro', 'Avg RO Value', 'money'), ('commercial_mix', 'Commercial Mix', 'pct'), ('total_revenue', 'Total Revenue', 'money')] %}
+            {% set yoy_cols = [('ro', 'RO Count', 'int'), ('avg_ro', 'Avg RO Value', 'money'), ('commercial_mix', 'Commercial Mix', 'pct'), ('total_revenue', 'Total Revenue', 'money'), ('total_offset', 'Total Offset', 'money')] %}
             {% if yoy %}
             {% set yrows, ytotal, ymonths, ypace = yoy %}
-            <div class="yoy-wrap table-wrap">
+            <div class="yoy-head">
+                <button type="button" class="tbtn not-editing" id="copyYoyBtn">Copy YoY</button>
+            </div>
+            <div class="table-wrap">
             <table class="kpi yoy" id="yoyTable">
                 <caption>{% if store_name %}{{ store_name }} &middot; {% endif %}YoY Comparison &ndash;
                     {% if full_year %}{{ year - 1 }} / {{ year }} ({{ ymonths }} month{{ '' if ymonths == 1 else 's' }})
@@ -302,7 +306,7 @@
                 {% endif %}
             </table>
             </div>
-            {% if ypace %}<div class="source">{{ 'The month still in progress is' if full_year else 'This month is still in progress, so' }} compared at the same pace: {{ year - 1 }}'s RO Count and Total Revenue are scaled to {{ ypace[0] }} of {{ ypace[1] }} working days.</div>{% endif %}
+            {% if ypace %}<div class="source">{{ 'The month still in progress is' if full_year else 'This month is still in progress, so' }} compared at the same pace: {{ year - 1 }}'s RO Count, Total Revenue and Total Offset are scaled to {{ ypace[0] }} of {{ ypace[1] }} working days.</div>{% endif %}
             {% elif rows %}
             <div class="source yoy-none">No {{ year - 1 }} data uploaded for {{ 'this year' if full_year else selected.label.split(' ')[0] }}, so there's no year-over-year comparison.</div>
             {% endif %}
@@ -492,11 +496,6 @@
             if (t.tFoot) html += rowHtml(t.tFoot.rows[0], 'total');
             return html + '</table>';
         }
-        // Both tables, main first, with a blank line between them.
-        function buildHtml() {
-            var yoy = document.getElementById('yoyTable');
-            return tableHtml(table) + (yoy ? '<p>&nbsp;</p>' + tableHtml(yoy) : '');
-        }
         function copyViaSelection(html) {
             var holder = document.createElement('div');
             holder.contentEditable = 'true';
@@ -514,27 +513,32 @@
             document.body.removeChild(holder);
             return ok;
         }
-        function flash(ok) {
-            copyBtn.textContent = ok ? 'Copied!' : 'Copy failed';
-            copyBtn.classList.toggle('copied', ok);
-            setTimeout(function () {
-                copyBtn.textContent = 'Copy Table';
-                copyBtn.classList.remove('copied');
-            }, 1600);
-        }
-        copyBtn.addEventListener('click', function () {
-            var html = buildHtml();
-            if (navigator.clipboard && window.ClipboardItem) {
-                var yoyT = document.getElementById('yoyTable');
-                var text = table.innerText + (yoyT ? '\n\n' + yoyT.innerText : '');
-                navigator.clipboard.write([new ClipboardItem({
-                    'text/html': new Blob([html], { type: 'text/html' }),
-                    'text/plain': new Blob([text], { type: 'text/plain' })
-                })]).then(function () { flash(true); }, function () { flash(copyViaSelection(html)); });
-            } else {
-                flash(copyViaSelection(html));
+        // Each button copies just its own table.
+        function wireCopy(btn, t) {
+            if (!btn || !t) return;
+            var label = btn.textContent;
+            function flash(ok) {
+                btn.textContent = ok ? 'Copied!' : 'Copy failed';
+                btn.classList.toggle('copied', ok);
+                setTimeout(function () {
+                    btn.textContent = label;
+                    btn.classList.remove('copied');
+                }, 1600);
             }
-        });
+            btn.addEventListener('click', function () {
+                var html = tableHtml(t);
+                if (navigator.clipboard && window.ClipboardItem) {
+                    navigator.clipboard.write([new ClipboardItem({
+                        'text/html': new Blob([html], { type: 'text/html' }),
+                        'text/plain': new Blob([t.innerText], { type: 'text/plain' })
+                    })]).then(function () { flash(true); }, function () { flash(copyViaSelection(html)); });
+                } else {
+                    flash(copyViaSelection(html));
+                }
+            });
+        }
+        wireCopy(copyBtn, table);
+        wireCopy(document.getElementById('copyYoyBtn'), document.getElementById('yoyTable'));
     })();
     </script>
 </body>

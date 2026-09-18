@@ -416,7 +416,7 @@ def year_view(reports, codes=None):
     return rows, total
 
 
-YOY_METRICS = ('ro', 'avg_ro', 'commercial_mix', 'total_revenue')
+YOY_METRICS = ('ro', 'avg_ro', 'commercial_mix', 'total_revenue', 'total_offset')
 
 
 def _is_complete(report):
