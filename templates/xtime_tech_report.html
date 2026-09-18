@@ -40,6 +40,12 @@
         td.name { font-weight: 600; color: #0a1f44; }
         td.pct { font-weight: 600; }
         tr.missing td { color: #9ca3af; }
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { color: #0068d6; }
+        th.sortable::after { content: ' \2195'; color: #cbd5e1; }
+        th.sortable.asc::after { content: ' \25B2'; color: #0068d6; }
+        th.sortable.desc::after { content: ' \25BC'; color: #0068d6; }
+        th.sortable.asc, th.sortable.desc { color: #0068d6; }
         tr.total td { border-top: 2px solid #e5e7eb; border-bottom: none; font-weight: 700; background: #f9fafb; }
         .note { display: block; font-size: 0.72rem; font-weight: 400; color: #b45309; }
         .empty { text-align: center; color: #888; padding: 36px 12px; }
@@ -109,30 +115,31 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Tech</th>
-                        <th>Store</th>
-                        <th>Total RO</th>
-                        <th>MPI Completed</th>
-                        <th>MPI %</th>
-                        <th>Avg Miles</th>
-                        <th>ASR</th>
-                        <th title="ASR &divide; total ROs">ASR %</th>
-                        <th>Sold Lines</th>
+                        <th class="sortable" data-type="text">Tech</th>
+                        <th class="sortable" data-type="text">Store</th>
+                        <th class="sortable" data-type="num">Total RO</th>
+                        <th class="sortable" data-type="num">MPI Completed</th>
+                        <th class="sortable" data-type="num">MPI %</th>
+                        <th class="sortable" data-type="num">Avg Miles</th>
+                        <th class="sortable" data-type="num">ASR</th>
+                        <th class="sortable" data-type="num" title="ASR &divide; total ROs">ASR %</th>
+                        <th class="sortable" data-type="num">Sold Lines</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in rows %}
                     {% if r.found %}
+                    {% macro v(x) %}{{ '' if x is none else x }}{% endmacro %}
                     <tr>
-                        <td class="name">{{ r.name }}</td>
-                        <td>{{ r.store }}{% if r.moved %}<span class="note">Listed under {{ r.report_store }}</span>{% endif %}</td>
-                        <td>{{ num(r.total_ro) }}</td>
-                        <td>{{ num(r.mpi_completed) }}</td>
-                        <td class="pct">{{ pct(r.mpi_pct) }}</td>
-                        <td>{{ num(r.avg_miles) }}</td>
-                        <td>{{ num(r.asr) }}</td>
-                        <td class="pct">{{ pct(r.asr_pct) }}</td>
-                        <td>{{ num(r.lines_sold) }}</td>
+                        <td class="name" data-v="{{ r.name }}">{{ r.name }}</td>
+                        <td data-v="{{ r.store }}">{{ r.store }}{% if r.moved %}<span class="note">Listed under {{ r.report_store }}</span>{% endif %}</td>
+                        <td data-v="{{ v(r.total_ro) }}">{{ num(r.total_ro) }}</td>
+                        <td data-v="{{ v(r.mpi_completed) }}">{{ num(r.mpi_completed) }}</td>
+                        <td class="pct" data-v="{{ v(r.mpi_pct) }}">{{ pct(r.mpi_pct) }}</td>
+                        <td data-v="{{ v(r.avg_miles) }}">{{ num(r.avg_miles) }}</td>
+                        <td data-v="{{ v(r.asr) }}">{{ num(r.asr) }}</td>
+                        <td class="pct" data-v="{{ v(r.asr_pct) }}">{{ pct(r.asr_pct) }}</td>
+                        <td data-v="{{ v(r.lines_sold) }}">{{ num(r.lines_sold) }}</td>
                     </tr>
                     {% else %}
                     <tr class="missing">
@@ -142,7 +149,9 @@
                     </tr>
                     {% endif %}
                     {% endfor %}
-                    {% if total %}
+                </tbody>
+                {% if total %}
+                <tfoot>
                     <tr class="total">
                         <td>{{ store ~ ' Total' if store else total.name }}</td>
                         <td>{{ total.store }}</td>
@@ -154,8 +163,8 @@
                         <td>{{ pct(total.asr_pct) }}</td>
                         <td>{{ num(total.lines_sold) }}</td>
                     </tr>
-                    {% endif %}
-                </tbody>
+                </tfoot>
+                {% endif %}
             </table>
             </div>
             {% else %}
@@ -170,5 +179,40 @@
             </ul>
         </div>
     </div>
+    <script>
+    // Click a header to sort; click again to flip. Numbers start highest-first,
+    // text A-Z. Techs missing from the month and blank values always sink to
+    // the bottom, and the total row lives in <tfoot> so it never moves.
+    (function () {
+        var table = document.querySelector('table');
+        if (!table) return;
+        var ths = table.querySelectorAll('th.sortable');
+        ths.forEach(function (th, col) {
+            th.addEventListener('click', function () {
+                var num = th.dataset.type === 'num';
+                var dir = th.classList.contains('desc') ? 'asc'
+                        : th.classList.contains('asc') ? 'desc'
+                        : (num ? 'desc' : 'asc');
+                ths.forEach(function (h) { h.classList.remove('asc', 'desc'); });
+                th.classList.add(dir);
+                var sign = dir === 'asc' ? 1 : -1;
+                var tbody = table.tBodies[0];
+                var rows = Array.prototype.slice.call(tbody.rows);
+                var val = function (tr) {
+                    if (tr.classList.contains('missing')) return null;
+                    var raw = tr.cells[col].dataset.v;
+                    if (raw === '' || raw === undefined) return null;
+                    return num ? parseFloat(raw) : raw.toLowerCase();
+                };
+                rows.sort(function (a, b) {
+                    var x = val(a), y = val(b);
+                    if (x === null || y === null) return (x === null) - (y === null);
+                    return (x < y ? -1 : x > y ? 1 : 0) * sign;
+                });
+                rows.forEach(function (tr) { tbody.appendChild(tr); });
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
