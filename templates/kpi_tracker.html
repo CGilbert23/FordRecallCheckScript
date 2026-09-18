@@ -59,11 +59,13 @@
         /* YoY table: always full width; each metric is a group of three. */
         .yoy-wrap { margin-top: 28px; }
         table.kpi.yoy { width: 100%; table-layout: fixed; }
-        table.kpi.yoy tr.grp th { background: #0f2a47; font-size: 0.8rem; }
-        table.kpi.yoy tr.grp th:first-child { background: #fff; border-color: #fff #c8ced6 #c8ced6 #fff; }
+        /* Lighter blues than the main table so the two are easy to tell apart. */
+        table.kpi.yoy thead th { background: #4a8bc9; }
+        table.kpi.yoy tr.grp th[colspan] { background: #2e75b6; font-size: 0.8rem; width: auto; }
+        table.kpi.yoy th, table.kpi.yoy td { width: auto; }
         table.kpi.yoy td.prev { color: #6b7280; }
         table.kpi.yoy td.chg { background: #f8fafc; font-weight: 600; }
-        table.kpi.yoy tr:not(.grp) > :nth-child(3n+1):not(:first-child) { border-right: 2px solid #9ca3af; }
+        table.kpi.yoy tbody tr > :nth-child(3n+1):not(:first-child), table.kpi.yoy tfoot tr > :nth-child(3n+1):not(:first-child), table.kpi.yoy tr.sub > :nth-child(3n) { border-right: 2px solid #9ca3af; }
         .up { color: #047857; }
         .down { color: #b91c1c; }
         .flat { color: #6b7280; }
@@ -257,17 +259,19 @@
                 <caption>{% if store_name %}{{ store_name }} &middot; {% endif %}YoY Comparison &ndash;
                     {% if full_year %}{{ year - 1 }} / {{ year }} ({{ ymonths }} month{{ '' if ymonths == 1 else 's' }})
                     {% else %}{{ selected.label.split(' ')[0] }} {{ year - 1 }} / {{ year }}{% endif %}</caption>
+                {# Explicit widths: with grouped headers the fixed layout can't infer them. #}
+                <colgroup><col style="width:150px">{% for i in range(yoy_cols | length * 3) %}<col>{% endfor %}</colgroup>
                 <thead>
                     <tr class="grp">
-                        <th></th>
+                        <th class="sortable w-name" rowspan="2" data-type="text" data-col="0">Store</th>
                         {% for key, label, fmt in yoy_cols %}<th colspan="3">{{ label }}</th>{% endfor %}
                     </tr>
-                    <tr>
-                        <th class="sortable w-name" data-type="text">Store</th>
+                    <tr class="sub">
                         {% for key, label, fmt in yoy_cols %}
-                        <th class="sortable" data-type="num">{{ year - 1 }}</th>
-                        <th class="sortable" data-type="num">{{ year }}</th>
-                        <th class="sortable" data-type="num">{{ 'Change' if key == 'commercial_mix' else '% Change' }}</th>
+                        {% set base = loop.index0 * 3 %}
+                        <th class="sortable" data-type="num" data-col="{{ base + 1 }}">{{ year - 1 }}</th>
+                        <th class="sortable" data-type="num" data-col="{{ base + 2 }}">{{ year }}</th>
+                        <th class="sortable" data-type="num" data-col="{{ base + 3 }}">{{ 'Change' if key == 'commercial_mix' else '% Change' }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -359,13 +363,13 @@
         if (yoyTable) makeSortable(yoyTable);
 
         // Click a header to sort; click again to flip. Numbers start
-        // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>. The
-        // last header row lines up 1:1 with the body cells.
+        // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>. A
+        // header's body column is its data-col (the YoY table's two header
+        // rows don't line up 1:1 with the body), else its position.
         function makeSortable(table) {
-        var head = table.tHead.rows;
-        var ths = head[head.length - 1].cells;
-        Array.prototype.forEach.call(ths, function (th, col) {
-            if (!th.classList.contains('sortable')) return;
+        var ths = table.tHead.querySelectorAll('th.sortable');
+        Array.prototype.forEach.call(ths, function (th) {
+            var col = th.dataset.col !== undefined ? parseInt(th.dataset.col, 10) : th.cellIndex;
             th.addEventListener('click', function () {
                 var num = th.dataset.type === 'num';
                 var dir = th.classList.contains('desc') ? 'asc'
@@ -410,10 +414,15 @@
         var STYLE = {
             title: { bg: '#bcd2e8', fg: '#0f2a47', bold: true, size: 14 },
             head:  { bg: '#dbe7f3', fg: '#0f2a47', bold: true },
+            head2: { bg: '#edf3fa', fg: '#0f2a47', bold: true },  // YoY 2025 / 2026 / Change row
             body:  { bg: '#ffffff', fg: '#111827' },
             store: { bg: '#f1f3f6', fg: '#0f2a47', bold: true },
             track: { bg: '#fff8cc', fg: '#111827' },
             inp:   { bg: '#e8f1fb', fg: '#111827' },
+            prev:  { bg: '#ffffff', fg: '#6b7280' },
+            up:    { bg: '#f8fafc', fg: '#047857', bold: true },
+            down:  { bg: '#f8fafc', fg: '#b91c1c', bold: true },
+            flat:  { bg: '#f8fafc', fg: '#6b7280', bold: true },
             total: { bg: '#e5e9ef', fg: '#111827', bold: true, italic: true }
         };
 
@@ -442,32 +451,51 @@
             return '<td bgcolor="' + s.bg + '" align="center" valign="middle" ' + (attrs || '')
                 + ' style="' + css + '">' + inner + '</td>';
         }
+        function bodyStyle(c) {
+            var cl = c.classList;
+            if (cl.contains('store')) return STYLE.store;
+            if (cl.contains('track')) return STYLE.track;
+            if (cl.contains('inp')) return STYLE.inp;
+            if (cl.contains('prev')) return STYLE.prev;
+            if (cl.contains('chg')) {
+                var sp = c.querySelector('span');
+                return STYLE[sp && sp.classList.contains('up') ? 'up'
+                           : sp && sp.classList.contains('down') ? 'down' : 'flat'];
+            }
+            return STYLE.body;
+        }
         function rowHtml(tr, kind) {
             var out = '<tr>';
             Array.prototype.forEach.call(tr.cells, function (c) {
                 if (!shown(c)) return;
-                var s = STYLE[kind];
-                if (kind === 'body') s = c.classList.contains('store') ? STYLE.store
-                                       : c.classList.contains('track') ? STYLE.track
-                                       : c.classList.contains('inp') ? STYLE.inp : STYLE.body;
+                var s = kind === 'body' ? bodyStyle(c) : STYLE[kind];
                 var name = c.classList.contains('w-name') || c.classList.contains('store');
                 if (name) s = Object.assign({}, s, { keep: true });
-                // Data columns get an even width; the Store column sizes to its names.
-                var attrs = kind === 'head' ? (name ? 'nowrap' : 'width="88"') : 'nowrap';
-                out += cell(cellText(c), s, attrs);
+                var span = (c.colSpan > 1 ? ' colspan="' + c.colSpan + '"' : '')
+                         + (c.rowSpan > 1 ? ' rowspan="' + c.rowSpan + '"' : '');
+                // Single data columns get an even width; the Store column sizes to its names.
+                var attrs = (kind.indexOf('head') === 0 && !name && c.colSpan === 1) ? 'width="88"' : 'nowrap';
+                out += cell(cellText(c), s, attrs + span);
             });
             return out + '</tr>';
         }
-        function buildHtml() {
-            var cols = Array.prototype.filter.call(table.tHead.rows[0].cells, shown).length;
+        function tableHtml(t) {
+            var cols = Array.prototype.filter.call(t.tBodies[0].rows[0].cells, shown).length;
             var html = '<table border="1" cellpadding="5" cellspacing="0" bordercolor="' + BORDER + '"'
                 + ' style="border-collapse:collapse;border:1px solid ' + BORDER + ';font-family:Arial,Helvetica,sans-serif;">'
-                + '<tr>' + cell(table.caption.textContent.trim(), STYLE.title, 'colspan="' + cols + '"') + '</tr>';
-            html += rowHtml(table.tHead.rows[0], 'head');
-            Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
+                + '<tr>' + cell(t.caption.textContent.replace(/\s+/g, ' ').trim(), STYLE.title, 'colspan="' + cols + '"') + '</tr>';
+            Array.prototype.forEach.call(t.tHead.rows, function (tr, i) {
+                html += rowHtml(tr, i === 0 ? 'head' : 'head2');
+            });
+            Array.prototype.forEach.call(t.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
             // Totals row only; the on-page "N /Day" line isn't copied.
-            if (table.tFoot) html += rowHtml(table.tFoot.rows[0], 'total');
+            if (t.tFoot) html += rowHtml(t.tFoot.rows[0], 'total');
             return html + '</table>';
+        }
+        // Both tables, main first, with a blank line between them.
+        function buildHtml() {
+            var yoy = document.getElementById('yoyTable');
+            return tableHtml(table) + (yoy ? '<p>&nbsp;</p>' + tableHtml(yoy) : '');
         }
         function copyViaSelection(html) {
             var holder = document.createElement('div');
@@ -497,7 +525,8 @@
         copyBtn.addEventListener('click', function () {
             var html = buildHtml();
             if (navigator.clipboard && window.ClipboardItem) {
-                var text = table.innerText;
+                var yoyT = document.getElementById('yoyTable');
+                var text = table.innerText + (yoyT ? '\n\n' + yoyT.innerText : '');
                 navigator.clipboard.write([new ClipboardItem({
                     'text/html': new Blob([html], { type: 'text/html' }),
                     'text/plain': new Blob([text], { type: 'text/plain' })
