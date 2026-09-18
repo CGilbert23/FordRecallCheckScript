@@ -35,9 +35,8 @@
         .report-head .meta { font-size: 0.8rem; color: #888; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: right; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
-        td { text-align: right; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; white-space: nowrap; }
-        th.left, td.left { text-align: left; }
+        th { text-align: center; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+        td { text-align: center; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; white-space: nowrap; }
         td.name { font-weight: 600; color: #0a1f44; }
         td.pct { font-weight: 600; }
         tr.missing td { color: #9ca3af; }
@@ -95,12 +94,14 @@
             <table>
                 <thead>
                     <tr>
-                        <th class="left">Tech</th>
-                        <th class="left">Store</th>
+                        <th>Tech</th>
+                        <th>Store</th>
                         <th>Total RO</th>
                         <th>MPI Completed</th>
                         <th>MPI %</th>
                         <th>Avg Miles</th>
+                        <th>ASR</th>
+                        <th title="ASR &divide; total ROs">ASR %</th>
                         <th>Lines Requested</th>
                         <th title="Lines requested &divide; total ROs">ASR Requested %</th>
                         <th>Sold Lines</th>
@@ -111,12 +112,14 @@
                     {% for r in rows %}
                     {% if r.found %}
                     <tr>
-                        <td class="left name">{{ r.name }}</td>
-                        <td class="left">{{ r.store }}{% if r.moved %}<span class="note">Listed under {{ r.report_store }}</span>{% endif %}</td>
+                        <td class="name">{{ r.name }}</td>
+                        <td>{{ r.store }}{% if r.moved %}<span class="note">Listed under {{ r.report_store }}</span>{% endif %}</td>
                         <td>{{ num(r.total_ro) }}</td>
                         <td>{{ num(r.mpi_completed) }}</td>
                         <td class="pct">{{ pct(r.mpi_pct) }}</td>
                         <td>{{ num(r.avg_miles) }}</td>
+                        <td>{{ num(r.asr) }}</td>
+                        <td class="pct">{{ pct(r.asr_pct) }}</td>
                         <td>{{ num(r.lines_requested) }}</td>
                         <td class="pct">{{ pct(r.asr_requested_pct) }}</td>
                         <td>{{ num(r.lines_sold) }}</td>
@@ -124,20 +127,22 @@
                     </tr>
                     {% else %}
                     <tr class="missing">
-                        <td class="left name">{{ r.name }}</td>
-                        <td class="left">{{ r.store }}</td>
-                        <td colspan="8" style="text-align:center;">Not in this month's report</td>
+                        <td class="name">{{ r.name }}</td>
+                        <td>{{ r.store }}</td>
+                        <td colspan="10">Not in this month's report</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
                     {% if total %}
                     <tr class="total">
-                        <td class="left">{{ total.name }}</td>
-                        <td class="left">{{ total.store }}</td>
+                        <td>{{ total.name }}</td>
+                        <td>{{ total.store }}</td>
                         <td>{{ num(total.total_ro) }}</td>
                         <td>{{ num(total.mpi_completed) }}</td>
                         <td>{{ pct(total.mpi_pct) }}</td>
                         <td>{{ num(total.avg_miles) }}</td>
+                        <td>{{ num(total.asr) }}</td>
+                        <td>{{ pct(total.asr_pct) }}</td>
                         <td>{{ num(total.lines_requested) }}</td>
                         <td>{{ pct(total.asr_requested_pct) }}</td>
                         <td>{{ num(total.lines_sold) }}</td>
@@ -154,7 +159,7 @@
 
         <div class="card how">
             <ul>
-                <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR Requested %</strong> = Lines Requested &divide; Total RO (can go over 100% when a tech requests more than one line per RO). <strong>Sold %</strong> = Sold Lines &divide; Lines Requested.</li>
+                <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR %</strong> = ASR &divide; Total RO. <strong>ASR Requested %</strong> = Lines Requested &divide; Total RO (can go over 100% when a tech requests more than one line per RO). <strong>Sold %</strong> = Sold Lines &divide; Lines Requested.</li>
                 <li>The Mobile Team row adds up every tech in the month; its Avg Miles is weighted by each tech's RO count.</li>
             </ul>
         </div>

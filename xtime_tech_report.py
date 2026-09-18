@@ -9,6 +9,7 @@ name with rowspan=4, so the row layout is:
                      hours req, hours sold, closing %, req per, sold per,
                      LINES REQ, LINES SOLD, ...
     Inspection row:  'Inspection', cust, warr, TOTAL (= MPIs completed), ...
+    ASR row:         'ASR', cust, warr, TOTAL (= ROs with an ASR), ...
 
 Each store table ends with a "<store> Totals" block, and the file ends with a
 "Fred Beans Totals" section — both are skipped.
@@ -35,14 +36,13 @@ MOBILE_TECHS = [
     {'name': 'Cameron Lee', 'store': 'Ford Langhorne', 'store_words': ('ford', 'langhorne')},
     {'name': 'Alex Innes', 'store': 'Ford West Chester', 'store_words': ('ford', 'west', 'chester')},
     {'name': 'Scott Ryan', 'store': 'Ford West Chester', 'store_words': ('ford', 'west', 'chester')},
-    {'name': 'Gabriel Lachkman', 'store': 'Ford Exton', 'store_words': ('ford', 'exton'),
-     'aliases': ('Gabriel Lackman',)},
+    {'name': 'Gabriel Lackman', 'store': 'Ford Exton', 'store_words': ('ford', 'exton')},
     {'name': 'Antonio Dixon', 'store': 'Ford Mechanicsburg', 'store_words': ('ford', 'mechanicsburg')},
     {'name': 'Bryan Burgos', 'store': 'Ford Mechanicsburg', 'store_words': ('ford', 'mechanicsburg')},
     {'name': 'Grant Carlson', 'store': 'Ford Boyertown', 'store_words': ('ford', 'boyertown')},
 ]
 
-METRIC_KEYS = ('total_ro', 'mpi_completed', 'avg_miles', 'lines_requested', 'lines_sold')
+METRIC_KEYS = ('total_ro', 'mpi_completed', 'avg_miles', 'asr', 'lines_requested', 'lines_sold')
 
 _DATE_RANGE_RE = re.compile(
     r'Date Range:\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*-\s*(\d{1,2})/(\d{1,2})/(\d{4})')
@@ -128,7 +128,7 @@ def parse_report(data):
 
     techs = []
     store = None
-    pending = None  # tech whose RO row we've seen, waiting on its Inspection row
+    pending = None  # tech whose RO row we've seen, waiting on its Inspection + ASR rows
     for kind, val in p.events:
         if kind == 'div':
             if not val.startswith(('Avg Miles', 'Date Range', 'Technician RO')):
@@ -137,6 +137,9 @@ def parse_report(data):
         cells = val
         if pending is not None and cells and cells[0] == 'Inspection':
             pending['mpi_completed'] = _int(cells[3]) if len(cells) > 3 else None
+            continue
+        if pending is not None and cells and cells[0] == 'ASR':
+            pending['asr'] = _int(cells[3]) if len(cells) > 3 else None
             techs.append(pending)
             pending = None
             continue
@@ -153,6 +156,7 @@ def parse_report(data):
             'lines_requested': _int(cells[13]),
             'lines_sold': _int(cells[14]),
             'mpi_completed': None,
+            'asr': None,
         }
 
     if not techs:
@@ -166,6 +170,7 @@ def _pct(num, den):
 
 def _with_rates(row):
     row['mpi_pct'] = _pct(row.get('mpi_completed'), row.get('total_ro'))
+    row['asr_pct'] = _pct(row.get('asr'), row.get('total_ro'))
     row['asr_requested_pct'] = _pct(row.get('lines_requested'), row.get('total_ro'))
     row['sold_pct'] = _pct(row.get('lines_sold'), row.get('lines_requested'))
     return row
@@ -203,7 +208,7 @@ def team_total(rows):
     """Sum the found rows; Avg Miles is weighted by each tech's RO count."""
     found = [r for r in rows if r['found']]
     tot = {'name': 'Mobile Team', 'store': f"{len(found)} tech{'' if len(found) == 1 else 's'}"}
-    for k in ('total_ro', 'mpi_completed', 'lines_requested', 'lines_sold'):
+    for k in ('total_ro', 'mpi_completed', 'asr', 'lines_requested', 'lines_sold'):
         tot[k] = sum(r[k] or 0 for r in found)
     weighted = [(r['avg_miles'], r['total_ro']) for r in found if r['avg_miles'] and r['total_ro']]
     ro = sum(w for _, w in weighted)
@@ -224,5 +229,5 @@ if __name__ == '__main__':
     for r in rows + [team_total(rows)]:
         print(f"{r['name']:<18} {(r.get('report_store') or r['store'])[:30]:<30} "
               + ' '.join(f'{fmt(r[k]):>6}' for k in (
-                  'total_ro', 'mpi_completed', 'mpi_pct', 'avg_miles',
+                  'total_ro', 'mpi_completed', 'mpi_pct', 'avg_miles', 'asr', 'asr_pct',
                   'lines_requested', 'asr_requested_pct', 'lines_sold', 'sold_pct')))
