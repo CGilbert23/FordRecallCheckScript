@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xtime Tech Report - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1200px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .btn:hover { background: #0050a8; }
+        .btn-danger { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; font-size: 0.8rem; }
+        .btn-danger:hover { background: #fef2f2; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .upload-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .upload-row label { font-weight: 600; font-size: 0.85rem; color: #374151; }
+        .upload-row input[type="file"] { flex: 1; min-width: 240px; padding: 8px; border: 2px dashed #cbd5e1; border-radius: 6px; background: #f9fafb; font-size: 0.85rem; cursor: pointer; }
+        .upload-row input[type="file"]:hover { border-color: #0068d6; background: #f0f7ff; }
+        .hint { font-size: 0.8rem; color: #888; margin-top: 8px; }
+        .months { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+        .month { padding: 7px 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #374151; text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+        .month:hover { border-color: #0068d6; color: #0068d6; }
+        .month.active { background: #0068d6; border-color: #0068d6; color: #fff; font-weight: 600; }
+        .report-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .report-head h2 { font-size: 1.2rem; color: #0a1f44; }
+        .report-head .meta { font-size: 0.8rem; color: #888; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: right; padding: 10px 12px; border-bottom: 2px solid #e5e7eb; color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+        td { text-align: right; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        th.left, td.left { text-align: left; }
+        td.name { font-weight: 600; color: #0a1f44; }
+        td.pct { font-weight: 600; }
+        tr.missing td { color: #9ca3af; }
+        tr.total td { border-top: 2px solid #e5e7eb; border-bottom: none; font-weight: 700; background: #f9fafb; }
+        .note { display: block; font-size: 0.72rem; font-weight: 400; color: #b45309; }
+        .empty { text-align: center; color: #888; padding: 36px 12px; }
+        .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
+        .how ul { margin-left: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Monthly Xtime results for the mobile techs, pulled out of the company-wide Technician RO / ASR report.</p>
+
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        {% if notice %}<div class="success">{{ notice }}</div>{% endif %}
+
+        <div class="card">
+            <form method="POST" action="/tech-performance/xtime-report/upload" enctype="multipart/form-data">
+                <div class="upload-row">
+                    <label for="report">Upload a month</label>
+                    <input type="file" id="report" name="report" accept=".xls,.htm,.html" required>
+                    <button type="submit" class="btn">Upload report</button>
+                </div>
+                <p class="hint">Xtime &rarr; Technician RO / ASR Report Totals, run for one full month (1st through the last day). Upload the .xls exactly as it downloads. Uploading a month that's already here replaces it.</p>
+            </form>
+        </div>
+
+        <div class="card">
+            {% if months %}
+            <div class="months">
+                {% for m in months %}
+                <a href="/tech-performance/xtime-report?month={{ m.key }}" class="month {% if selected and m.key == selected.key %}active{% endif %}">{{ m.label }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if report %}
+            <div class="report-head">
+                <h2>{{ selected.label }}</h2>
+                <div class="meta">
+                    {{ report.filename or '' }}
+                    <form method="POST" action="/tech-performance/xtime-report/{{ selected.key }}/delete" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Delete the {{ selected.label }} report? You can upload it again later.');">
+                        <button type="submit" class="btn btn-danger">Delete month</button>
+                    </form>
+                </div>
+            </div>
+
+            {% macro pct(v) %}{% if v is none %}&mdash;{% else %}{{ '%.0f' % (v * 100) }}%{% endif %}{% endmacro %}
+            {% macro num(v) %}{% if v is none %}&mdash;{% else %}{{ '{:,}'.format(v) }}{% endif %}{% endmacro %}
+
+            <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="left">Tech</th>
+                        <th class="left">Store</th>
+                        <th>Total RO</th>
+                        <th>MPI Completed</th>
+                        <th>MPI %</th>
+                        <th>Avg Miles</th>
+                        <th>Lines Requested</th>
+                        <th title="Lines requested &divide; total ROs">ASR Requested %</th>
+                        <th>Sold Lines</th>
+                        <th title="Sold lines &divide; lines requested">Sold %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    {% if r.found %}
+                    <tr>
+                        <td class="left name">{{ r.name }}</td>
+                        <td class="left">{{ r.store }}{% if r.moved %}<span class="note">Listed under {{ r.report_store }}</span>{% endif %}</td>
+                        <td>{{ num(r.total_ro) }}</td>
+                        <td>{{ num(r.mpi_completed) }}</td>
+                        <td class="pct">{{ pct(r.mpi_pct) }}</td>
+                        <td>{{ num(r.avg_miles) }}</td>
+                        <td>{{ num(r.lines_requested) }}</td>
+                        <td class="pct">{{ pct(r.asr_requested_pct) }}</td>
+                        <td>{{ num(r.lines_sold) }}</td>
+                        <td class="pct">{{ pct(r.sold_pct) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr class="missing">
+                        <td class="left name">{{ r.name }}</td>
+                        <td class="left">{{ r.store }}</td>
+                        <td colspan="8" style="text-align:center;">Not in this month's report</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% if total %}
+                    <tr class="total">
+                        <td class="left">{{ total.name }}</td>
+                        <td class="left">{{ total.store }}</td>
+                        <td>{{ num(total.total_ro) }}</td>
+                        <td>{{ num(total.mpi_completed) }}</td>
+                        <td>{{ pct(total.mpi_pct) }}</td>
+                        <td>{{ num(total.avg_miles) }}</td>
+                        <td>{{ num(total.lines_requested) }}</td>
+                        <td>{{ pct(total.asr_requested_pct) }}</td>
+                        <td>{{ num(total.lines_sold) }}</td>
+                        <td>{{ pct(total.sold_pct) }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="empty">No reports uploaded yet. Upload a month above to get started.</div>
+            {% endif %}
+        </div>
+
+        <div class="card how">
+            <ul>
+                <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR Requested %</strong> = Lines Requested &divide; Total RO (can go over 100% when a tech requests more than one line per RO). <strong>Sold %</strong> = Sold Lines &divide; Lines Requested.</li>
+                <li>The Mobile Team row adds up every tech in the month; its Avg Miles is weighted by each tech's RO count.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

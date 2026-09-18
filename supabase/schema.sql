@@ -222,3 +222,16 @@ create table key_code_contacts (
 create trigger key_code_contacts_updated_at
   before update on key_code_contacts
   for each row execute function set_updated_at();
+
+-- Xtime Tech Report: one row per uploaded month of the Xtime "Technician RO /
+-- ASR Report Totals" export. `techs` holds every tech in the file (not just
+-- mobile techs) so roster changes apply retroactively. Re-uploading a month
+-- replaces it (upsert on period_start).
+create table xtime_tech_reports (
+  id uuid primary key default gen_random_uuid(),
+  period_start date not null unique,
+  period_end date not null,
+  filename text,
+  techs jsonb not null default '[]'::jsonb,
+  uploaded_at timestamptz not null default now()
+);

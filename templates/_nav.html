@@ -14,6 +14,8 @@
     <a href="/mobile-keys/import" class="nav-tab {% if path.startswith('/mobile-keys/import') %}active{% endif %}">Import Invoice</a>
     <a href="/mobile-keys/inventory" class="nav-tab {% if path.startswith('/mobile-keys/inventory') %}active{% endif %}">Inventory</a>
     <a href="/mobile-keys/contacts" class="nav-tab {% if path.startswith('/mobile-keys/contacts') %}active{% endif %}">Key Code Contacts</a>
+    {% elif path.startswith('/tech-performance') %}
+    <a href="/tech-performance/xtime-report" class="nav-tab active">Xtime Tech Report</a>
     {% elif path.startswith('/dealership-locator') %}
     <a href="/dealership-locator" class="nav-tab active">Dealership Locator</a>
     {% endif %}

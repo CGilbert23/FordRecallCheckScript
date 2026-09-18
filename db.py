@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime, timezone
 from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
@@ -606,3 +607,41 @@ def update_key_code_contact(contact_id, data):
 def delete_key_code_contact(contact_id):
     client = get_client()
     client.table('key_code_contacts').delete().eq('id', contact_id).execute()
+
+
+# ---------------------------------------------------------------------------
+# Xtime Tech Report (Tech Performance)
+# ---------------------------------------------------------------------------
+
+def list_xtime_report_months():
+    """Uploaded months, newest first — without the (large) techs payload."""
+    client = get_client()
+    res = (client.table('xtime_tech_reports')
+           .select('id, period_start, period_end, filename, uploaded_at')
+           .order('period_start', desc=True).execute())
+    return res.data or []
+
+
+def get_xtime_report(period_start):
+    client = get_client()
+    res = (client.table('xtime_tech_reports').select('*')
+           .eq('period_start', period_start).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def upsert_xtime_report(period_start, period_end, filename, techs):
+    """Save a month, replacing any earlier upload for the same month."""
+    client = get_client()
+    res = client.table('xtime_tech_reports').upsert({
+        'period_start': period_start,
+        'period_end': period_end,
+        'filename': filename,
+        'techs': techs,
+        'uploaded_at': datetime.now(timezone.utc).isoformat(),
+    }, on_conflict='period_start').execute()
+    return res.data[0] if res.data else None
+
+
+def delete_xtime_report(period_start):
+    client = get_client()
+    client.table('xtime_tech_reports').delete().eq('period_start', period_start).execute()

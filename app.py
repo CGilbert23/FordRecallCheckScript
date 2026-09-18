@@ -19,6 +19,7 @@ import db
 import scheduler
 import dealership_locator as dealership_locator_mod
 import key_invoice_parser
+import xtime_tech_report
 
 # Log everything to stdout
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -1867,6 +1868,104 @@ def mobile_key_import_apply():
         'errors': errors,
         'marked_ordered': mark_ordered,
     })
+
+
+# ---------------------------------------------------------------------------
+# Tech Performance — Xtime Tech Report
+# ---------------------------------------------------------------------------
+
+MAX_XTIME_REPORT_BYTES = 10 * 1024 * 1024
+_MONTH_RE = re.compile(r'^\d{4}-\d{2}$')
+
+
+def _month_label(period_start):
+    """'2026-08-01' -> 'August 2026'."""
+    return datetime.strptime(str(period_start)[:10], '%Y-%m-%d').strftime('%B %Y')
+
+
+def _xtime_report_page(month=None, error=None, notice=None, status=200):
+    """Render the report for `month` ('YYYY-MM'), defaulting to the newest upload."""
+    months, report, rows, total = [], None, [], None
+    try:
+        months = db.list_xtime_report_months()
+        for m in months:
+            m['key'] = m['period_start'][:7]
+            m['label'] = _month_label(m['period_start'])
+        selected = next((m for m in months if m['key'] == month), months[0] if months else None)
+        if selected:
+            report = db.get_xtime_report(selected['period_start'])
+    except Exception as e:
+        logger.error(f"Xtime report load failed: {e}")
+        error = error or 'Could not load saved reports from the database.'
+        selected = None
+    if report:
+        rows = xtime_tech_report.mobile_tech_rows(report.get('techs') or [])
+        total = xtime_tech_report.team_total(rows)
+    return render_template('xtime_tech_report.html', months=months, selected=selected,
+                           report=report, rows=rows, total=total,
+                           error=error, notice=notice), status
+
+
+@app.route('/tech-performance')
+def tech_performance():
+    return redirect(url_for('xtime_tech_report_view'))
+
+
+@app.route('/tech-performance/xtime-report')
+def xtime_tech_report_view():
+    month = (request.args.get('month') or '').strip()
+    return _xtime_report_page(month if _MONTH_RE.match(month) else None)
+
+
+@app.route('/tech-performance/xtime-report/upload', methods=['POST'])
+def xtime_tech_report_upload():
+    upload = request.files.get('report')
+    if not upload or not upload.filename:
+        return _xtime_report_page(error='Pick a report file to upload.', status=400)
+    if not upload.filename.lower().endswith(('.xls', '.htm', '.html')):
+        return _xtime_report_page(
+            error='Upload the .xls file exactly as Xtime exports it (Technician RO / ASR Report Totals).',
+            status=400)
+    data = upload.read(MAX_XTIME_REPORT_BYTES + 1)
+    if not data:
+        return _xtime_report_page(error='That file was empty.', status=400)
+    if len(data) > MAX_XTIME_REPORT_BYTES:
+        return _xtime_report_page(error='That file is larger than 10 MB.', status=400)
+    try:
+        parsed = xtime_tech_report.parse_report(data)
+    except ValueError as e:
+        return _xtime_report_page(error=str(e), status=400)
+    except Exception as e:
+        logger.error(f"Xtime report parse failed: {e}")
+        return _xtime_report_page(error='Could not read that report.', status=400)
+
+    start = parsed['period_start']
+    try:
+        existing = db.get_xtime_report(start.isoformat())
+        db.upsert_xtime_report(start.isoformat(), parsed['period_end'].isoformat(),
+                               upload.filename, parsed['techs'])
+    except Exception as e:
+        logger.error(f"Xtime report save failed: {e}")
+        return _xtime_report_page(error=f'Could not save the report: {e}', status=500)
+
+    label = _month_label(start)
+    notice = f"{label} {'replaced' if existing else 'uploaded'}."
+    found = sum(r['found'] for r in xtime_tech_report.mobile_tech_rows(parsed['techs']))
+    if found < len(xtime_tech_report.MOBILE_TECHS):
+        notice += f' {found} of {len(xtime_tech_report.MOBILE_TECHS)} mobile techs are in this report.'
+    return _xtime_report_page(start.strftime('%Y-%m'), notice=notice)
+
+
+@app.route('/tech-performance/xtime-report/<month>/delete', methods=['POST'])
+def xtime_tech_report_delete(month):
+    if not _MONTH_RE.match(month):
+        return redirect(url_for('xtime_tech_report_view'))
+    try:
+        db.delete_xtime_report(f'{month}-01')
+    except Exception as e:
+        logger.error(f"Xtime report delete failed: {e}")
+        return _xtime_report_page(month, error=f'Could not delete that month: {e}', status=500)
+    return redirect(url_for('xtime_tech_report_view'))
 
 
 if __name__ == '__main__':
