@@ -171,8 +171,6 @@ def _pct(num, den):
 def _with_rates(row):
     row['mpi_pct'] = _pct(row.get('mpi_completed'), row.get('total_ro'))
     row['asr_pct'] = _pct(row.get('asr'), row.get('total_ro'))
-    row['asr_requested_pct'] = _pct(row.get('lines_requested'), row.get('total_ro'))
-    row['sold_pct'] = _pct(row.get('lines_sold'), row.get('lines_requested'))
     return row
 
 
@@ -230,4 +228,4 @@ if __name__ == '__main__':
         print(f"{r['name']:<18} {(r.get('report_store') or r['store'])[:30]:<30} "
               + ' '.join(f'{fmt(r[k]):>6}' for k in (
                   'total_ro', 'mpi_completed', 'mpi_pct', 'avg_miles', 'asr', 'asr_pct',
-                  'lines_requested', 'asr_requested_pct', 'lines_sold', 'sold_pct')))
+                  'lines_sold')))

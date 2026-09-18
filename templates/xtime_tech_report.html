@@ -102,10 +102,7 @@
                         <th>Avg Miles</th>
                         <th>ASR</th>
                         <th title="ASR &divide; total ROs">ASR %</th>
-                        <th>Lines Requested</th>
-                        <th title="Lines requested &divide; total ROs">Lines Requested %</th>
                         <th>Sold Lines</th>
-                        <th title="Sold lines &divide; lines requested">Sold %</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -120,16 +117,13 @@
                         <td>{{ num(r.avg_miles) }}</td>
                         <td>{{ num(r.asr) }}</td>
                         <td class="pct">{{ pct(r.asr_pct) }}</td>
-                        <td>{{ num(r.lines_requested) }}</td>
-                        <td class="pct">{{ pct(r.asr_requested_pct) }}</td>
                         <td>{{ num(r.lines_sold) }}</td>
-                        <td class="pct">{{ pct(r.sold_pct) }}</td>
                     </tr>
                     {% else %}
                     <tr class="missing">
                         <td class="name">{{ r.name }}</td>
                         <td>{{ r.store }}</td>
-                        <td colspan="10">Not in this month's report</td>
+                        <td colspan="7">Not in this month's report</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -143,10 +137,7 @@
                         <td>{{ num(total.avg_miles) }}</td>
                         <td>{{ num(total.asr) }}</td>
                         <td>{{ pct(total.asr_pct) }}</td>
-                        <td>{{ num(total.lines_requested) }}</td>
-                        <td>{{ pct(total.asr_requested_pct) }}</td>
                         <td>{{ num(total.lines_sold) }}</td>
-                        <td>{{ pct(total.sold_pct) }}</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -159,7 +150,7 @@
 
         <div class="card how">
             <ul>
-                <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR %</strong> = ASR &divide; Total RO. <strong>Lines Requested %</strong> = Lines Requested &divide; Total RO (can go over 100% when a tech requests more than one line per RO). <strong>Sold %</strong> = Sold Lines &divide; Lines Requested.</li>
+                <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR %</strong> = ASR &divide; Total RO.</li>
                 <li>The Mobile Team row adds up every tech in the month; its Avg Miles is weighted by each tech's RO count.</li>
             </ul>
         </div>
