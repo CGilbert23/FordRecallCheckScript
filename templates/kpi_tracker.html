@@ -17,11 +17,15 @@
         .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #0050a8; }
-        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
-        .btn-light { background: #fff; color: #0068d6; border: 1px solid #93c5fd; }
-        .btn-light:hover { background: #eff6ff; }
-        .btn-danger { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; font-size: 0.8rem; }
-        .btn-danger:hover { background: #fef2f2; }
+        /* Report toolbar buttons: one neutral style; Save is the only blue
+           one and Delete only differs by its red text. */
+        .tbtn { display: inline-block; background: #fff; color: #1f2937; border: 1px solid #cbd5e1; padding: 7px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; line-height: 1.2; }
+        .tbtn:hover { background: #f3f4f6; }
+        .tbtn.primary { background: #0068d6; border-color: #0068d6; color: #fff; }
+        .tbtn.primary:hover { background: #0050a8; }
+        .tbtn.danger { color: #b91c1c; }
+        .tbtn.danger:hover { background: #fef2f2; }
+        .tbtn.copied { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
         .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
         .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
         .upload-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
@@ -33,25 +37,19 @@
         .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
         .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 160px; cursor: pointer; }
         .filters select:focus { outline: none; border-color: #0068d6; }
-        .report-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-        .report-head .meta { font-size: 0.85rem; color: #666; }
         .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .actions form { display: inline; }
         .toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
         .toolbar .filters { margin-bottom: 0; }
-        .btn-view { background: #0a1f44; min-width: 120px; }
-        .btn-view:hover { background: #1e3a6b; }
-        .btn-copy { min-width: 100px; }
-        .btn-copy.copied { background: #059669; }
+        #viewBtn { min-width: 118px; }
+        #copyBtn { min-width: 96px; }
+        .source { font-size: 0.75rem; color: #999; text-align: center; margin-top: 8px; }
         .table-wrap { overflow-x: auto; }
-        /* Fixed layout: Store / Ford name get set widths, every other column
-           shares the rest evenly. Extended scrolls sideways below 1700px. */
-        table.kpi { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
-        table.kpi:not(.core) { min-width: 1700px; }
-        table.kpi th.w-name { width: 150px; }
-        table.kpi th.w-dlr_name { width: 230px; }
-        table.kpi th, table.kpi td { border: 1px solid #d1d5db; text-align: center; padding: 8px 8px; white-space: nowrap; }
-        table.kpi td { overflow: hidden; text-overflow: ellipsis; }
-        table.kpi th { color: #fff; font-size: 0.75rem; font-weight: 600; vertical-align: middle; white-space: normal; }
+        /* Every data column is the same width; long headers wrap onto two lines. */
+        table.kpi { margin: 0 auto; border-collapse: collapse; font-size: 0.85rem; }
+        table.kpi th, table.kpi td { width: 88px; border: 1px solid #d1d5db; text-align: center; padding: 7px 6px; white-space: nowrap; }
+        table.kpi th.w-name, table.kpi td.store { width: 150px; }
+        table.kpi th { color: #fff; font-size: 0.75rem; font-weight: 600; vertical-align: middle; white-space: normal; line-height: 1.25; }
         table.kpi caption { background: #0f2a47; color: #fff; font-size: 1rem; font-weight: 700; padding: 8px; border: 1px solid #d1d5db; border-bottom: none; }
         table.kpi th.g-navy { background: #0f2a47; }
         table.kpi th.g-blue { background: #2563a6; }
@@ -59,11 +57,12 @@
         table.kpi th.g-orange { background: #ed7d31; }
         table.kpi td { font-variant-numeric: tabular-nums; }
         table.kpi td.store { background: #f3f4f6; font-weight: 600; color: #0a1f44; }
-        table.kpi td.dlr { color: #666; font-size: 0.75rem; text-align: left; }
         table.kpi td.track { background: #fffbd1; }
         table.kpi.core .ext { display: none; }
-        table.kpi:not(.core) th, table.kpi:not(.core) td { padding: 6px 5px; font-size: 0.8rem; }
-        table.kpi:not(.core) th { font-size: 0.7rem; }
+        /* Editing shows only Store + the two editable columns. */
+        table.kpi.editing th:not(.edit-col), table.kpi.editing td:not(.edit-col), table.kpi.editing tfoot { display: none; }
+        table.kpi.editing .edit-col { display: table-cell; }
+        table.kpi.editing caption { white-space: nowrap; }
         table.kpi tr.total td { background: #f3f4f6; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
@@ -146,11 +145,17 @@
             </form>
             {% if rows %}
             <div class="actions">
-                <button type="button" class="btn btn-sm btn-view" id="viewBtn">Core View</button>
+                <button type="button" class="tbtn not-editing" id="viewBtn">Core View</button>
                 {% if report %}
-                <button type="button" class="btn btn-sm btn-light not-editing" id="editBtn">Edit Techs &amp; Offset</button>
-                <button type="submit" form="settingsForm" class="btn btn-sm editing-only">Save</button>
-                <button type="button" class="btn btn-sm btn-light editing-only" id="cancelBtn">Cancel</button>
+                <button type="button" class="tbtn not-editing" id="editBtn">Edit Techs &amp; Offset</button>
+                <button type="submit" form="settingsForm" class="tbtn primary editing-only">Save</button>
+                <button type="button" class="tbtn editing-only" id="cancelBtn">Cancel</button>
+                {% endif %}
+                <button type="button" class="tbtn not-editing" id="copyBtn">Copy Table</button>
+                {% if report %}
+                <form method="POST" action="/tech-performance/kpi-tracker/{{ selected.key }}/delete" class="not-editing" onsubmit="return confirm('Delete the {{ selected.label }} KPI report? You can upload it again later (edited techs and offset values will be lost).');">
+                    <button type="submit" class="tbtn danger">Delete Month</button>
+                </form>
                 {% endif %}
             </div>
             {% endif %}
@@ -159,30 +164,13 @@
 
             {% if rows %}
             {% if full_year %}
-                {% set title = 'Full Year ' ~ year %}
-                {% set days_total = year_reports | sum(attribute='days_elapsed') %}
-                {% set meta = year_reports | length ~ ' month' ~ ('' if year_reports | length == 1 else 's') ~ ' uploaded · ' ~ days_total ~ ' working days' %}
+                {% set n = year_reports | length %}
+                {% set title = 'Full Year ' ~ year ~ ' – ' ~ n ~ ' Month' ~ ('' if n == 1 else 's') ~ ', ' ~ (year_reports | sum(attribute='days_elapsed')) ~ ' Work Days' %}
+            {% elif report.days_elapsed >= report.work_days %}
+                {% set title = selected.label ~ ' – ' ~ report.work_days ~ ' Work Days' %}
             {% else %}
-                {% set title = selected.label %}
-                {% if report.days_elapsed >= report.work_days %}
-                    {% set meta = 'Full month · ' ~ report.days_elapsed ~ ' working days' %}
-                {% else %}
-                    {% set meta = 'Month to date · ' ~ report.days_elapsed ~ ' of ' ~ report.work_days ~ ' working days' %}
-                {% endif %}
+                {% set title = selected.label ~ ' – ' ~ report.days_elapsed ~ '/' ~ report.work_days ~ ' Working Days Complete' %}
             {% endif %}
-
-            <div class="report-head">
-                <div class="meta">{{ meta }}{% if report and report.filename %} &middot; {{ report.filename }}{% endif %}</div>
-                <div class="actions">
-                    <button type="button" class="btn btn-sm btn-copy not-editing" id="copyBtn"
-                            data-title="Mobile Service KPIs &ndash; {{ title }}{% if store_name %} &middot; {{ store_name }}{% endif %}">Copy Table</button>
-                    {% if report %}
-                    <form method="POST" action="/tech-performance/kpi-tracker/{{ selected.key }}/delete" style="display:inline;" onsubmit="return confirm('Delete the {{ selected.label }} KPI report? You can upload it again later (edited techs and offset values will be lost).');">
-                        <button type="submit" class="btn btn-danger not-editing">Delete month</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
             {% if report %}
             <form method="POST" id="settingsForm" action="/tech-performance/kpi-tracker/{{ selected.key }}/settings">
                 <input type="hidden" name="store" value="{{ store or '' }}">
@@ -191,11 +179,11 @@
 
             <div class="table-wrap">
             <table class="kpi core" id="kpiTable">
-                <caption>{{ title }}{% if store_name %} &middot; {{ store_name }}{% endif %}</caption>
+                <caption>{% if store_name %}{{ store_name }} &middot; {% endif %}{{ title }}</caption>
                 <thead>
                     <tr>
                         {% for c in columns %}
-                        <th class="g-{{ c.group }} sortable{% if c.ext %} ext{% endif %}{% if c.key in ('name', 'dlr_name') %} w-{{ c.key }}{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
+                        <th class="g-{{ c.group }} sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}{% if c.key == 'name' or c.setting %} edit-col{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -204,7 +192,7 @@
                     <tr>
                         {% for c in columns %}
                         {% set v = r[c.key] %}
-                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'dlr_name' %}dlr{% elif c.key == 'tracking' %}track{% endif %}"
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' or c.setting %}edit-col {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'tracking' %}track{% endif %}"
                             data-v="{{ '' if v is none else v }}">
                             {%- if c.setting and report -%}
                             <span class="val">{{ fmtv(v, c.fmt) }}</span>
@@ -225,7 +213,7 @@
                         {% for c in columns %}
                         <td class="{% if c.ext %}ext{% endif %}">
                             {%- if c.key == 'name' -%}TOTALS:
-                            {%- elif c.key in ('dlr_name', 'offset_value') -%}
+                            {%- elif c.key == 'offset_value' -%}
                             {%- else -%}{{ fmtv(total[c.key], c.fmt) }}{%- endif -%}
                         </td>
                         {% endfor %}
@@ -239,6 +227,7 @@
                 {% endif %}
             </table>
             </div>
+            {% if report and report.filename %}<div class="source">Source: {{ report.filename }}</div>{% endif %}
             {% elif months %}
             <div class="empty">No data for that selection.</div>
             {% else %}
@@ -284,10 +273,7 @@
             table.classList.toggle('editing', on);
             document.body.classList.toggle('editing', on);
         }
-        if (editBtn) editBtn.addEventListener('click', function () {
-            setView('extended');  // Offset Value is an Extended column
-            setEditing(true);
-        });
+        if (editBtn) editBtn.addEventListener('click', function () { setEditing(true); });
         if (cancelBtn) cancelBtn.addEventListener('click', function () {
             document.getElementById('settingsForm').reset();
             table.querySelectorAll('input.edit').forEach(function (i) { i.value = i.defaultValue; });
@@ -350,7 +336,6 @@
             if (kind === 'perday') return 'border:none;color:#16a34a;font-style:italic;font-size:11px;';
             if (c.classList.contains('store')) return 'background:#f3f4f6;font-weight:bold;color:#0a1f44;';
             if (c.classList.contains('track')) return 'background:#fffbd1;color:#111827;';
-            if (c.classList.contains('dlr')) return 'color:#666666;text-align:left;';
             return 'color:#111827;';
         }
         function rowHtml(tr, kind) {
@@ -366,7 +351,7 @@
             var cols = Array.prototype.filter.call(table.tHead.rows[0].cells, shown).length;
             var html = '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;' + FONT + '">'
                 + '<tr><th colspan="' + cols + '" style="' + CELL + 'background:#0f2a47;color:#ffffff;font-size:14px;font-weight:bold;">'
-                + esc(copyBtn.dataset.title) + '</th></tr>';
+                + esc(table.caption.textContent.trim()) + '</th></tr>';
             html += rowHtml(table.tHead.rows[0], 'head');
             Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
             if (table.tFoot) {
@@ -404,7 +389,7 @@
         copyBtn.addEventListener('click', function () {
             var html = buildHtml();
             if (navigator.clipboard && window.ClipboardItem) {
-                var text = copyBtn.dataset.title + '\n' + table.innerText;
+                var text = table.innerText;
                 navigator.clipboard.write([new ClipboardItem({
                     'text/html': new Blob([html], { type: 'text/html' }),
                     'text/plain': new Blob([text], { type: 'text/plain' })

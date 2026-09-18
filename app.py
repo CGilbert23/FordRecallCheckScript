@@ -1991,7 +1991,6 @@ MAX_KPI_REPORT_BYTES = 10 * 1024 * 1024
 # Report columns, left to right. `ext` columns only show in the Extended
 # view; `group` picks the header colour (matching the team's spreadsheet).
 KPI_COLUMNS = [
-    {'key': 'dlr_name', 'label': 'Ford Dealer Name', 'fmt': 'text', 'group': 'navy', 'ext': True},
     {'key': 'name', 'label': 'Store', 'fmt': 'text', 'group': 'navy'},
     {'key': 'units', 'label': 'Units Launched', 'fmt': 'int', 'group': 'navy'},
     {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'group': 'navy', 'setting': 'active_techs'},
