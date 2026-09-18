@@ -432,6 +432,9 @@
                 + 'font-family:Arial,Helvetica,sans-serif;font-size:' + size + 'px;'
                 + 'font-weight:' + (s.bold ? 'bold' : 'normal') + ';font-style:' + (s.italic ? 'italic' : 'normal') + ';';
             var inner = esc(text) || '&nbsp;';
+            // Outlook ignores nowrap once it fixes column widths, so store
+            // names get non-breaking spaces to stay on one line.
+            if (s.keep) inner = inner.replace(/ /g, '&nbsp;');
             if (s.bold) inner = '<b>' + inner + '</b>';
             if (s.italic) inner = '<i>' + inner + '</i>';
             inner = '<font face="Arial, Helvetica, sans-serif" color="' + s.fg + '">'
@@ -447,8 +450,10 @@
                 if (kind === 'body') s = c.classList.contains('store') ? STYLE.store
                                        : c.classList.contains('track') ? STYLE.track
                                        : c.classList.contains('inp') ? STYLE.inp : STYLE.body;
-                var attrs = kind === 'head'
-                    ? 'width="' + (c.classList.contains('w-name') ? 150 : 88) + '"' : 'nowrap';
+                var name = c.classList.contains('w-name') || c.classList.contains('store');
+                if (name) s = Object.assign({}, s, { keep: true });
+                // Data columns get an even width; the Store column sizes to its names.
+                var attrs = kind === 'head' ? (name ? 'nowrap' : 'width="88"') : 'nowrap';
                 out += cell(cellText(c), s, attrs);
             });
             return out + '</tr>';
@@ -460,18 +465,9 @@
                 + '<tr>' + cell(table.caption.textContent.trim(), STYLE.title, 'colspan="' + cols + '"') + '</tr>';
             html += rowHtml(table.tHead.rows[0], 'head');
             Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
-            var perDay = '';
-            if (table.tFoot) {
-                html += rowHtml(table.tFoot.rows[0], 'total');
-                var pd = table.tFoot.querySelector('tr.perday');
-                perDay = pd ? pd.textContent.replace(/\s+/g, ' ').trim() : '';
-            }
-            html += '</table>';
-            if (perDay) {
-                html += '<p style="margin:4px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#16a34a;">'
-                    + '<font face="Arial, Helvetica, sans-serif" color="#16a34a"><i>' + esc(perDay.replace('/Day', 'ROs / Day')) + '</i></font></p>';
-            }
-            return html;
+            // Totals row only; the on-page "N /Day" line isn't copied.
+            if (table.tFoot) html += rowHtml(table.tFoot.rows[0], 'total');
+            return html + '</table>';
         }
         function copyViaSelection(html) {
             var holder = document.createElement('div');
