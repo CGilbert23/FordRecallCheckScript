@@ -43,6 +43,10 @@ MOBILE_TECHS = [
     {'name': 'Michael Magargal', 'store': 'Ford Boyertown', 'store_words': ('ford', 'boyertown')},
 ]
 
+# Targets shown in the Benchmark row under the report table.
+MPI_BENCHMARK = 0.90
+ASR_BENCHMARK = 0.40
+
 METRIC_KEYS = ('total_ro', 'mpi_completed', 'avg_miles', 'asr', 'lines_requested', 'lines_sold')
 
 _DATE_RANGE_RE = re.compile(

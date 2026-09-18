@@ -47,6 +47,7 @@
         th.sortable.desc::after { content: ' \25BC'; color: #0068d6; }
         th.sortable.asc, th.sortable.desc { color: #0068d6; }
         tr.total td { border-top: 2px solid #e5e7eb; border-bottom: none; font-weight: 700; background: #f9fafb; }
+        tr.benchmark td { border-top: 1px solid #e5e7eb; border-bottom: none; font-weight: 700; color: #0068d6; background: #eff6ff; }
         .note { display: block; font-size: 0.72rem; font-weight: 400; color: #b45309; }
         .empty { text-align: center; color: #888; padding: 36px 12px; }
         .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
@@ -162,6 +163,17 @@
                         <td>{{ num(total.asr) }}</td>
                         <td>{{ pct(total.asr_pct) }}</td>
                         <td>{{ num(total.lines_sold) }}</td>
+                    </tr>
+                    <tr class="benchmark">
+                        <td>Benchmark</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{{ pct(mpi_benchmark) }}</td>
+                        <td></td>
+                        <td></td>
+                        <td>{{ pct(asr_benchmark) }}</td>
+                        <td></td>
                     </tr>
                 </tfoot>
                 {% endif %}

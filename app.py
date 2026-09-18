@@ -1913,6 +1913,8 @@ def _xtime_report_page(month=None, error=None, notice=None, status=200, store=No
     return render_template('xtime_tech_report.html', months=months, selected=selected,
                            report=report, rows=rows, total=total,
                            stores=stores, store=store,
+                           mpi_benchmark=xtime_tech_report.MPI_BENCHMARK,
+                           asr_benchmark=xtime_tech_report.ASR_BENCHMARK,
                            error=error, notice=notice), status
 
 
