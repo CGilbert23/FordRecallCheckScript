@@ -59,6 +59,25 @@
         .empty-state { text-align: center; color: #888; padding: 36px 12px; line-height: 1.8; }
         .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
         .how ul { margin-left: 18px; }
+        /* Print: the scorecard goes to paper for the Thursday meeting, so drop
+           the page chrome and keep the table (landscape, backgrounds kept so
+           the red/yellow/green survive — browsers strip them by default). */
+        @media print {
+            @page { size: landscape; margin: 10mm; }
+            body { background: #fff; }
+            .container { margin: 0; padding: 0; max-width: none; }
+            .page-nav, .kpi-tabs, .subtitle, .toolbar, .error, .success { display: none !important; }
+            .card { box-shadow: none; padding: 0; margin: 0; border-radius: 0; }
+            h1 { font-size: 1.1rem; margin-bottom: 8px; }
+            .table-wrap { overflow: visible; }
+            table.eos { font-size: 7.5pt; }
+            table.eos th, table.eos td { padding: 3px 4px; }
+            table.eos, table.eos th, table.eos td {
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            tr, table { page-break-inside: avoid; }
+            .legend { margin-top: 8px; font-size: 7.5pt; }
+        }
     </style>
 </head>
 <body>
@@ -84,6 +103,7 @@
                 </form>
                 {% if view %}
                 <div class="actions">
+                    <button type="button" class="tbtn not-editing" id="printBtn">Print</button>
                     <button type="button" class="tbtn not-editing" id="editBtn">Edit Goals &amp; Notes</button>
                     <button type="submit" form="scorecardForm" class="tbtn primary edit-only">Save</button>
                     <button type="button" class="tbtn edit-only" id="cancelBtn">Cancel</button>
@@ -188,6 +208,9 @@
     </div>
     <script>
     (function () {
+        var printBtn = document.getElementById('printBtn');
+        if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
+
         var editBtn = document.getElementById('editBtn');
         var cancelBtn = document.getElementById('cancelBtn');
         if (!editBtn) return;
