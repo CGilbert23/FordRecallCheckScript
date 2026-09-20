@@ -140,7 +140,7 @@
                     <tr>
                         <td class="label {% if row.store %}store{% endif %}">{{ row.label }}</td>
                         <td class="goal{% if row.derived %} calc{% endif %}"
-                            {% if row.derived %}title="Calculated{{ ' from the Total RO Count goal and the month\'s working days' if row.key == 'ro_per_day' else ' — Total RO Count goal x Avg RO Value goal' }}"{% endif %}>
+                            {% if row.derived %}title="Calculated: {{ {'ro_per_day': "Total RO Count goal / the month's working days", 'ro_per_tech_day': "Total RO Count goal / Active Technicians goal / the month's working days", 'revenue': 'Total RO Count goal x Avg RO Value goal'}[row.key] }}"{% endif %}>
                             {% if row.derived %}{{ fmtv(row.goal, row.fmt) }}{% else %}
                             <span class="cell-value">{{ fmtv(row.goal, row.fmt) }}</span>
                             <span class="cell-input"><input class="cell" type="text" inputmode="decimal" form="scorecardForm"
