@@ -2023,7 +2023,7 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     anything else falls back to the newest month of the year. `store` is a
     Ford P&A code and narrows the table to that store.
     """
-    months, years, report, rows, total = [], [], None, [], None
+    months, years, report, rows, total, latest_upload = [], [], None, [], None, None
     selected, full_year, year_reports = None, False, []
     try:
         months = db.list_kpi_report_months()
@@ -2031,6 +2031,8 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
             m['key'] = m['period_start'][:7]
             m['label'] = _month_label(m['period_start'])
             m['year'] = int(m['period_start'][:4])
+        newest = max(months, key=lambda m: m.get('uploaded_at') or '', default=None)
+        latest_upload = (newest or {}).get('filename')
         years = sorted({m['year'] for m in months}, reverse=True)
         if month and _MONTH_RE.match(month) and not year:
             year = int(month[:4])
@@ -2075,7 +2077,7 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     return render_template('kpi_tracker.html', months=months, years=years, year=year,
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
-                           rows=rows, total=total, columns=columns, yoy=yoy,
+                           rows=rows, total=total, columns=columns, yoy=yoy, latest_upload=latest_upload,
                            stores=kpi_tracker.STORES, store=store,
                            store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
                            error=error, notice=notice), status
@@ -2133,14 +2135,18 @@ def _kpi_scorecard_page(month=None, notice=None, error=None, status=200):
         keys |= {p[:7] for p in db.list_kpi_scorecard_months()}
         keys |= {_next_month(max(keys))} if keys else {datetime.now().strftime('%Y-%m')}
         months = [{'key': k, 'label': _month_label(f'{k}-01')} for k in sorted(keys, reverse=True)]
-        selected = month if any(m['key'] == month for m in months) else (months[0]['key'] if months else None)
+        # Default to the month we're in (the one being reviewed each Thursday),
+        # not the newest key — that's next month, which is there to set up early.
+        this_month = datetime.now().strftime('%Y-%m')
+        default = this_month if any(m['key'] == this_month for m in months) else (months[0]['key'] if months else None)
+        selected = month if any(m['key'] == month for m in months) else default
         if selected:
             start = f'{selected}-01'
             card = db.get_kpi_scorecard(start)
             goals = (card or {}).get('goals')
             if not card:  # a fresh month starts from the last month's goals
                 prior = db.latest_kpi_scorecard_before(start)
-                goals = (prior or {}).get('goals') or {}
+                goals = (prior or {}).get('goals') or dict(kpi_tracker.DEFAULT_SCORECARD_GOALS)
             report = db.get_kpi_report(start)
             view = kpi_tracker.scorecard_view(
                 start, db.list_kpi_report_weeks(start), report,

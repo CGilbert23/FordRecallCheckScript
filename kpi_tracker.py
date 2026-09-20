@@ -584,6 +584,25 @@ SCORECARD_SECTIONS = [
 ]
 
 
+# The team's starting goals — what a month shows before anything is saved and
+# there's no earlier scorecard to copy from. Edit them on the page per month.
+DEFAULT_SCORECARD_GOALS = {
+    'vans': 16, 'techs': 12,
+    'ro': 1120,
+    'store:01273': 180,   # Boyertown
+    'store:01341': 170,   # West Chester
+    'store:04197': 140,   # Mechanicsburg
+    'store:01017': 120,   # Exton
+    'store:01305': 120,   # Langhorne
+    'store:01203': 120,   # Doylestown
+    'store:05494': 90,    # Washington
+    'store:01844': 90,    # Newtown
+    'store:11524': 90,    # Lincoln Doylestown
+    'ro_per_day': 53.3, 'ro_per_tech_day': 4.4,
+    'revenue': 179200, 'avg_ro_value': 160, 'commercial_mix': 0.40,
+}
+
+
 def mondays(year, month):
     """Every Monday in the month — the scorecard's week columns. Ford's file
     lands on a Monday and covers through the Friday before."""

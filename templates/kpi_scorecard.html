@@ -174,25 +174,11 @@
                 <span><span class="swatch" style="background:#fbeec2"></span>10&ndash;20% under</span>
                 <span><span class="swatch" style="background:#f7d2d2"></span>More than 20% under</span>
             </div>
-            {% if not view.has_data %}
-            <p class="note-line">No Ford file uploaded for this month yet &mdash; set the goals now and the numbers fill in each Monday.</p>
-            {% endif %}
             {% else %}
             <div class="empty-state">Pick a month to start a scorecard.</div>
             {% endif %}
         </div>
 
-        {% if view %}
-        <div class="card how">
-            <ul>
-                <li>One column per Monday, because that's when Ford's file arrives &mdash; it covers everything through the Friday before. A week stays blank until that week's file is uploaded on the Monthly Tracker tab.</li>
-                <li><strong>Actual</strong> is judged against the goal scaled to the days so far, so mid-month it reads as on-pace or not. <strong>Tracking</strong> (the projected month-end) is judged against the full goal. Per-day and per-RO rows are compared to the goal as-is.</li>
-                <li><strong>Monthly Goal</strong>, <strong>Notes</strong>, and the Van Count / Active Technicians <strong>Tracking</strong> cells are hand-entered &mdash; everything else is automatic. A new month starts from last month's goals.</li>
-                <li><strong>Total Revenue</strong> is Ford's revenue without the offset (goal = RO count &times; Avg RO Value). Store rows show <em>(techs/vans)</em>.</li>
-                <li><strong>EOM</strong> fills in once the month is finished, from the first file of the next month.</li>
-            </ul>
-        </div>
-        {% endif %}
     </div>
     <script>
     (function () {

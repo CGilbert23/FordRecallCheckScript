@@ -27,7 +27,6 @@
         table.profit th, table.profit td { border: 1px solid #c8ced6; text-align: center; padding: 7px 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
         table.profit th { background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 600; white-space: normal; line-height: 1.25; }
         table.profit td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; text-align: left; padding-left: 10px; }
-        table.profit td.setting { background: #e8f1fb; }
         /* Profitability bands: Total RO Value against the month's tech count. */
         table.profit td.green { background: #cdeccf; color: #14532d; font-weight: 600; }
         table.profit td.yellow { background: #fbeec2; color: #713f12; font-weight: 600; }
@@ -121,17 +120,10 @@
             </div>
 
             <div class="legend">
-                <span><span class="swatch" style="background:#cdeccf"></span>On target</span>
-                <span><span class="swatch" style="background:#fbeec2"></span>Close</span>
-                <span><span class="swatch" style="background:#f7d2d2"></span>Under</span>
-                {% for t in tech_levels %}
-                <span><strong>{{ t.techs }} tech{{ '' if t.techs == 1 else 's' }}:</strong>
-                    green {{ money(t.green) }}+, yellow {{ money(t.yellow) }}&ndash;{{ money(t.green) }}, red under {{ money(t.yellow) }}</span>
-                {% endfor %}
+                <span><span class="swatch" style="background:#cdeccf"></span>Profitable</span>
+                <span><span class="swatch" style="background:#fbeec2"></span>Near Profitable</span>
+                <span><span class="swatch" style="background:#f7d2d2"></span>Unprofitable</span>
             </div>
-            {% if partial_month %}
-            <p class="note">{{ month_names[partial_month] }} is still in progress, so it's shown in grey without a colour &mdash; a part-month total would always read red.</p>
-            {% endif %}
             {% elif years %}
             <div class="empty-state">No KPI reports uploaded for {{ year }} yet.</div>
             {% else %}
@@ -139,16 +131,6 @@
             {% endif %}
         </div>
 
-        {% if rows %}
-        <div class="card how">
-            <ul>
-                <li>Each cell is that store's <strong>Total RO Value</strong> for the month &mdash; Ford's revenue, <strong>not</strong> including the offset.</li>
-                <li>The colour compares it to the techs that store was running <em>that month</em> (shown under the number), not today's count. Targets rise ${{ '{:,.0f}'.format(per_tech) }} per extra tech.</li>
-                <li>Units Launched and Active Technicians show the most recent uploaded month. Edit techs per month on the Monthly Tracker tab.</li>
-                <li>The totals row is left uncoloured.</li>
-            </ul>
-        </div>
-        {% endif %}
     </div>
 </body>
 </html>

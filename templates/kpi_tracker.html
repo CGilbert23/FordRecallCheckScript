@@ -114,7 +114,7 @@
                     <input type="file" id="report" name="report" accept=".xlsx" required>
                     <button type="submit" class="btn">Upload report</button>
                 </div>
-                <p class="hint">Upload the .xlsx exactly as Ford sends it, without renaming it: the date in the name ("August 24, 2026") tells the app which year it is. Each weekly file replaces that month's numbers, and the techs and offset values you've edited are kept.</p>
+                {% if latest_upload %}<p class="hint">Most Recent Upload: {{ latest_upload }}</p>{% endif %}
             </form>
         </div>
 
@@ -244,7 +244,6 @@
                 {% endif %}
             </table>
             </div>
-            {% if report and report.filename %}<div class="source">Source: {{ report.filename }}</div>{% endif %}
 
             {# Year over year: same month (or same months) last year. Shown in both views. #}
             {% macro chg(v, key) -%}
