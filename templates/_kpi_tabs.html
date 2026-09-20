@@ -3,8 +3,9 @@
 {% set kpi_path = request.path %}
 <div class="kpi-tabs">
     <a href="/tech-performance/kpi-tracker" class="kpi-tab {% if kpi_path == '/tech-performance/kpi-tracker' %}active{% endif %}">KPI Tracker</a>
-    <a href="/tech-performance/kpi-tracker/profitability" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/profitability') %}active{% endif %}">Profitability</a>
     <a href="/tech-performance/kpi-tracker/scorecard" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/scorecard') %}active{% endif %}">EOS Scorecard</a>
+    <a href="/tech-performance/kpi-tracker/profitability" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/profitability') %}active{% endif %}">Profitability</a>
+    <a href="/tech-performance/xtime-report" class="kpi-tab {% if kpi_path.startswith('/tech-performance/xtime-report') %}active{% endif %}">Xtime Tech Report</a>
 </div>
 <style>
     .kpi-tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 22px; flex-wrap: wrap; }

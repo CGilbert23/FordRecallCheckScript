@@ -158,7 +158,7 @@
                                 name="manual__{{ view.columns[loop.index0].key }}__{{ row.key }}"
                                 value="{{ rawv(cell.tracking, row.fmt) }}"
                                 aria-label="{{ row.label }} {{ view.columns[loop.index0].label }} tracking"></span>
-                            {% else %}{{ fmtv(cell.tracking, row.fmt) }}{% endif %}
+                            {% else %}{% if cell.tracking is not none %}~{% endif %}{{ fmtv(cell.tracking, row.fmt) }}{% endif %}
                         </td>
                         {% endfor %}
                         <td class="eom {{ row.eom_band or '' }}">{{ fmtv(row.eom, row.fmt) }}</td>

@@ -61,6 +61,7 @@
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
         <p class="subtitle">Monthly Xtime results for the mobile techs, pulled out of the company-wide Technician RO / ASR report.</p>
+        {% include '_kpi_tabs.html' %}
 
         {% if error %}<div class="error">{{ error }}</div>{% endif %}
         {% if notice %}<div class="success">{{ notice }}</div>{% endif %}

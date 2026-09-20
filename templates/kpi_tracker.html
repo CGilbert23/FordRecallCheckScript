@@ -218,6 +218,8 @@
                                    form="settingsForm" name="{{ 'techs' if c.setting == 'active_techs' else 'offset' }}__{{ r.code }}"
                                    value="{{ v if v is not none else '' }}" aria-label="{{ r.name }} {{ c.label }}">
                             {%- else -%}
+                            {# Tracking is a projection, so it reads ~160, not 160. #}
+                            {%- if c.key == 'tracking' and v is not none %}~{% endif -%}
                             {{ fmtv(v, c.fmt) }}
                             {%- endif -%}
                         </td>
@@ -232,6 +234,7 @@
                         <td class="{% if c.ext %}ext{% endif %}">
                             {%- if c.key == 'name' -%}TOTALS:
                             {%- elif c.key == 'offset_value' -%}
+                            {%- elif c.key == 'tracking' and total[c.key] is not none -%}~{{ fmtv(total[c.key], c.fmt) }}
                             {%- else -%}{{ fmtv(total[c.key], c.fmt) }}{%- endif -%}
                         </td>
                         {% endfor %}
