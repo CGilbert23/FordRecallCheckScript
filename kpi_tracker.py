@@ -253,6 +253,11 @@ def parse_report(data, filename='', today=None):
         total_days = days if complete else max(full, days)
         months.append({
             'period_start': date(year, month, 1),
+            'as_of': ref,  # the Monday the file was sent: the scorecard's column
+            # A scorecard week column only makes sense for a weekly file dated
+            # inside the month it covers. A year file (every month at once) and
+            # the file that closes out the prior month aren't weeks.
+            'weekly': not full_year and (ref.year, ref.month) == (year, month),
             'days_elapsed': days,
             'work_days': total_days,
             'complete': complete,
@@ -549,6 +554,164 @@ def yoy_view(cur_reports, prior_reports, codes=None):
     now, then = _yoy_metrics(cur_all), _yoy_metrics(prev_all)
     total = {'cur': now, 'prev': then, 'change': _yoy_changes(now, then)}
     return rows, total, months, pace
+
+
+# ---------------------------------------------------------------------------
+# EOS Scorecard
+# ---------------------------------------------------------------------------
+
+# Green within 10% of goal, yellow 10-20% under, red more than 20% under.
+SCORECARD_GREEN = 0.90
+SCORECARD_YELLOW = 0.80
+
+# Rows, in the order the team's spreadsheet lists them. `rate` rows are per-day
+# or per-RO figures — they're compared to the goal as-is (no pacing) and have
+# no month-end projection. `manual` rows take their Tracking by hand (vans on
+# order, techs being hired). The per-store RO rows are inserted after 'ro'.
+SCORECARD_SECTIONS = [
+    {'title': 'Vans & Technicians', 'rows': [
+        {'key': 'vans', 'label': 'Van Count', 'fmt': 'int', 'manual': True},
+        {'key': 'techs', 'label': 'Active Mobile Technicians', 'fmt': 'int', 'manual': True},
+    ]},
+    {'title': 'KPI', 'rows': [
+        {'key': 'ro', 'label': 'Total RO Count', 'fmt': 'int', 'stores': True},
+        {'key': 'ro_per_day', 'label': 'Avg RO Per Day', 'fmt': 'dec', 'rate': True, 'gap': True},
+        {'key': 'ro_per_tech_day', 'label': 'RO Per Active Tech / Day', 'fmt': 'dec', 'rate': True},
+        {'key': 'revenue', 'label': 'Total Revenue', 'fmt': 'money', 'gap': True},
+        {'key': 'avg_ro_value', 'label': 'Avg RO Value', 'fmt': 'money', 'rate': True},
+        {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct', 'rate': True},
+    ]},
+]
+
+
+def mondays(year, month):
+    """Every Monday in the month — the scorecard's week columns. Ford's file
+    lands on a Monday and covers through the Friday before."""
+    last = calendar.monthrange(year, month)[1]
+    return [date(year, month, d) for d in range(1, last + 1)
+            if date(year, month, d).weekday() == 0]
+
+
+def goal_band(value, goal):
+    """'green' / 'yellow' / 'red' against a goal (or a pace-adjusted goal)."""
+    if value is None or not goal:
+        return None
+    ratio = value / goal
+    return ('green' if ratio >= SCORECARD_GREEN
+            else 'yellow' if ratio >= SCORECARD_YELLOW else 'red')
+
+
+def _scorecard_metrics(snapshot, settings):
+    """One snapshot (a weekly upload or the finished month) -> {row key: value},
+    plus the same projected to month end for the additive rows."""
+    days, total = snapshot['days_elapsed'], snapshot['work_days']
+    parts, per_store = [], {}
+    for s in snapshot.get('stores') or []:
+        c = _components(s, settings, days, total)
+        parts.append(c)
+        per_store[s['code']] = c
+    c = _combine(parts, days)
+    actual = {
+        'vans': c['units'],
+        'techs': c['techs'],
+        'ro': c['ro'],
+        'ro_per_day': _div(c['ro'], days),
+        'ro_per_tech_day': _div(c['ro'], c['tech_days']),
+        'revenue': c['ro_value'],
+        'avg_ro_value': _div(c['ro_value'], c['ro']),
+        'commercial_mix': (c['ford_pro'] / c['ro'] + COMMERCIAL_MIX_BUMP) if c['ro'] else None,
+    }
+    for code, sc in per_store.items():
+        actual['store:' + code] = sc['ro']
+    factor = (total / days) if days else None
+    tracking = {k: (v * factor if v is not None and factor else None)
+                for k, v in actual.items()
+                if k in ('ro', 'revenue') or k.startswith('store:')}
+    return {'actual': actual, 'tracking': tracking, 'days': days, 'work_days': total,
+            'stores': per_store, 'complete': _is_complete(snapshot)}
+
+
+def scorecard_view(period_start, weeks, month_report, settings=None, goals=None, manual=None):
+    """Build the EOS Scorecard grid for one month.
+
+    `weeks` are `kpi_report_weeks` rows (one per Monday upload), `month_report`
+    the `kpi_reports` row (used for the EOM column once the month is finished).
+    Columns are every Monday in the month plus EOM; a week with no upload is
+    blank. Actuals are banded against the goal scaled to the days elapsed, so
+    a part-month reads as on-pace or not; Tracking is banded against the full
+    goal. Rate rows (per day, per RO) are banded against the goal as-is.
+    """
+    goals, manual = goals or {}, manual or {}
+    start = period_start if isinstance(period_start, date) else _parse_date(period_start)
+    by_week = {}
+    for w in weeks:
+        m = _scorecard_metrics(w, settings)
+        by_week[str(w['as_of'])[:10]] = m
+    latest = max(by_week.values(), key=lambda m: m['days'], default=None)
+
+    columns = []
+    for monday in mondays(start.year, start.month):
+        key = monday.isoformat()
+        columns.append({'key': key, 'label': f'{monday.day}-{calendar.month_abbr[monday.month]}',
+                        'metrics': by_week.get(key), 'manual': (manual or {}).get(key) or {}})
+    eom = _scorecard_metrics(month_report, settings) if month_report and _is_complete(month_report) else None
+
+    sections = []
+    for section in SCORECARD_SECTIONS:
+        rows = []
+        for spec in section['rows']:
+            rows.append(_scorecard_row(spec, spec['key'], spec['label'], columns, eom, goals))
+            if spec.get('stores'):
+                # Before the month's first upload there's nothing to read the
+                # roster from, so fall back to the store list — the goals still
+                # need a row to be typed into.
+                known = latest['stores'] if latest else {}
+                for s in _ordered([{'code': c} for c in (known or STORE_BY_CODE)]):
+                    code = s['code']
+                    sc = known.get(code)
+                    label = (f"{_store_name(code)} ({sc['techs']}/{sc['units']})"
+                             if sc else _store_name(code))
+                    rows.append(_scorecard_row({'fmt': 'int', 'store': True}, 'store:' + code,
+                                               label, columns, eom, goals))
+        sections.append({'title': section['title'], 'rows': rows})
+    return {'columns': columns, 'sections': sections, 'has_data': bool(by_week)}
+
+
+def _scorecard_row(spec, key, label, columns, eom, goals):
+    goal = goals.get(key)
+    try:
+        goal = float(goal) if goal not in (None, '') else None
+    except (TypeError, ValueError):
+        goal = None
+    cells = []
+    for col in columns:
+        m = col['metrics']
+        cell = {'actual': None, 'tracking': None, 'band': None, 'tracking_band': None}
+        if spec.get('manual'):
+            cell['tracking'] = col['manual'].get(key)
+            cell['manual'] = True
+        if m:
+            cell['actual'] = m['actual'].get(key)
+            if not spec.get('manual'):
+                cell['tracking'] = m['tracking'].get(key)
+            # Mid-month actuals are judged against the goal scaled to the days
+            # so far; rate rows (per day / per RO) need no scaling.
+            pace = goal
+            if goal is not None and not spec.get('rate') and m['work_days']:
+                pace = goal * m['days'] / m['work_days']
+            cell['band'] = goal_band(cell['actual'], pace)
+            if not spec.get('manual'):
+                cell['tracking_band'] = goal_band(cell['tracking'], goal)
+        cells.append(cell)
+    eom_value = eom['actual'].get(key) if eom else None
+    return {'key': key, 'label': label, 'fmt': spec.get('fmt', 'int'), 'goal': goal,
+            'cells': cells, 'eom': eom_value, 'eom_band': goal_band(eom_value, goal),
+            'rate': bool(spec.get('rate')), 'manual': bool(spec.get('manual')),
+            'store': bool(spec.get('store')), 'gap': bool(spec.get('gap'))}
+
+
+def _parse_date(value):
+    return date(*(int(p) for p in str(value)[:10].split('-')))
 
 
 if __name__ == '__main__':

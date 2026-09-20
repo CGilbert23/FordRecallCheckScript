@@ -251,3 +251,30 @@ create table kpi_reports (
   settings jsonb not null default '{}'::jsonb,
   uploaded_at timestamptz not null default now()
 );
+
+-- EOS Scorecard. kpi_report_weeks keeps one row per weekly Ford KPI upload
+-- (kpi_reports only keeps the newest snapshot per month) so the scorecard can
+-- show a column per Monday; `as_of` is the date in the file name.
+-- kpi_scorecards holds the hand-entered half for a month: `goals` {row key:
+-- number}, `notes` {row key: text}, `manual` {as_of: {vans, techs}}.
+create table kpi_report_weeks (
+  id uuid primary key default gen_random_uuid(),
+  period_start date not null,
+  as_of date not null,
+  days_elapsed int not null,
+  work_days int not null,
+  filename text,
+  stores jsonb not null default '[]'::jsonb,
+  uploaded_at timestamptz not null default now(),
+  unique (period_start, as_of)
+);
+create index kpi_report_weeks_period_idx on kpi_report_weeks (period_start);
+
+create table kpi_scorecards (
+  id uuid primary key default gen_random_uuid(),
+  period_start date not null unique,
+  goals jsonb not null default '{}'::jsonb,
+  notes jsonb not null default '{}'::jsonb,
+  manual jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);

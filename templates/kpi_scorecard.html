@@ -7,7 +7,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
-        .container { max-width: 1200px; margin: 60px auto; padding: 0 20px; }
+        .container { max-width: 1800px; margin: 60px auto; padding: 0 20px; }
         h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
         .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
         .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
@@ -15,23 +15,196 @@
         .nav-tab:hover { color: #0068d6; }
         .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
         .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .empty-state { text-align: center; color: #888; padding: 48px 12px; line-height: 1.8; }
-        .empty-state strong { color: #475569; display: block; font-size: 1rem; margin-bottom: 6px; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 180px; cursor: pointer; }
+        .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .tbtn { display: inline-block; background: #fff; color: #1f2937; border: 1px solid #cbd5e1; padding: 7px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; line-height: 1.2; }
+        .tbtn:hover { background: #f3f4f6; }
+        .tbtn.primary { background: #0068d6; border-color: #0068d6; color: #fff; }
+        .tbtn.primary:hover { background: #0050a8; }
+        .table-wrap { overflow-x: auto; }
+        table.eos { width: 100%; border-collapse: collapse; font-size: 0.82rem; table-layout: fixed; }
+        table.eos th, table.eos td { border: 1px solid #c8ced6; padding: 5px 8px; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        table.eos th { background: #e9edf2; color: #0f2a47; font-weight: 700; font-size: 0.8rem; }
+        table.eos th.sub { background: #f5f7fa; font-weight: 600; font-size: 0.75rem; }
+        table.eos td.label { text-align: left; font-weight: 600; color: #0f2a47; }
+        table.eos td.label.store { padding-left: 22px; font-weight: 500; font-style: italic; color: #334155; }
+        table.eos tr.section td { background: #f5f7fa; text-align: left; font-weight: 700; color: #0f2a47; text-decoration: underline; }
+        table.eos tr.gap td { border: none; background: none; height: 10px; padding: 0; }
+        table.eos td.goal { background: #f1f3f6; font-weight: 700; }
+        table.eos td.track { font-style: italic; color: #475569; }
+        table.eos td.eom { background: #f8fafc; font-weight: 700; }
+        table.eos td.note { text-align: left; font-style: italic; color: #92400e; white-space: normal; }
+        /* Green within 10% of goal, yellow 10-20% under, red more than 20% under. */
+        table.eos td.green { background: #cdeccf; color: #14532d; font-weight: 600; }
+        table.eos td.yellow { background: #fbeec2; color: #713f12; font-weight: 600; }
+        table.eos td.red { background: #f7d2d2; color: #7f1d1d; font-weight: 600; }
+        table.eos td.blank { color: #cbd5e1; }
+        input.cell { width: 100%; padding: 3px 4px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.8rem; text-align: center; font-family: inherit; }
+        input.cell.note-input { text-align: left; }
+        .edit-only { display: none; }
+        body.editing .edit-only { display: inline-block; }
+        body.editing .not-editing { display: none; }
+        .cell-input { display: none; }
+        body.editing .cell-input { display: block; }
+        body.editing .cell-value { display: none; }
+        .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; font-size: 0.78rem; color: #555; }
+        .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.12); }
+        .note-line { font-size: 0.78rem; color: #888; margin-top: 10px; }
+        .empty-state { text-align: center; color: #888; padding: 36px 12px; line-height: 1.8; }
+        .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
+        .how ul { margin-left: 18px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
-        <p class="subtitle">EOS Scorecard for the mobile service team.</p>
+        <p class="subtitle">Weekly EOS numbers against the month's goals. Ford's file lands Monday with everything through the Friday before.</p>
         {% include '_kpi_tabs.html' %}
 
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        {% if notice %}<div class="success">{{ notice }}</div>{% endif %}
+
         <div class="card">
-            <div class="empty-state">
-                <strong>Nothing here yet.</strong>
-                This tab is a placeholder &mdash; tell Claude what the scorecard should track and it gets built here.
+            <div class="toolbar">
+                <form method="GET" action="/tech-performance/kpi-tracker/scorecard" class="filters">
+                    <label for="month">Month</label>
+                    <select id="month" name="month" onchange="this.form.submit()">
+                        {% for m in months %}
+                        <option value="{{ m.key }}" {% if m.key == selected %}selected{% endif %}>{{ m.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <noscript><button type="submit" class="tbtn">Show</button></noscript>
+                </form>
+                {% if view %}
+                <div class="actions">
+                    <button type="button" class="tbtn not-editing" id="editBtn">Edit Goals &amp; Notes</button>
+                    <button type="submit" form="scorecardForm" class="tbtn primary edit-only">Save</button>
+                    <button type="button" class="tbtn edit-only" id="cancelBtn">Cancel</button>
+                </div>
+                {% endif %}
             </div>
+
+            {% if view %}
+            {% macro fmtv(v, fmt) -%}
+                {%- if v is none -%}&ndash;&ndash;
+                {%- elif fmt == 'money' -%}${{ '{:,.0f}'.format(v) }}
+                {%- elif fmt == 'pct' -%}{{ '%.0f' % (v * 100) }}%
+                {%- elif fmt == 'dec' -%}{{ '%.1f' % v }}
+                {%- else -%}{{ '{:,.0f}'.format(v) }}
+                {%- endif -%}
+            {%- endmacro %}
+            {% macro rawv(v, fmt) -%}
+                {%- if v is none -%}{%- elif fmt == 'pct' -%}{{ '%.0f' % (v * 100) }}{%- elif fmt == 'dec' -%}{{ '%.1f' % v }}{%- else -%}{{ '%.0f' % v }}{%- endif -%}
+            {%- endmacro %}
+
+            <form method="POST" id="scorecardForm" action="/tech-performance/kpi-tracker/scorecard/{{ selected }}/save"></form>
+            <div class="table-wrap">
+            <table class="eos">
+                <colgroup>
+                    <col style="width:210px"><col style="width:92px">
+                    {% for c in view.columns %}<col style="width:80px"><col style="width:80px">{% endfor %}
+                    <col style="width:86px"><col style="width:210px">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>{{ months | selectattr('key', 'equalto', selected) | map(attribute='label') | first }}</th>
+                        <th></th>
+                        {% for c in view.columns %}<th colspan="2">{{ c.label }}</th>{% endfor %}
+                        <th>EOM</th>
+                        <th>Notes</th>
+                    </tr>
+                    <tr>
+                        <th class="sub"></th>
+                        <th class="sub">Monthly Goal</th>
+                        {% for c in view.columns %}
+                        <th class="sub">Actual</th><th class="sub">Tracking</th>
+                        {% endfor %}
+                        <th class="sub">Actual</th>
+                        <th class="sub"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for section in view.sections %}
+                    <tr class="section">
+                        <td colspan="{{ 4 + view.columns | length * 2 }}">{{ section.title }}</td>
+                    </tr>
+                    {% for row in section.rows %}
+                    {% if row.gap %}<tr class="gap"><td colspan="{{ 4 + view.columns | length * 2 }}"></td></tr>{% endif %}
+                    <tr>
+                        <td class="label {% if row.store %}store{% endif %}">{{ row.label }}</td>
+                        <td class="goal">
+                            <span class="cell-value">{{ fmtv(row.goal, row.fmt) }}</span>
+                            <span class="cell-input"><input class="cell" type="text" inputmode="decimal" form="scorecardForm"
+                                name="goal__{{ row.key }}" value="{{ rawv(row.goal, row.fmt) }}"
+                                aria-label="{{ row.label }} monthly goal"></span>
+                        </td>
+                        {% for cell in row.cells %}
+                        <td class="{{ cell.band or ('blank' if cell.actual is none else '') }}">{{ fmtv(cell.actual, row.fmt) }}</td>
+                        <td class="track {{ cell.tracking_band or '' }}">
+                            {% if row.manual %}
+                            <span class="cell-value">{{ fmtv(cell.tracking, row.fmt) }}</span>
+                            <span class="cell-input"><input class="cell" type="text" inputmode="decimal" form="scorecardForm"
+                                name="manual__{{ view.columns[loop.index0].key }}__{{ row.key }}"
+                                value="{{ rawv(cell.tracking, row.fmt) }}"
+                                aria-label="{{ row.label }} {{ view.columns[loop.index0].label }} tracking"></span>
+                            {% else %}{{ fmtv(cell.tracking, row.fmt) }}{% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="eom {{ row.eom_band or '' }}">{{ fmtv(row.eom, row.fmt) }}</td>
+                        <td class="note">
+                            <span class="cell-value">{{ notes.get(row.key, '') }}</span>
+                            <span class="cell-input"><input class="cell note-input" type="text" form="scorecardForm"
+                                name="note__{{ row.key }}" value="{{ notes.get(row.key, '') }}"
+                                aria-label="{{ row.label }} note"></span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+
+            <div class="legend">
+                <span><span class="swatch" style="background:#cdeccf"></span>Within 10% of goal</span>
+                <span><span class="swatch" style="background:#fbeec2"></span>10&ndash;20% under</span>
+                <span><span class="swatch" style="background:#f7d2d2"></span>More than 20% under</span>
+            </div>
+            {% if not view.has_data %}
+            <p class="note-line">No Ford file uploaded for this month yet &mdash; set the goals now and the numbers fill in each Monday.</p>
+            {% endif %}
+            {% else %}
+            <div class="empty-state">Pick a month to start a scorecard.</div>
+            {% endif %}
         </div>
+
+        {% if view %}
+        <div class="card how">
+            <ul>
+                <li>One column per Monday, because that's when Ford's file arrives &mdash; it covers everything through the Friday before. A week stays blank until that week's file is uploaded on the Monthly Tracker tab.</li>
+                <li><strong>Actual</strong> is judged against the goal scaled to the days so far, so mid-month it reads as on-pace or not. <strong>Tracking</strong> (the projected month-end) is judged against the full goal. Per-day and per-RO rows are compared to the goal as-is.</li>
+                <li><strong>Monthly Goal</strong>, <strong>Notes</strong>, and the Van Count / Active Technicians <strong>Tracking</strong> cells are hand-entered &mdash; everything else is automatic. A new month starts from last month's goals.</li>
+                <li><strong>Total Revenue</strong> is Ford's revenue without the offset (goal = RO count &times; Avg RO Value). Store rows show <em>(techs/vans)</em>.</li>
+                <li><strong>EOM</strong> fills in once the month is finished, from the first file of the next month.</li>
+            </ul>
+        </div>
+        {% endif %}
     </div>
+    <script>
+    (function () {
+        var editBtn = document.getElementById('editBtn');
+        var cancelBtn = document.getElementById('cancelBtn');
+        if (!editBtn) return;
+        editBtn.addEventListener('click', function () { document.body.classList.add('editing'); });
+        cancelBtn.addEventListener('click', function () {
+            document.querySelectorAll('input.cell').forEach(function (i) { i.value = i.defaultValue; });
+            document.body.classList.remove('editing');
+        });
+    })();
+    </script>
 </body>
 </html>

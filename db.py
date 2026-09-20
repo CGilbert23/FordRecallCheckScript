@@ -715,3 +715,65 @@ def update_kpi_settings(period_start, settings):
 def delete_kpi_report(period_start):
     client = get_client()
     client.table('kpi_reports').delete().eq('period_start', period_start).execute()
+
+
+# ---------------------------------------------------------------------------
+# EOS Scorecard (weekly KPI snapshots + the hand-entered goals/notes)
+# ---------------------------------------------------------------------------
+
+def list_kpi_report_weeks(period_start):
+    """Every weekly snapshot saved for a month, oldest first."""
+    client = get_client()
+    res = (client.table('kpi_report_weeks').select('*')
+           .eq('period_start', period_start).order('as_of').execute())
+    return res.data or []
+
+
+def upsert_kpi_report_week(period_start, as_of, days_elapsed, work_days, filename, stores):
+    """Save one weekly upload; re-uploading the same week replaces it."""
+    client = get_client()
+    res = client.table('kpi_report_weeks').upsert({
+        'period_start': period_start,
+        'as_of': as_of,
+        'days_elapsed': days_elapsed,
+        'work_days': work_days,
+        'filename': filename,
+        'stores': stores,
+        'uploaded_at': datetime.now(timezone.utc).isoformat(),
+    }, on_conflict='period_start,as_of').execute()
+    return res.data[0] if res.data else None
+
+
+def get_kpi_scorecard(period_start):
+    client = get_client()
+    res = (client.table('kpi_scorecards').select('*')
+           .eq('period_start', period_start).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def latest_kpi_scorecard_before(period_start):
+    """The newest scorecard before `period_start` — a new month copies its goals."""
+    client = get_client()
+    res = (client.table('kpi_scorecards').select('*')
+           .lt('period_start', period_start)
+           .order('period_start', desc=True).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def list_kpi_scorecard_months():
+    client = get_client()
+    res = (client.table('kpi_scorecards').select('period_start')
+           .order('period_start', desc=True).execute())
+    return [r['period_start'] for r in (res.data or [])]
+
+
+def upsert_kpi_scorecard(period_start, goals, notes, manual):
+    client = get_client()
+    res = client.table('kpi_scorecards').upsert({
+        'period_start': period_start,
+        'goals': goals,
+        'notes': notes,
+        'manual': manual,
+        'updated_at': datetime.now(timezone.utc).isoformat(),
+    }, on_conflict='period_start').execute()
+    return res.data[0] if res.data else None

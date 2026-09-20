@@ -2115,9 +2115,97 @@ def kpi_profitability():
                       'yellow': kpi_tracker.profit_thresholds(t)[1]} for t in levels])
 
 
+def _next_month(key):
+    """'2026-09' -> '2026-10'."""
+    y, m = int(key[:4]), int(key[5:7])
+    return f'{y + 1}-01' if m == 12 else f'{y}-{m + 1:02d}'
+
+
+def _kpi_scorecard_page(month=None, notice=None, error=None, status=200):
+    """EOS Scorecard for one month: a column per Monday plus EOM.
+
+    The month list is every month with KPI data or a saved scorecard, plus the
+    month after the newest so next month can be set up before data arrives.
+    """
+    months, card, view = [], None, None
+    try:
+        keys = {m['period_start'][:7] for m in db.list_kpi_report_months()}
+        keys |= {p[:7] for p in db.list_kpi_scorecard_months()}
+        keys |= {_next_month(max(keys))} if keys else {datetime.now().strftime('%Y-%m')}
+        months = [{'key': k, 'label': _month_label(f'{k}-01')} for k in sorted(keys, reverse=True)]
+        selected = month if any(m['key'] == month for m in months) else (months[0]['key'] if months else None)
+        if selected:
+            start = f'{selected}-01'
+            card = db.get_kpi_scorecard(start)
+            goals = (card or {}).get('goals')
+            if not card:  # a fresh month starts from the last month's goals
+                prior = db.latest_kpi_scorecard_before(start)
+                goals = (prior or {}).get('goals') or {}
+            report = db.get_kpi_report(start)
+            view = kpi_tracker.scorecard_view(
+                start, db.list_kpi_report_weeks(start), report,
+                (report or {}).get('settings'), goals, (card or {}).get('manual'))
+    except Exception as e:
+        logger.error(f"KPI scorecard load failed: {e}")
+        error = error or 'Could not load the scorecard from the database.'
+        selected = month
+
+    return render_template('kpi_scorecard.html', months=months, selected=selected,
+                           view=view, notes=(card or {}).get('notes') or {},
+                           saved=bool(card), notice=notice, error=error), status
+
+
 @app.route('/tech-performance/kpi-tracker/scorecard')
 def kpi_scorecard():
-    return render_template('kpi_scorecard.html')
+    month = (request.args.get('month') or '').strip()
+    return _kpi_scorecard_page(month if _MONTH_RE.match(month) else None)
+
+
+@app.route('/tech-performance/kpi-tracker/scorecard/<month>/save', methods=['POST'])
+def kpi_scorecard_save(month):
+    """Save the hand-entered half: monthly goals, notes, and the manual
+    Van Count / Active Technicians tracking per week."""
+    if not _MONTH_RE.match(month):
+        return redirect(url_for('kpi_scorecard'))
+    start = f'{month}-01'
+
+    # Percentage rows are typed and shown as whole percents ("40"), stored as
+    # a fraction like every other percentage in the app.
+    pct_keys = {r['key'] for s in kpi_tracker.SCORECARD_SECTIONS for r in s['rows']
+                if r.get('fmt') == 'pct'}
+
+    def number(raw, key=None):
+        raw = (raw or '').replace('$', '').replace(',', '').strip()
+        if not raw:
+            return None
+        value = float(raw.rstrip('%'))
+        if (key in pct_keys or raw.endswith('%')) and value > 1:
+            value /= 100
+        return value
+
+    goals, notes, manual = {}, {}, {}
+    try:
+        for field, raw in request.form.items():
+            if field.startswith('goal__'):
+                value = number(raw, field[6:])
+                if value is not None:
+                    goals[field[6:]] = value
+            elif field.startswith('note__'):
+                if raw.strip():
+                    notes[field[6:]] = raw.strip()
+            elif field.startswith('manual__'):
+                week, _, key = field[8:].partition('__')
+                value = number(raw)
+                if value is not None:
+                    manual.setdefault(week, {})[key] = value
+    except ValueError:
+        return _kpi_scorecard_page(month, error='Goals must be numbers.', status=400)
+    try:
+        db.upsert_kpi_scorecard(start, goals, notes, manual)
+    except Exception as e:
+        logger.error(f"KPI scorecard save failed: {e}")
+        return _kpi_scorecard_page(month, error=f'Could not save the scorecard: {e}', status=500)
+    return redirect(url_for('kpi_scorecard', month=month))
 
 
 @app.route('/tech-performance/kpi-tracker/upload', methods=['POST'])
@@ -2146,6 +2234,15 @@ def kpi_tracker_upload():
         for m in sorted(parsed, key=lambda m: m['period_start']):
             start = m['period_start'].isoformat()
             existing = db.get_kpi_report(start)
+            # Keep every weekly upload for the EOS Scorecard's week columns.
+            if m['weekly']:
+                db.upsert_kpi_report_week(start, m['as_of'].isoformat(), m['days_elapsed'],
+                                          m['work_days'], upload.filename, m['stores'])
+            # Re-uploading an older weekly file fills its scorecard column but
+            # must not roll the month's own numbers back.
+            if existing and existing['days_elapsed'] > m['days_elapsed']:
+                saved.append(m)
+                continue
             settings = None
             if not existing:
                 settings = db.latest_kpi_settings_before(start) or kpi_tracker.default_settings()
