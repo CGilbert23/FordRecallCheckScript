@@ -1891,12 +1891,14 @@ def _xtime_report_page(month=None, error=None, notice=None, status=200, store=No
     `store` (one of the roster's display stores) narrows the table and its
     total row to that store's techs; anything else shows every store.
     """
-    months, report, rows, total = [], None, [], None
+    months, report, rows, total, latest_upload = [], None, [], None, None
     try:
         months = db.list_xtime_report_months()
         for m in months:
             m['key'] = m['period_start'][:7]
             m['label'] = _month_label(m['period_start'])
+        newest = max(months, key=lambda m: m.get('uploaded_at') or '', default=None)
+        latest_upload = (newest or {}).get('filename')
         selected = next((m for m in months if m['key'] == month), months[0] if months else None)
         if selected:
             report = db.get_xtime_report(selected['period_start'])
@@ -1913,7 +1915,7 @@ def _xtime_report_page(month=None, error=None, notice=None, status=200, store=No
             rows = [r for r in rows if r['store'] == store]
         total = xtime_tech_report.team_total(rows)
     return render_template('xtime_tech_report.html', months=months, selected=selected,
-                           report=report, rows=rows, total=total,
+                           report=report, rows=rows, total=total, latest_upload=latest_upload,
                            stores=stores, store=store,
                            mpi_benchmark=xtime_tech_report.MPI_BENCHMARK,
                            asr_benchmark=xtime_tech_report.ASR_BENCHMARK,

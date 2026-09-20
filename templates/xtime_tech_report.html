@@ -73,7 +73,7 @@
                     <input type="file" id="report" name="report" accept=".xls,.htm,.html" required>
                     <button type="submit" class="btn">Upload report</button>
                 </div>
-                <p class="hint">Xtime &rarr; Technician RO / ASR Report Totals, run for one full month (1st through the last day). Upload the .xls exactly as it downloads. Uploading a month that's already here replaces it.</p>
+                {% if latest_upload %}<p class="hint">Most Recent Upload: {{ latest_upload }}</p>{% endif %}
             </form>
         </div>
 
@@ -105,7 +105,6 @@
             <div class="report-head">
                 <h2>{{ selected.label }}{% if store %} &middot; {{ store }}{% endif %}</h2>
                 <div class="meta">
-                    {{ report.filename or '' }}
                     <button type="button" class="btn btn-copy" id="copyEmailBtn" style="margin-left: 10px;"
                             data-title="Mobile Tech Xtime Report &ndash; {{ selected.label }}{% if store %} &middot; {{ store }}{% endif %}">Copy for Email</button>
                     <form method="POST" action="/tech-performance/xtime-report/{{ selected.key }}/delete" style="display:inline; margin-left: 10px;" onsubmit="return confirm('Delete the {{ selected.label }} report? You can upload it again later.');">
