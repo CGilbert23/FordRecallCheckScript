@@ -1,0 +1,14 @@
+{# KPI Tracker sub-nav: the three screens. Included by every KPI page just
+   under the subtitle; the top-level nav keeps one "KPI Tracker" tab. #}
+{% set kpi_path = request.path %}
+<div class="kpi-tabs">
+    <a href="/tech-performance/kpi-tracker" class="kpi-tab {% if kpi_path == '/tech-performance/kpi-tracker' %}active{% endif %}">Monthly Tracker</a>
+    <a href="/tech-performance/kpi-tracker/profitability" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/profitability') %}active{% endif %}">Profitability</a>
+    <a href="/tech-performance/kpi-tracker/scorecard" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/scorecard') %}active{% endif %}">EOS Scorecard</a>
+</div>
+<style>
+    .kpi-tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 22px; flex-wrap: wrap; }
+    .kpi-tab { padding: 7px 18px; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #475569; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    .kpi-tab:hover { background: #f1f5f9; color: #0f2a47; }
+    .kpi-tab.active { background: #0f2a47; border-color: #0f2a47; color: #fff; }
+</style>

@@ -6,6 +6,7 @@ import uuid
 import queue
 import threading
 import logging
+import calendar
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
@@ -2086,6 +2087,37 @@ def kpi_tracker_view():
     month = (request.args.get('month') or '').strip()
     store = (request.args.get('store') or '').strip()
     return _kpi_page(int(year) if year.isdigit() else None, month, store)
+
+
+@app.route('/tech-performance/kpi-tracker/profitability')
+def kpi_profitability():
+    """Year profitability map: one row per store, one cell per month, coloured
+    against what that store's techs should be producing."""
+    want = (request.args.get('year') or '').strip()
+    years, year, rows, totals, months, error = [], None, [], None, [], None
+    try:
+        uploaded = db.list_kpi_report_months()
+        years = sorted({int(m['period_start'][:4]) for m in uploaded}, reverse=True)
+        year = int(want) if want.isdigit() and int(want) in years else (years[0] if years else None)
+        if year:
+            rows, totals, months = kpi_tracker.profitability_view(db.get_kpi_reports_for_year(year))
+    except Exception as e:
+        logger.error(f"KPI profitability load failed: {e}")
+        error = 'Could not load saved KPI reports from the database.'
+
+    partial = next((m for m in months if totals['months'][m]['partial']), None)
+    levels = sorted({r['months'][m]['techs'] for r in rows for m in r['months']} - {0})
+    return render_template(
+        'kpi_profitability.html', years=years, year=year, rows=rows, totals=totals,
+        months=months, month_names=list(calendar.month_abbr), partial_month=partial,
+        per_tech=kpi_tracker.PROFIT_PER_TECH, error=error,
+        tech_levels=[{'techs': t, 'green': kpi_tracker.profit_thresholds(t)[0],
+                      'yellow': kpi_tracker.profit_thresholds(t)[1]} for t in levels])
+
+
+@app.route('/tech-performance/kpi-tracker/scorecard')
+def kpi_scorecard():
+    return render_template('kpi_scorecard.html')
 
 
 @app.route('/tech-performance/kpi-tracker/upload', methods=['POST'])

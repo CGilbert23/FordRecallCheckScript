@@ -416,6 +416,69 @@ def year_view(reports, codes=None):
     return rows, total
 
 
+# Profitability map thresholds on Total RO Value (no offset), by the store's
+# active techs that month: 1 tech 18k/14k, 2 techs 30k/26k, +12k per tech after.
+PROFIT_GREEN_BASE = 6000
+PROFIT_YELLOW_BASE = 2000
+PROFIT_PER_TECH = 12000
+
+
+def profit_thresholds(techs):
+    """(green floor, yellow floor) for a store running `techs` techs."""
+    return (PROFIT_GREEN_BASE + PROFIT_PER_TECH * techs,
+            PROFIT_YELLOW_BASE + PROFIT_PER_TECH * techs)
+
+
+def profit_band(value, techs):
+    """'green' / 'yellow' / 'red', or None when there's nothing to judge."""
+    if not techs or value is None:
+        return None
+    green, yellow = profit_thresholds(techs)
+    return 'green' if value >= green else 'yellow' if value >= yellow else 'red'
+
+
+def profitability_view(reports):
+    """Year profitability map: one row per store, one cell per month.
+
+    Each cell carries that month's Total RO Value (no offset) and the techs it
+    is judged against. A month still in progress is flagged `partial` and left
+    unbanded — a part-month total would always read red.
+
+    Returns (rows, totals, months_present).
+    """
+    by_store, names, months_present, latest = {}, {}, [], {}
+    for rep in sorted(reports, key=lambda r: str(r['period_start'])):
+        month = int(str(rep['period_start'])[5:7])
+        months_present.append(month)
+        partial = not _is_complete(rep)
+        for s in rep.get('stores') or []:
+            c = _components(s, rep.get('settings'), rep['days_elapsed'], rep['work_days'])
+            by_store.setdefault(s['code'], {})[month] = {
+                'value': c['ro_value'],
+                'techs': c['techs'],
+                'partial': partial,
+                'band': None if partial else profit_band(c['ro_value'], c['techs']),
+            }
+            names[s['code']] = s.get('name')
+            latest[s['code']] = c  # reports are oldest first, so this ends up newest
+
+    rows = []
+    for s in _ordered([{'code': c} for c in by_store]):
+        code = s['code']
+        cells = by_store[code]
+        rows.append({'code': code, 'name': _store_name(code, names.get(code)),
+                     'units': latest[code]['units'], 'techs': latest[code]['techs'],
+                     'months': cells,
+                     'total': sum(m['value'] for m in cells.values())})
+    totals = {'months': {m: {'value': sum(r['months'][m]['value'] for r in rows if m in r['months']),
+                             'partial': any(r['months'][m]['partial'] for r in rows if m in r['months'])}
+                         for m in months_present},
+              'total': sum(r['total'] for r in rows),
+              'units': sum(r['units'] for r in rows),
+              'techs': sum(r['techs'] for r in rows)}
+    return rows, totals, months_present
+
+
 YOY_METRICS = ('ro', 'avg_ro', 'commercial_mix', 'total_revenue', 'total_offset')
 
 

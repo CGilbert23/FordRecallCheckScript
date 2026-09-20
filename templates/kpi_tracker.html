@@ -102,6 +102,7 @@
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
         <p class="subtitle">Ford's weekly mobile service KPIs by store, one month (or a full year) at a time.</p>
+        {% include '_kpi_tabs.html' %}
 
         {% if error %}<div class="error">{{ error }}</div>{% endif %}
         {% if notice %}<div class="success">{{ notice }}</div>{% endif %}

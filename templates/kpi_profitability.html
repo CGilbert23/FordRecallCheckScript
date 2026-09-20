@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profitability - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1800px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+        .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 160px; cursor: pointer; }
+        .filters select:focus { outline: none; border-color: #0068d6; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; }
+        .table-wrap { overflow-x: auto; }
+        table.profit { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+        table.profit caption { background: #0f2a47; color: #fff; font-size: 1rem; font-weight: 700; padding: 8px; border: 1px solid #c8ced6; border-bottom: none; }
+        table.profit th, table.profit td { border: 1px solid #c8ced6; text-align: center; padding: 7px 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        table.profit th { background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 600; white-space: normal; line-height: 1.25; }
+        table.profit td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; text-align: left; padding-left: 10px; }
+        table.profit td.setting { background: #e8f1fb; }
+        /* Profitability bands: Total RO Value against the month's tech count. */
+        table.profit td.green { background: #cdeccf; color: #14532d; font-weight: 600; }
+        table.profit td.yellow { background: #fbeec2; color: #713f12; font-weight: 600; }
+        table.profit td.red { background: #f7d2d2; color: #7f1d1d; font-weight: 600; }
+        table.profit td.mtd { color: #6b7280; font-style: italic; }
+        table.profit td .techs { display: block; font-size: 0.62rem; font-weight: 500; opacity: 0.65; margin-top: 1px; }
+        table.profit td.empty { color: #cbd5e1; }
+        table.profit td.year { background: #f8fafc; font-weight: 700; }
+        table.profit tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
+        .legend { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin-top: 14px; font-size: 0.8rem; color: #555; }
+        .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.12); }
+        .note { font-size: 0.78rem; color: #888; margin-top: 10px; }
+        .empty-state { text-align: center; color: #888; padding: 36px 12px; }
+        .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
+        .how ul { margin-left: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Monthly revenue by store against what each store's techs should be producing.</p>
+        {% include '_kpi_tabs.html' %}
+
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+        <div class="card">
+            {% if years %}
+            <form method="GET" action="/tech-performance/kpi-tracker/profitability" class="filters">
+                <div>
+                    <label for="year">Year</label>
+                    <select id="year" name="year" onchange="this.form.submit()">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <noscript><button type="submit" class="btn">Show</button></noscript>
+            </form>
+            {% endif %}
+
+            {% if rows %}
+            {% macro money(v) %}{% if v is none %}&mdash;{% else %}${{ '{:,.0f}'.format(v) }}{% endif %}{% endmacro %}
+            <div class="table-wrap">
+            <table class="profit">
+                <caption>{{ year }} Profitability &ndash; Total Revenue by Store (no offset)</caption>
+                <colgroup>
+                    <col style="width:150px"><col style="width:70px"><col style="width:70px">
+                    {% for m in months %}<col>{% endfor %}<col style="width:100px">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Store</th>
+                        <th>Units Launched</th>
+                        <th>Active Technicians</th>
+                        {% for m in months %}<th>{{ month_names[m] }}</th>{% endfor %}
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        <td class="store">{{ r.name }}</td>
+                        <td class="setting">{{ r.units }}</td>
+                        <td class="setting">{{ r.techs }}</td>
+                        {% for m in months %}
+                        {% set c = r.months.get(m) %}
+                        {% if c is none %}
+                        <td class="empty">&mdash;</td>
+                        {% else %}
+                        <td class="{{ c.band or ('mtd' if c.partial else '') }}"
+                            title="{{ r.name }} {{ month_names[m] }}: {{ money(c.value) }} with {{ c.techs }} tech{{ '' if c.techs == 1 else 's' }}{% if c.partial %} (month to date){% endif %}">
+                            {{ money(c.value) }}{% if c.partial %} <span class="techs">MTD &middot; {{ c.techs }} tech{{ '' if c.techs == 1 else 's' }}</span>{% else %}<span class="techs">{{ c.techs }} tech{{ '' if c.techs == 1 else 's' }}</span>{% endif %}
+                        </td>
+                        {% endif %}
+                        {% endfor %}
+                        <td class="year">{{ money(r.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total">
+                        <td>TOTALS:</td>
+                        <td>{{ totals.units }}</td>
+                        <td>{{ totals.techs }}</td>
+                        {% for m in months %}<td>{{ money(totals.months[m].value) }}</td>{% endfor %}
+                        <td>{{ money(totals.total) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            </div>
+
+            <div class="legend">
+                <span><span class="swatch" style="background:#cdeccf"></span>On target</span>
+                <span><span class="swatch" style="background:#fbeec2"></span>Close</span>
+                <span><span class="swatch" style="background:#f7d2d2"></span>Under</span>
+                {% for t in tech_levels %}
+                <span><strong>{{ t.techs }} tech{{ '' if t.techs == 1 else 's' }}:</strong>
+                    green {{ money(t.green) }}+, yellow {{ money(t.yellow) }}&ndash;{{ money(t.green) }}, red under {{ money(t.yellow) }}</span>
+                {% endfor %}
+            </div>
+            {% if partial_month %}
+            <p class="note">{{ month_names[partial_month] }} is still in progress, so it's shown in grey without a colour &mdash; a part-month total would always read red.</p>
+            {% endif %}
+            {% elif years %}
+            <div class="empty-state">No KPI reports uploaded for {{ year }} yet.</div>
+            {% else %}
+            <div class="empty-state">No KPI reports uploaded yet. Upload Ford's weekly file on the Monthly Tracker tab to get started.</div>
+            {% endif %}
+        </div>
+
+        {% if rows %}
+        <div class="card how">
+            <ul>
+                <li>Each cell is that store's <strong>Total RO Value</strong> for the month &mdash; Ford's revenue, <strong>not</strong> including the offset.</li>
+                <li>The colour compares it to the techs that store was running <em>that month</em> (shown under the number), not today's count. Targets rise ${{ '{:,.0f}'.format(per_tech) }} per extra tech.</li>
+                <li>Units Launched and Active Technicians show the most recent uploaded month. Edit techs per month on the Monthly Tracker tab.</li>
+                <li>The totals row is left uncoloured.</li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
