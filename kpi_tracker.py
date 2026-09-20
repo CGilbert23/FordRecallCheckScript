@@ -284,10 +284,27 @@ def _setting(settings, code, key):
     return val
 
 
-def _tracking(ro, days, total_days):
-    if not days:
+# ROs close late in the month — there's always a push in the last two weeks —
+# so a straight day-share projection reads low. The bump applies only to the
+# part of the month that hasn't happened yet, so it fades to nothing as the
+# month closes out (and is zero once the month is finished). 25% on the
+# remainder works out to about +9.5% at 13 of 21 days, which is the ~10% the
+# team was adding by hand. Replace it with measured numbers once
+# `kpi_report_weeks` has a few months of history.
+LATE_CLOSE_UPLIFT = 0.25
+
+
+def projection_factor(days, work_days):
+    """Multiplier turning a month-to-date figure into a projected month end."""
+    if not days or not work_days:
         return None
-    return int(round(ro / days * total_days, -1))
+    remaining = max(0, work_days - days) / work_days
+    return work_days / days * (1 + LATE_CLOSE_UPLIFT * remaining)
+
+
+def _tracking(ro, days, total_days):
+    factor = projection_factor(days, total_days)
+    return None if factor is None else int(round(ro * factor, -1))
 
 
 def _components(store, settings, days, total_days):
@@ -662,7 +679,7 @@ def _scorecard_metrics(snapshot, settings):
     }
     for code, sc in per_store.items():
         actual['store:' + code] = sc['ro']
-    factor = (total / days) if days else None
+    factor = projection_factor(days, total)
     tracking = {k: (v * factor if v is not None and factor else None)
                 for k, v in actual.items()
                 if k in ('ro', 'revenue') or k.startswith('store:')}

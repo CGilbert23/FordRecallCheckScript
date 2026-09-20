@@ -200,7 +200,8 @@
                 <thead>
                     <tr>
                         {% for c in columns %}
-                        <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}{% if c.key == 'name' or c.setting %} edit-col{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}">{{ c.label }}</th>
+                        <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}{% if c.key == 'name' or c.setting %} edit-col{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}"
+                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come"{% endif %}>{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>

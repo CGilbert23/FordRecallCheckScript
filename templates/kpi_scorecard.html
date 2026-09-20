@@ -124,7 +124,8 @@
                         <th class="sub"></th>
                         <th class="sub">Monthly Goal</th>
                         {% for c in view.columns %}
-                        <th class="sub">Actual</th><th class="sub">Tracking</th>
+                        <th class="sub">Actual</th>
+                        <th class="sub" title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come">Tracking</th>
                         {% endfor %}
                         <th class="sub">Actual</th>
                         <th class="sub"></th>

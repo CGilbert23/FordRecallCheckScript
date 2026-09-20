@@ -2078,6 +2078,7 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
                            rows=rows, total=total, columns=columns, yoy=yoy, latest_upload=latest_upload,
+                           late_close_pct=round(kpi_tracker.LATE_CLOSE_UPLIFT * 100),
                            stores=kpi_tracker.STORES, store=store,
                            store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
                            error=error, notice=notice), status
@@ -2158,6 +2159,7 @@ def _kpi_scorecard_page(month=None, notice=None, error=None, status=200):
 
     return render_template('kpi_scorecard.html', months=months, selected=selected,
                            view=view, notes=(card or {}).get('notes') or {},
+                           late_close_pct=round(kpi_tracker.LATE_CLOSE_UPLIFT * 100),
                            saved=bool(card), notice=notice, error=error), status
 
 
