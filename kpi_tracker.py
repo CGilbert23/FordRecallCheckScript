@@ -724,11 +724,8 @@ def scorecard_view(period_start, weeks, month_report, settings=None, goals=None,
                 known = latest['stores'] if latest else {}
                 for s in _ordered([{'code': c} for c in (known or STORE_BY_CODE)]):
                     code = s['code']
-                    sc = known.get(code)
-                    label = (f"{_store_name(code)} ({sc['techs']}/{sc['units']})"
-                             if sc else _store_name(code))
                     rows.append(_scorecard_row({'fmt': 'int', 'store': True}, 'store:' + code,
-                                               label, columns, eom, goals))
+                                               _store_name(code), columns, eom, goals))
         sections.append({'title': section['title'], 'rows': rows})
     return {'columns': columns, 'sections': sections, 'has_data': bool(by_week)}
 
@@ -748,16 +745,17 @@ def _scorecard_row(spec, key, label, columns, eom, goals):
             cell['manual'] = True
         if m:
             cell['actual'] = m['actual'].get(key)
-            if not spec.get('manual'):
+            if spec.get('manual'):
+                # Counts of vans and techs: what's there is there, no pacing.
+                cell['band'] = goal_band(cell['actual'], goal)
+            else:
                 cell['tracking'] = m['tracking'].get(key)
-            # Mid-month actuals are judged against the goal scaled to the days
-            # so far; rate rows (per day / per RO) need no scaling.
-            pace = goal
-            if goal is not None and not spec.get('rate') and m['work_days']:
-                pace = goal * m['days'] / m['work_days']
-            cell['band'] = goal_band(cell['actual'], pace)
-            if not spec.get('manual'):
                 cell['tracking_band'] = goal_band(cell['tracking'], goal)
+                # A rate (per day, per RO) is already comparable to the goal;
+                # a running total is judged by where it's heading, so Actual
+                # and Tracking always carry the same colour.
+                cell['band'] = (goal_band(cell['actual'], goal) if spec.get('rate')
+                                else cell['tracking_band'])
         cells.append(cell)
     eom_value = eom['actual'].get(key) if eom else None
     return {'key': key, 'label': label, 'fmt': spec.get('fmt', 'int'), 'goal': goal,
