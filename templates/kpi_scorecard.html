@@ -35,6 +35,8 @@
         table.eos tr.section td { background: #f5f7fa; text-align: left; font-weight: 700; color: #0f2a47; text-decoration: underline; }
         table.eos tr.gap td { border: none; background: none; height: 10px; padding: 0; }
         table.eos td.goal { background: #f1f3f6; font-weight: 700; }
+        /* Calculated goals (Avg RO Per Day, Total Revenue) aren't typed. */
+        table.eos td.goal.calc { color: #475569; }
         table.eos td.track { font-style: italic; color: #475569; }
         table.eos td.eom { background: #f8fafc; font-weight: 700; }
         table.eos td.note { text-align: left; font-style: italic; color: #92400e; white-space: normal; }
@@ -137,11 +139,14 @@
                     {% if row.gap %}<tr class="gap"><td colspan="{{ 4 + view.columns | length * 2 }}"></td></tr>{% endif %}
                     <tr>
                         <td class="label {% if row.store %}store{% endif %}">{{ row.label }}</td>
-                        <td class="goal">
+                        <td class="goal{% if row.derived %} calc{% endif %}"
+                            {% if row.derived %}title="Calculated{{ ' from the Total RO Count goal and the month\'s working days' if row.key == 'ro_per_day' else ' — Total RO Count goal x Avg RO Value goal' }}"{% endif %}>
+                            {% if row.derived %}{{ fmtv(row.goal, row.fmt) }}{% else %}
                             <span class="cell-value">{{ fmtv(row.goal, row.fmt) }}</span>
                             <span class="cell-input"><input class="cell" type="text" inputmode="decimal" form="scorecardForm"
                                 name="goal__{{ row.key }}" value="{{ rawv(row.goal, row.fmt) }}"
                                 aria-label="{{ row.label }} monthly goal"></span>
+                            {% endif %}
                         </td>
                         {% for cell in row.cells %}
                         <td class="{{ cell.band or ('blank' if cell.actual is none else '') }}">{{ fmtv(cell.actual, row.fmt) }}</td>

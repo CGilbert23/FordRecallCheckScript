@@ -575,13 +575,28 @@ SCORECARD_SECTIONS = [
     ]},
     {'title': 'KPI', 'rows': [
         {'key': 'ro', 'label': 'Total RO Count', 'fmt': 'int', 'stores': True},
-        {'key': 'ro_per_day', 'label': 'Avg RO Per Day', 'fmt': 'dec', 'rate': True, 'gap': True},
+        # Goal calculated from the Total RO Count goal, the way the team's
+        # spreadsheet does it: 1120 / 21 working days = 53.3.
+        {'key': 'ro_per_day', 'label': 'Avg RO Per Day', 'fmt': 'dec', 'rate': True,
+         'derived': True, 'gap': True},
         {'key': 'ro_per_tech_day', 'label': 'RO Per Active Tech / Day', 'fmt': 'dec', 'rate': True},
-        {'key': 'revenue', 'label': 'Total Revenue', 'fmt': 'money', 'gap': True},
         {'key': 'avg_ro_value', 'label': 'Avg RO Value', 'fmt': 'money', 'rate': True},
+        # Goal calculated: RO Count goal x Avg RO Value goal (1120 x 160).
+        {'key': 'revenue', 'label': 'Total Revenue', 'fmt': 'money', 'derived': True, 'gap': True},
         {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct', 'rate': True},
     ]},
 ]
+
+
+def derived_goals(goals, year, month):
+    """Fill in the goals the spreadsheet calculates rather than types."""
+    goals = dict(goals or {})
+    days = work_days(year, month)
+    if goals.get('ro') and days:
+        goals['ro_per_day'] = goals['ro'] / days
+    if goals.get('ro') and goals.get('avg_ro_value'):
+        goals['revenue'] = goals['ro'] * goals['avg_ro_value']
+    return goals
 
 
 # The team's starting goals — what a month shows before anything is saved and
@@ -598,8 +613,8 @@ DEFAULT_SCORECARD_GOALS = {
     'store:05494': 90,    # Washington
     'store:01844': 90,    # Newtown
     'store:11524': 90,    # Lincoln Doylestown
-    'ro_per_day': 53.3, 'ro_per_tech_day': 4.4,
-    'revenue': 179200, 'avg_ro_value': 160, 'commercial_mix': 0.40,
+    'ro_per_tech_day': 4.4, 'avg_ro_value': 160, 'commercial_mix': 0.40,
+    # Avg RO Per Day and Total Revenue are calculated — see derived_goals().
 }
 
 
@@ -660,8 +675,8 @@ def scorecard_view(period_start, weeks, month_report, settings=None, goals=None,
     a part-month reads as on-pace or not; Tracking is banded against the full
     goal. Rate rows (per day, per RO) are banded against the goal as-is.
     """
-    goals, manual = goals or {}, manual or {}
     start = period_start if isinstance(period_start, date) else _parse_date(period_start)
+    goals, manual = derived_goals(goals, start.year, start.month), manual or {}
     by_week = {}
     for w in weeks:
         m = _scorecard_metrics(w, settings)
@@ -726,6 +741,7 @@ def _scorecard_row(spec, key, label, columns, eom, goals):
     return {'key': key, 'label': label, 'fmt': spec.get('fmt', 'int'), 'goal': goal,
             'cells': cells, 'eom': eom_value, 'eom_band': goal_band(eom_value, goal),
             'rate': bool(spec.get('rate')), 'manual': bool(spec.get('manual')),
+            'derived': bool(spec.get('derived')),
             'store': bool(spec.get('store')), 'gap': bool(spec.get('gap'))}
 
 
