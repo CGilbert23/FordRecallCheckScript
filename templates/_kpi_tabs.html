@@ -2,7 +2,7 @@
    under the subtitle; the top-level nav keeps one "KPI Tracker" tab. #}
 {% set kpi_path = request.path %}
 <div class="kpi-tabs">
-    <a href="/tech-performance/kpi-tracker" class="kpi-tab {% if kpi_path == '/tech-performance/kpi-tracker' %}active{% endif %}">Monthly Tracker</a>
+    <a href="/tech-performance/kpi-tracker" class="kpi-tab {% if kpi_path == '/tech-performance/kpi-tracker' %}active{% endif %}">KPI Tracker</a>
     <a href="/tech-performance/kpi-tracker/profitability" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/profitability') %}active{% endif %}">Profitability</a>
     <a href="/tech-performance/kpi-tracker/scorecard" class="kpi-tab {% if kpi_path.startswith('/tech-performance/kpi-tracker/scorecard') %}active{% endif %}">EOS Scorecard</a>
 </div>
