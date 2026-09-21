@@ -14,11 +14,10 @@
     <a href="/mobile-keys/import" class="nav-tab {% if path.startswith('/mobile-keys/import') %}active{% endif %}">Import Invoice</a>
     <a href="/mobile-keys/inventory" class="nav-tab {% if path.startswith('/mobile-keys/inventory') %}active{% endif %}">Inventory</a>
     <a href="/mobile-keys/contacts" class="nav-tab {% if path.startswith('/mobile-keys/contacts') %}active{% endif %}">Key Code Contacts</a>
-    {% elif path.startswith('/tech-performance') %}
-    <a href="/tech-performance/xtime-report" class="nav-tab {% if path.startswith('/tech-performance/xtime-report') %}active{% endif %}">Xtime Tech Report</a>
-    <a href="/tech-performance/kpi-tracker" class="nav-tab {% if path.startswith('/tech-performance/kpi-tracker') %}active{% endif %}">KPI Tracker</a>
     {% elif path.startswith('/dealership-locator') %}
     <a href="/dealership-locator" class="nav-tab active">Dealership Locator</a>
     {% endif %}
+    {# /tech-performance pages show only Home here; they switch between
+       themselves with the pill row in _kpi_tabs.html. #}
 </div>
 {% endif %}

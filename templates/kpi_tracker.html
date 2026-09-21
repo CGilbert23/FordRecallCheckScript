@@ -360,6 +360,20 @@
         var yoyTable = document.getElementById('yoyTable');
         if (yoyTable) makeSortable(yoyTable);
 
+        // Default view: highest RO Count first. A numeric header's first click
+        // sorts highest-first, so clicking it once here also sets the arrow.
+        // The YoY table follows suit on this year's RO Count so both tables
+        // list the stores in the same order.
+        function clickHeader(t, match) {
+            var th = Array.prototype.find.call(t.tHead.querySelectorAll('th.sortable'), match);
+            if (th) th.click();
+        }
+        clickHeader(table, function (th) { return th.textContent.trim().indexOf('RO Count') === 0; });
+        if (yoyTable) {
+            var thisYear = yoyTable.tHead.rows[1].cells[1];  // RO Count group: last year, this year, change
+            if (thisYear) thisYear.click();
+        }
+
         // Click a header to sort; click again to flip. Numbers start
         // highest-first, text A-Z; blanks sink. Totals sit in <tfoot>. A
         // header's body column is its data-col (the YoY table's two header
