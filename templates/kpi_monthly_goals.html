@@ -37,11 +37,20 @@
         .money { display: flex; align-items: center; gap: 4px; }
         .adorn { font-size: 1.05rem; font-weight: 700; color: #475569; }
         input.big { width: 110px; padding: 8px 10px; font-size: 1.05rem; font-weight: 600; }
+        /* Read-only until Edit is clicked; a month with nothing saved starts editable. */
+        .typed { display: none; }
+        span.shown { font-weight: 600; color: #0f2a47; }
+        span.shown.big { font-size: 1.05rem; min-width: 46px; display: inline-block; }
+        body.editing .typed { display: inline-block; }
+        body.editing span.shown { display: none; }
+        .editing-only { display: none; }
+        body.editing .editing-only { display: inline-block; }
+        body.editing .not-editing { display: none; }
         .hint { font-size: 0.8rem; color: #888; margin-top: 14px; }
         .empty-state { text-align: center; color: #888; padding: 36px 12px; }
     </style>
 </head>
-<body>
+<body class="{% if not saved %}editing{% endif %}">
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
@@ -64,8 +73,9 @@
                 </form>
                 {% if selected %}
                 <div>
-                    <button type="submit" form="goalsForm" class="tbtn primary">Save</button>
-                    <button type="button" class="tbtn" id="resetBtn">Reset</button>
+                    <button type="button" class="tbtn not-editing" id="editBtn">Edit</button>
+                    <button type="submit" form="goalsForm" class="tbtn primary editing-only">Save</button>
+                    <button type="button" class="tbtn editing-only" id="cancelBtn">Cancel</button>
                 </div>
                 {% endif %}
             </div>
@@ -73,17 +83,21 @@
             {% if selected %}
             <form method="POST" id="goalsForm" action="/tech-performance/kpi-tracker/monthly-goals/{{ selected }}/save">
             <div class="wide">
+                {% set avg_ro = goals.avg_ro_value | round | int if goals.avg_ro_value is not none else '' %}
+                {% set mix = (goals.commercial_mix * 100) | round | int if goals.commercial_mix is not none else '' %}
                 <div class="field">
                     <label for="goal__avg_ro_value">Avg RO Value goal</label>
                     <div class="money"><span class="adorn">$</span>
-                        <input class="cell big" type="text" inputmode="decimal" id="goal__avg_ro_value" name="goal__avg_ro_value"
-                               value="{{ goals.avg_ro_value | round | int if goals.avg_ro_value is not none else '' }}"></div>
+                        <span class="shown big">{{ avg_ro }}</span>
+                        <input class="cell big typed" type="text" inputmode="decimal" id="goal__avg_ro_value"
+                               name="goal__avg_ro_value" value="{{ avg_ro }}"></div>
                 </div>
                 <div class="field">
                     <label for="goal__commercial_mix">Commercial Mix goal</label>
                     <div class="money">
-                        <input class="cell big" type="text" inputmode="decimal" id="goal__commercial_mix" name="goal__commercial_mix"
-                               value="{{ (goals.commercial_mix * 100) | round | int if goals.commercial_mix is not none else '' }}"><span class="adorn after">%</span></div>
+                        <span class="shown big">{{ mix }}</span>
+                        <input class="cell big typed" type="text" inputmode="decimal" id="goal__commercial_mix"
+                               name="goal__commercial_mix" value="{{ mix }}"><span class="adorn after">%</span></div>
                 </div>
             </div>
             <table class="goals">
@@ -100,12 +114,14 @@
                     <tr>
                         <td class="store">{{ s.name }}</td>
                         <td class="ford">{{ s.vans if s.vans is not none else '&mdash;' | safe }}</td>
-                        <td><input class="cell" type="text" inputmode="numeric" name="techs__{{ s.code }}"
-                                   value="{{ s.active_techs if s.active_techs is not none else '' }}"
-                                   aria-label="{{ s.name }} active techs"></td>
-                        <td><input class="cell" type="text" inputmode="numeric" name="forecast__{{ s.code }}"
-                                   value="{{ s.forecast | int if s.forecast is not none else '' }}"
-                                   aria-label="{{ s.name }} RO forecast"></td>
+                        {% set techs = s.active_techs if s.active_techs is not none else '' %}
+                        {% set forecast = s.forecast | round | int if s.forecast is not none else '' %}
+                        <td><span class="shown">{{ techs }}</span>
+                            <input class="cell typed" type="text" inputmode="numeric" name="techs__{{ s.code }}"
+                                   value="{{ techs }}" aria-label="{{ s.name }} active techs"></td>
+                        <td><span class="shown">{{ forecast }}</span>
+                            <input class="cell typed" type="text" inputmode="numeric" name="forecast__{{ s.code }}"
+                                   value="{{ forecast }}" aria-label="{{ s.name }} RO forecast"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -144,9 +160,15 @@
             document.getElementById('forecastTotal').textContent = sum('forecast__').toLocaleString();
         }
         form.addEventListener('input', retotal);
-        document.getElementById('resetBtn').addEventListener('click', function () {
+        var editBtn = document.getElementById('editBtn');
+        if (editBtn) editBtn.addEventListener('click', function () {
+            document.body.classList.add('editing');
+        });
+        var cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) cancelBtn.addEventListener('click', function () {
             form.querySelectorAll('input.cell').forEach(function (i) { i.value = i.defaultValue; });
             retotal();
+            document.body.classList.remove('editing');
         });
         retotal();
     })();

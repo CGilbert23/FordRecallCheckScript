@@ -63,10 +63,12 @@ def _trigger_for(schedule: dict):
     raise ValueError(f'Unknown cadence: {cadence}')
 
 
-def start(fire_callback):
+def start(fire_callback, goals_reminder=None):
     """Initialize the scheduler and register triggers for all active schedules.
 
-    `fire_callback(schedule_id)` will be called when a scheduled run should execute.
+    `fire_callback(schedule_id)` will be called when a scheduled run should
+    execute. `goals_reminder()` is an optional monthly job, fired on the 1st at
+    10am ET, that nudges the team to set the month's KPI goals.
     """
     global _scheduler, _fire_callback
     if _scheduler is not None:
@@ -78,6 +80,14 @@ def start(fire_callback):
     _scheduler.start()
     logger.info('APScheduler started (America/New_York)')
 
+    # Registered before the schedules load, so a Supabase hiccup there doesn't
+    # cost us the reminder.
+    if goals_reminder is not None:
+        _scheduler.add_job(_run_goals_reminder, CronTrigger(day=1, hour=10, minute=0, timezone=TZ),
+                           id='kpi_goals_reminder', replace_existing=True,
+                           args=[goals_reminder])
+        logger.info('Registered monthly KPI goals reminder (1st at 10:00 ET)')
+
     try:
         schedules = db.list_schedules()
     except Exception as e:
@@ -87,6 +97,14 @@ def start(fire_callback):
     for s in schedules:
         if s.get('active'):
             register(s)
+
+
+def _run_goals_reminder(goals_reminder):
+    """Never let a failed reminder take the scheduler thread down."""
+    try:
+        goals_reminder()
+    except Exception as e:
+        logger.error(f'KPI goals reminder failed: {e}')
 
 
 def register(schedule: dict):

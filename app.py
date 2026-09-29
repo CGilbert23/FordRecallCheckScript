@@ -94,6 +94,14 @@ resend.api_key = os.environ.get('RESEND_API_KEY', '')
 RESEND_FROM_EMAIL = os.environ.get(
     'RESEND_FROM_EMAIL', 'recallchecks@fredbeans-reporting.com'
 )
+# The goals reminder comes from its own address on the same verified domain —
+# a different domain would need its own DKIM/SPF records in Resend.
+KPI_GOALS_FROM_EMAIL = os.environ.get(
+    'KPI_GOALS_FROM_EMAIL', f"Mobile-KPITracker@{RESEND_FROM_EMAIL.split('@')[-1]}"
+)
+KPI_GOALS_REMINDER_TO = [e.strip() for e in os.environ.get(
+    'KPI_GOALS_REMINDER_TO', 'chris.gilbert@fredbeans.com,SNawalany@fredbeans.com'
+).split(',') if e.strip()]
 
 # In-memory job store and queue
 jobs = {}
@@ -287,7 +295,10 @@ def enqueue_scheduled_run(schedule_id, triggered_by='scheduled'):
 # Start APScheduler once the app module is loaded. Single gunicorn worker
 # (see gunicorn.conf.py) means exactly one scheduler instance, no dup fires.
 try:
-    scheduler.start(fire_callback=enqueue_scheduled_run)
+    # send_monthly_goals_reminder is defined further down this file, so the
+    # lambda defers the lookup to fire time.
+    scheduler.start(fire_callback=enqueue_scheduled_run,
+                    goals_reminder=lambda: send_monthly_goals_reminder())
 except Exception as e:
     logger.error(f"Scheduler failed to start: {e}")
 
@@ -2129,7 +2140,7 @@ def kpi_tracker_view():
 def _monthly_goals_page(month=None, notice=None, error=None, status=200):
     """Monthly Goals: the month's active techs and RO forecast per store, plus
     the two company-wide goals. Feeds the KPI Tracker and the EOS Scorecard."""
-    months, monthly, vans = [], None, {}
+    months, monthly, vans, saved = [], None, {}, False
     try:
         keys = {m['period_start'][:7] for m in db.list_kpi_report_months()}
         keys |= {p[:7] for p in db.list_kpi_monthly_goal_months()}
@@ -2140,6 +2151,7 @@ def _monthly_goals_page(month=None, notice=None, error=None, status=200):
         selected = month if any(m['key'] == month for m in months) else default
         if selected:
             report = db.get_kpi_report(f'{selected}-01')
+            saved = bool(db.get_kpi_monthly_goals(f'{selected}-01'))
             monthly = _monthly_goals(f'{selected}-01', report)
             # A month Ford hasn't reported on yet (next month) shows the newest
             # van count we do have — the fleet carries over.
@@ -2157,7 +2169,42 @@ def _monthly_goals_page(month=None, notice=None, error=None, status=200):
               for s in kpi_tracker.STORES]
     return render_template('kpi_monthly_goals.html', months=months, selected=selected,
                            stores=stores, goals=(monthly or {}).get('goals') or {},
-                           notice=notice, error=error), status
+                           saved=saved, notice=notice, error=error), status
+
+
+def send_monthly_goals_reminder():
+    """Nudge the team to set this month's goals. Fired by the scheduler on the
+    1st at 10am ET; a store still sitting at a 0 forecast means it isn't done,
+    so a month that's already filled in sends nothing."""
+    start = datetime.now().strftime('%Y-%m-01')
+    monthly = _monthly_goals(start)
+    stores = (monthly or {}).get('stores') or {}
+    missing = [s['name'] for s in kpi_tracker.STORES
+               if not (stores.get(s['code']) or {}).get('forecast')]
+    if not missing:
+        logger.info(f'Monthly goals for {start} are set; no reminder sent')
+        return False
+
+    month = _month_label(start)
+    url = 'http://dashboard.fredbeans-mobileservice.com/tech-performance/kpi-tracker/monthly-goals'
+    goals = (monthly or {}).get('goals') or {}
+    unset = [label for label, key in (('Avg RO Value', 'avg_ro_value'),
+                                      ('Commercial Mix', 'commercial_mix')) if not goals.get(key)]
+    resend.Emails.send({
+        'from': KPI_GOALS_FROM_EMAIL,
+        'to': KPI_GOALS_REMINDER_TO,
+        'subject': f'Set the mobile service goals for {month}',
+        'html': (
+            f'<p>{month} has started and the goals aren\'t set yet.</p>'
+            f'<p><strong>No RO forecast yet:</strong> {", ".join(missing)}</p>'
+            + (f'<p><strong>Also unset:</strong> {", ".join(unset)}</p>' if unset else '')
+            + f'<p><a href="{url}">Set them on the Monthly Goals tab</a></p>'
+            f'<p style="color:#888;font-size:12px">The KPI Tracker and the EOS Scorecard both '
+            f'read from those goals, so their targets stay blank until this is done.</p>'
+        ),
+    })
+    logger.info(f'Monthly goals reminder sent for {start} ({len(missing)} stores unset)')
+    return True
 
 
 @app.route('/tech-performance/kpi-tracker/monthly-goals')
