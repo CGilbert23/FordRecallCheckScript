@@ -684,6 +684,17 @@ def default_monthly_goals():
     }
 
 
+def carry_forward_goals(monthly):
+    """What a new month inherits: the roster carries over (techs don't change
+    by themselves), but the forecast and the two company-wide goals are zeroed
+    — they're set by hand each month, not repeated."""
+    return {
+        'stores': {code: {'active_techs': store.get('active_techs'), 'forecast': 0}
+                   for code, store in ((monthly or {}).get('stores') or {}).items()},
+        'goals': {'avg_ro_value': 0, 'commercial_mix': 0},
+    }
+
+
 def monthly_goals_from_settings(settings, goals=None):
     """Build Monthly Goals from an old `kpi_reports.settings` blob (+ optional
     saved scorecard goals), so months that predate this page keep their numbers."""

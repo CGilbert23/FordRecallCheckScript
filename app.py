@@ -2028,7 +2028,7 @@ def _monthly_goals(period_start, report=None):
         return saved
     prior = db.latest_kpi_monthly_goals_before(period_start)
     if prior:
-        return prior
+        return kpi_tracker.carry_forward_goals(prior)
     settings = (report or db.get_kpi_report(period_start) or {}).get('settings')
     goals = (db.get_kpi_scorecard(period_start) or {}).get('goals')
     if settings or goals:
@@ -2141,8 +2141,12 @@ def _monthly_goals_page(month=None, notice=None, error=None, status=200):
         if selected:
             report = db.get_kpi_report(f'{selected}-01')
             monthly = _monthly_goals(f'{selected}-01', report)
+            # A month Ford hasn't reported on yet (next month) shows the newest
+            # van count we do have — the fleet carries over.
+            newest = db.list_kpi_report_months()
+            source = report or (db.get_kpi_report(newest[0]['period_start']) if newest else None)
             vans = {s['code']: (s.get('raw') or {}).get(kpi_tracker.K_LAUNCHED_VANS)
-                    for s in (report or {}).get('stores') or []}
+                    for s in (source or {}).get('stores') or []}
     except Exception as e:
         logger.error(f"Monthly goals load failed: {e}")
         error = error or 'Could not load the monthly goals from the database.'

@@ -30,8 +30,13 @@
         table.goals td.ford { color: #6b7280; }
         table.goals tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         input.cell { width: 90px; padding: 4px 6px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.88rem; text-align: center; font-family: inherit; }
-        .wide { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e5e7eb; }
-        .wide label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        /* The two company-wide goals, above the per-store table so they're
+           not mistaken for a footnote. */
+        .wide { display: flex; gap: 32px; flex-wrap: wrap; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+        .wide label { display: block; font-weight: 700; font-size: 0.85rem; color: #0f2a47; margin-bottom: 6px; }
+        .money { display: flex; align-items: center; gap: 4px; }
+        .adorn { font-size: 1.05rem; font-weight: 700; color: #475569; }
+        input.big { width: 110px; padding: 8px 10px; font-size: 1.05rem; font-weight: 600; }
         .hint { font-size: 0.8rem; color: #888; margin-top: 14px; }
         .empty-state { text-align: center; color: #888; padding: 36px 12px; }
     </style>
@@ -67,6 +72,20 @@
 
             {% if selected %}
             <form method="POST" id="goalsForm" action="/tech-performance/kpi-tracker/monthly-goals/{{ selected }}/save">
+            <div class="wide">
+                <div class="field">
+                    <label for="goal__avg_ro_value">Avg RO Value goal</label>
+                    <div class="money"><span class="adorn">$</span>
+                        <input class="cell big" type="text" inputmode="decimal" id="goal__avg_ro_value" name="goal__avg_ro_value"
+                               value="{{ goals.avg_ro_value | round | int if goals.avg_ro_value is not none else '' }}"></div>
+                </div>
+                <div class="field">
+                    <label for="goal__commercial_mix">Commercial Mix goal</label>
+                    <div class="money">
+                        <input class="cell big" type="text" inputmode="decimal" id="goal__commercial_mix" name="goal__commercial_mix"
+                               value="{{ (goals.commercial_mix * 100) | round | int if goals.commercial_mix is not none else '' }}"><span class="adorn after">%</span></div>
+                </div>
+            </div>
             <table class="goals">
                 <thead>
                     <tr>
@@ -100,21 +119,9 @@
                 </tfoot>
             </table>
 
-            <div class="wide">
-                <div>
-                    <label for="goal__avg_ro_value">Avg RO Value goal</label>
-                    <input class="cell" type="text" inputmode="decimal" id="goal__avg_ro_value" name="goal__avg_ro_value"
-                           value="{{ goals.avg_ro_value | int if goals.avg_ro_value is not none else '' }}">
-                </div>
-                <div>
-                    <label for="goal__commercial_mix">Commercial Mix goal (%)</label>
-                    <input class="cell" type="text" inputmode="decimal" id="goal__commercial_mix" name="goal__commercial_mix"
-                           value="{{ (goals.commercial_mix * 100) | round | int if goals.commercial_mix is not none else '' }}">
-                </div>
-            </div>
             </form>
 
-            <p class="hint">Van Count comes from Ford's file and can't be typed. Active Techs drives the KPI Tracker's per-tech figures; Forecast is the store's RO goal and colours the Tracking column. A new month starts as a copy of the month before it.</p>
+            <p class="hint">Van Count comes from Ford's file and can't be typed &mdash; a month Ford hasn't reported on yet shows the latest count. Active Techs drives the KPI Tracker's per-tech figures; Forecast is the store's RO goal and colours its Tracking cell. A new month keeps last month's vans and techs, but the forecasts and the two goals above start at 0 &mdash; those are set by hand each month.</p>
             {% else %}
             <div class="empty-state">Upload Ford's KPI report first &mdash; the months come from there.</div>
             {% endif %}
