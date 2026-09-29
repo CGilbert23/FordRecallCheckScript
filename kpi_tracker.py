@@ -396,34 +396,57 @@ def _ordered(stores):
     return sorted(stores, key=lambda s: order.get(s['code'], len(order)))
 
 
-def month_view(report, codes=None):
-    """(rows, total) for one saved month. `codes` narrows to those stores."""
+def _forecast_row(row, forecast):
+    """Attach the month's RO goal for this store and the on-trend colour.
+    Green once the projection is within 10% of the goal, red below — two
+    states, since a projection is either on trend or it isn't."""
+    row['forecast'] = forecast
+    band = goal_band(row.get('tracking'), forecast)
+    row['trend'] = ('green' if band == 'green' else 'red') if band else None
+    return row
+
+
+def month_view(report, codes=None, settings=None, forecasts=None):
+    """(rows, total) for one saved month. `codes` narrows to those stores;
+    `settings` / `forecasts` come from that month's Monthly Goals."""
     days, total_days = report['days_elapsed'], report['work_days']
+    settings = settings if settings is not None else report.get('settings')
+    forecasts = forecasts or {}
     rows, parts = [], []
     for s in _ordered(report.get('stores') or []):
         if codes and s['code'] not in codes:
             continue
-        c = _components(s, report.get('settings'), days, total_days)
+        c = _components(s, settings, days, total_days)
         parts.append(c)
-        rows.append({'code': s['code'], 'dlr_name': s.get('name'),
-                     'name': _store_name(s['code'], s.get('name')),
-                     **_derive(c)})
-    total = _derive(_combine(parts, days)) if parts else None
+        rows.append(_forecast_row({'code': s['code'], 'dlr_name': s.get('name'),
+                                   'name': _store_name(s['code'], s.get('name')),
+                                   **_derive(c)}, forecasts.get(s['code'])))
+    total = None
+    if parts:
+        goals = [r['forecast'] for r in rows if r['forecast'] is not None]
+        total = _forecast_row(_derive(_combine(parts, days)), sum(goals) if goals else None)
     return rows, total
 
 
-def year_view(reports, codes=None):
+def year_view(reports, codes=None, settings_by_month=None, forecasts_by_month=None):
     """(rows, total) summed across a year's saved months (oldest first).
-    Units, techs and offset value show the latest month's settings."""
-    by_store, names, days = {}, {}, 0
+    Units and techs show the latest month; forecasts are summed month by month.
+    Both maps are keyed 'YYYY-MM'."""
+    settings_by_month, forecasts_by_month = settings_by_month or {}, forecasts_by_month or {}
+    by_store, names, days, forecasts = {}, {}, 0, {}
     for rep in sorted(reports, key=lambda r: str(r['period_start'])):
+        key = str(rep['period_start'])[:7]
         days += rep['days_elapsed']
+        month_forecast = forecasts_by_month.get(key) or {}
         for s in rep.get('stores') or []:
             if codes and s['code'] not in codes:
                 continue
             by_store.setdefault(s['code'], []).append(
-                _components(s, rep.get('settings'), rep['days_elapsed'], rep['work_days']))
+                _components(s, settings_by_month.get(key, rep.get('settings')),
+                            rep['days_elapsed'], rep['work_days']))
             names[s['code']] = s.get('name')
+            if month_forecast.get(s['code']) is not None:
+                forecasts[s['code']] = forecasts.get(s['code'], 0) + month_forecast[s['code']]
     rows, store_totals = [], []
     for s in _ordered([{'code': c} for c in by_store]):
         parts = by_store[s['code']]
@@ -431,10 +454,14 @@ def year_view(reports, codes=None):
         c = _combine(parts, sum(p['days'] for p in parts),
                      units=last['units'], techs=last['techs'], offset_value=last['offset_value'])
         store_totals.append(c)
-        rows.append({'code': s['code'], 'dlr_name': names[s['code']],
-                     'name': _store_name(s['code'], names[s['code']]),
-                     **_derive(c)})
-    total = _derive(_combine(store_totals, days)) if store_totals else None
+        rows.append(_forecast_row({'code': s['code'], 'dlr_name': names[s['code']],
+                                   'name': _store_name(s['code'], names[s['code']]),
+                                   **_derive(c)}, forecasts.get(s['code'])))
+    total = None
+    if store_totals:
+        goals = [r['forecast'] for r in rows if r['forecast'] is not None]
+        total = _forecast_row(_derive(_combine(store_totals, days)),
+                              sum(goals) if goals else None)
     return rows, total
 
 
@@ -530,7 +557,7 @@ def _yoy_changes(cur, prev):
     return out
 
 
-def yoy_view(cur_reports, prior_reports, codes=None):
+def yoy_view(cur_reports, prior_reports, codes=None, settings_by_period=None):
     """Year-over-year for the months in `cur_reports` that the prior year also
     has. Returns (rows, total, months_compared, pace) or None when there's
     nothing to compare.
@@ -555,7 +582,9 @@ def yoy_view(cur_reports, prior_reports, codes=None):
             for s in r.get('stores') or []:
                 if codes and s['code'] not in codes:
                     continue
-                c = _components(s, r.get('settings'), r['days_elapsed'], r['work_days'])
+                settings = (settings_by_period or {}).get(str(r['period_start'])[:10],
+                                                          r.get('settings'))
+                c = _components(s, settings, r['days_elapsed'], r['work_days'])
                 side.setdefault(s['code'], []).append(_scaled(c, f))
                 names.setdefault(s['code'], s.get('name'))
     if not months:
@@ -638,6 +667,74 @@ DEFAULT_SCORECARD_GOALS = {
     # Avg RO Per Day, RO Per Active Tech / Day and Total Revenue are
     # calculated — see derived_goals().
 }
+
+
+# ---------------------------------------------------------------------------
+# Monthly Goals — one month's targets, read by the KPI Tracker and the Scorecard
+# ---------------------------------------------------------------------------
+
+def default_monthly_goals():
+    """The starting point for a month with nothing saved and nothing to inherit."""
+    return {
+        'stores': {s['code']: {'active_techs': s['techs'],
+                               'forecast': DEFAULT_SCORECARD_GOALS.get('store:' + s['code'])}
+                   for s in STORES},
+        'goals': {'avg_ro_value': DEFAULT_SCORECARD_GOALS['avg_ro_value'],
+                  'commercial_mix': DEFAULT_SCORECARD_GOALS['commercial_mix']},
+    }
+
+
+def monthly_goals_from_settings(settings, goals=None):
+    """Build Monthly Goals from an old `kpi_reports.settings` blob (+ optional
+    saved scorecard goals), so months that predate this page keep their numbers."""
+    monthly = default_monthly_goals()
+    for code, store in (settings or {}).items():
+        if code in monthly['stores'] and store.get('active_techs') is not None:
+            monthly['stores'][code]['active_techs'] = store['active_techs']
+    for code in monthly['stores']:
+        if (goals or {}).get('store:' + code) is not None:
+            monthly['stores'][code]['forecast'] = goals['store:' + code]
+    for key in ('avg_ro_value', 'commercial_mix'):
+        if (goals or {}).get(key) is not None:
+            monthly['goals'][key] = goals[key]
+    return monthly
+
+
+def settings_from_goals(monthly):
+    """Monthly Goals -> the `{code: {active_techs, offset_value}}` shape every
+    calculation already takes. Offset Value is a constant now (it doesn't
+    change), so it always comes from STORES."""
+    stores = (monthly or {}).get('stores') or {}
+    return {s['code']: {'active_techs': (stores.get(s['code']) or {}).get('active_techs', s['techs']),
+                        'offset_value': s['offset_value']}
+            for s in STORES}
+
+
+def forecasts_from_goals(monthly):
+    """Monthly Goals -> {code: RO forecast}."""
+    return {code: store.get('forecast')
+            for code, store in ((monthly or {}).get('stores') or {}).items()
+            if store.get('forecast') is not None}
+
+
+def scorecard_goals(monthly, vans=None):
+    """Monthly Goals -> the Scorecard's goals dict. Per-store forecasts become
+    the store rows and their sum the Total RO Count goal; techs sum to the
+    Active Mobile Technicians goal; `vans` is Ford's Launched Vans total."""
+    stores = (monthly or {}).get('stores') or {}
+    goals = dict((monthly or {}).get('goals') or {})
+    forecasts = [s['forecast'] for s in stores.values() if s.get('forecast') is not None]
+    techs = [s['active_techs'] for s in stores.values() if s.get('active_techs') is not None]
+    if forecasts:
+        goals['ro'] = sum(forecasts)
+    if techs:
+        goals['techs'] = sum(techs)
+    if vans is not None:
+        goals['vans'] = vans
+    for code, store in stores.items():
+        if store.get('forecast') is not None:
+            goals['store:' + code] = store['forecast']
+    return goals
 
 
 def mondays(year, month):

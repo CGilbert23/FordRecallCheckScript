@@ -777,3 +777,41 @@ def upsert_kpi_scorecard(period_start, goals, notes, manual):
         'updated_at': datetime.now(timezone.utc).isoformat(),
     }, on_conflict='period_start').execute()
     return res.data[0] if res.data else None
+
+
+# ---------------------------------------------------------------------------
+# Monthly Goals (feeds both the KPI Tracker and the EOS Scorecard)
+# ---------------------------------------------------------------------------
+
+def get_kpi_monthly_goals(period_start):
+    client = get_client()
+    res = (client.table('kpi_monthly_goals').select('*')
+           .eq('period_start', period_start).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def latest_kpi_monthly_goals_before(period_start):
+    """The newest month's goals before `period_start` — a fresh month copies them."""
+    client = get_client()
+    res = (client.table('kpi_monthly_goals').select('*')
+           .lt('period_start', period_start)
+           .order('period_start', desc=True).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def list_kpi_monthly_goal_months():
+    client = get_client()
+    res = (client.table('kpi_monthly_goals').select('period_start')
+           .order('period_start', desc=True).execute())
+    return [r['period_start'] for r in (res.data or [])]
+
+
+def upsert_kpi_monthly_goals(period_start, stores, goals):
+    client = get_client()
+    res = client.table('kpi_monthly_goals').upsert({
+        'period_start': period_start,
+        'stores': stores,
+        'goals': goals,
+        'updated_at': datetime.now(timezone.utc).isoformat(),
+    }, on_conflict='period_start').execute()
+    return res.data[0] if res.data else None

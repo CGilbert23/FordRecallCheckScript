@@ -54,7 +54,10 @@
         table.kpi thead th { background: #1f4e79; }
         table.kpi td { font-variant-numeric: tabular-nums; }
         table.kpi td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; }
-        table.kpi td.track { background: #fff8cc; }
+        /* Tracking: green once the projection is within 10% of Forecast, else red. */
+        table.kpi td.green { background: #cdeccf; color: #14532d; font-weight: 600; }
+        table.kpi td.red { background: #f7d2d2; color: #7f1d1d; font-weight: 600; }
+        table.kpi td.goal { background: #f8fafc; color: #475569; }
         table.kpi td.inp { background: #e8f1fb; }
         /* YoY table: always full width; each metric is a group of three. */
         .yoy-head { display: flex; justify-content: flex-end; margin: 28px 0 8px; }
@@ -74,11 +77,6 @@
         /* Core fills the card (columns stay even); Extended sizes to its columns. */
         table.kpi.core { width: 100%; table-layout: fixed; }
         table.kpi.core .ext { display: none; }
-        /* Editing shows only Store + the two editable columns. */
-        table.kpi.editing th:not(.edit-col), table.kpi.editing td:not(.edit-col), table.kpi.editing tfoot { display: none; }
-        table.kpi.editing .edit-col { display: table-cell; }
-        table.kpi.editing caption { white-space: nowrap; }
-        table.kpi.core.editing { width: auto; table-layout: auto; }
         table.kpi tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
@@ -86,12 +84,6 @@
         th.sortable::after { content: ' \2195'; opacity: 0.55; }
         th.sortable.asc::after { content: ' \25B2'; opacity: 1; }
         th.sortable.desc::after { content: ' \25BC'; opacity: 1; }
-        .edit { display: none; width: 64px; padding: 3px 4px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.85rem; text-align: center; }
-        table.kpi.editing .edit { display: inline-block; }
-        table.kpi.editing .val { display: none; }
-        .editing-only { display: none; }
-        body.editing .editing-only { display: inline-block; }
-        body.editing .not-editing { display: none; }
         .empty { text-align: center; color: #888; padding: 36px 12px; }
         .how { font-size: 0.82rem; color: #666; line-height: 1.7; }
         .how ul { margin-left: 18px; }
@@ -162,15 +154,10 @@
             </form>
             {% if rows %}
             <div class="actions">
-                <button type="button" class="tbtn not-editing" id="viewBtn">Core View</button>
+                <button type="button" class="tbtn" id="viewBtn">Core View</button>
+                <button type="button" class="tbtn" id="copyBtn">Copy Table</button>
                 {% if report %}
-                <button type="button" class="tbtn not-editing" id="editBtn">Edit Techs &amp; Offset</button>
-                <button type="submit" form="settingsForm" class="tbtn primary editing-only">Save</button>
-                <button type="button" class="tbtn editing-only" id="cancelBtn">Cancel</button>
-                {% endif %}
-                <button type="button" class="tbtn not-editing" id="copyBtn">Copy Table</button>
-                {% if report %}
-                <form method="POST" action="/tech-performance/kpi-tracker/{{ selected.key }}/delete" class="not-editing" onsubmit="return confirm('Delete the {{ selected.label }} KPI report? You can upload it again later (edited techs and offset values will be lost).');">
+                <form method="POST" action="/tech-performance/kpi-tracker/{{ selected.key }}/delete" onsubmit="return confirm('Delete the {{ selected.label }} KPI report? You can upload it again later.');">
                     <button type="submit" class="tbtn danger">Delete Month</button>
                 </form>
                 {% endif %}
@@ -188,11 +175,6 @@
             {% else %}
                 {% set title = selected.label ~ ' – ' ~ report.days_elapsed ~ '/' ~ report.work_days ~ ' Working Days Complete' %}
             {% endif %}
-            {% if report %}
-            <form method="POST" id="settingsForm" action="/tech-performance/kpi-tracker/{{ selected.key }}/settings">
-                <input type="hidden" name="store" value="{{ store or '' }}">
-            </form>
-            {% endif %}
 
             <div class="table-wrap">
             <table class="kpi core" id="kpiTable">
@@ -200,8 +182,8 @@
                 <thead>
                     <tr>
                         {% for c in columns %}
-                        <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}{% if c.key == 'name' or c.setting %} edit-col{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}"
-                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come"{% endif %}>{{ c.label }}</th>
+                        <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}"
+                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come. Green once it's within 10% of Forecast."{% elif c.key == 'forecast' %}title="This month's RO goal for the store, set on the Monthly Goals tab"{% endif %}>{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -210,18 +192,11 @@
                     <tr>
                         {% for c in columns %}
                         {% set v = r[c.key] %}
-                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' or c.setting %}edit-col {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'tracking' %}track{% elif c.input %}inp{% endif %}"
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'tracking' %}{{ r.trend or '' }}{% elif c.key == 'forecast' %}goal{% elif c.input %}inp{% endif %}"
                             data-v="{{ '' if v is none else v }}">
-                            {%- if c.setting and report -%}
-                            <span class="val">{{ fmtv(v, c.fmt) }}</span>
-                            <input class="edit" type="number" min="0" step="{{ 1 if c.setting == 'active_techs' else 'any' }}"
-                                   form="settingsForm" name="{{ 'techs' if c.setting == 'active_techs' else 'offset' }}__{{ r.code }}"
-                                   value="{{ v if v is not none else '' }}" aria-label="{{ r.name }} {{ c.label }}">
-                            {%- else -%}
                             {# Tracking is a projection, so it reads ~160, not 160. #}
                             {%- if c.key == 'tracking' and v is not none %}~{% endif -%}
                             {{ fmtv(v, c.fmt) }}
-                            {%- endif -%}
                         </td>
                         {% endfor %}
                     </tr>
@@ -231,7 +206,7 @@
                 <tfoot>
                     <tr class="total">
                         {% for c in columns %}
-                        <td class="{% if c.ext %}ext{% endif %}">
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'tracking' %}{{ total.trend or '' }}{% endif %}">
                             {%- if c.key == 'name' -%}TOTALS:
                             {%- elif c.key == 'offset_value' -%}
                             {%- elif c.key == 'tracking' and total[c.key] is not none -%}~{{ fmtv(total[c.key], c.fmt) }}
@@ -260,7 +235,7 @@
             {% if yoy %}
             {% set yrows, ytotal, ymonths, ypace = yoy %}
             <div class="yoy-head">
-                <button type="button" class="tbtn not-editing" id="copyYoyBtn">Copy YoY</button>
+                <button type="button" class="tbtn" id="copyYoyBtn">Copy YoY</button>
             </div>
             <div class="table-wrap">
             <table class="kpi yoy" id="yoyTable">
@@ -342,20 +317,6 @@
             setView(table.classList.contains('core') ? 'extended' : 'core');
         });
 
-        // Edit techs & offset: swap those cells for inputs.
-        var editBtn = document.getElementById('editBtn');
-        var cancelBtn = document.getElementById('cancelBtn');
-        function setEditing(on) {
-            table.classList.toggle('editing', on);
-            document.body.classList.toggle('editing', on);
-        }
-        if (editBtn) editBtn.addEventListener('click', function () { setEditing(true); });
-        if (cancelBtn) cancelBtn.addEventListener('click', function () {
-            document.getElementById('settingsForm').reset();
-            table.querySelectorAll('input.edit').forEach(function (i) { i.value = i.defaultValue; });
-            setEditing(false);
-        });
-
         makeSortable(table);
         var yoyTable = document.getElementById('yoyTable');
         if (yoyTable) makeSortable(yoyTable);
@@ -431,6 +392,9 @@
             store: { bg: '#f1f3f6', fg: '#0f2a47', bold: true },
             track: { bg: '#fff8cc', fg: '#111827' },
             inp:   { bg: '#e8f1fb', fg: '#111827' },
+            goal:  { bg: '#f8fafc', fg: '#475569' },
+            onTrend:  { bg: '#cdeccf', fg: '#14532d', bold: true },
+            offTrend: { bg: '#f7d2d2', fg: '#7f1d1d', bold: true },
             prev:  { bg: '#ffffff', fg: '#6b7280' },
             up:    { bg: '#f8fafc', fg: '#047857', bold: true },
             down:  { bg: '#f8fafc', fg: '#b91c1c', bold: true },
@@ -466,7 +430,10 @@
         function bodyStyle(c) {
             var cl = c.classList;
             if (cl.contains('store')) return STYLE.store;
-            if (cl.contains('track')) return STYLE.track;
+            if (cl.contains('goal')) return STYLE.goal;
+            // Tracking carries its on-trend colour into the email copy.
+            if (cl.contains('green')) return STYLE.onTrend;
+            if (cl.contains('red')) return STYLE.offTrend;
             if (cl.contains('inp')) return STYLE.inp;
             if (cl.contains('prev')) return STYLE.prev;
             if (cl.contains('chg')) {

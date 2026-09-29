@@ -278,3 +278,16 @@ create table kpi_scorecards (
   manual jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Monthly Goals: one row per month defining that month's targets, read by both
+-- the KPI Tracker and the EOS Scorecard. `stores` = {P&A code: {active_techs,
+-- forecast}} (active techs aren't in Ford's file; forecast is the store's RO
+-- goal), `goals` = {avg_ro_value, commercial_mix}. A month with no row inherits
+-- the newest earlier one.
+create table kpi_monthly_goals (
+  id uuid primary key default gen_random_uuid(),
+  period_start date not null unique,
+  stores jsonb not null default '{}'::jsonb,
+  goals jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);

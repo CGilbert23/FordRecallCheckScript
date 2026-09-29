@@ -1996,10 +1996,11 @@ MAX_KPI_REPORT_BYTES = 10 * 1024 * 1024
 KPI_COLUMNS = [
     {'key': 'name', 'label': 'Store', 'fmt': 'text'},
     {'key': 'units', 'label': 'Units Launched', 'fmt': 'int', 'input': True},
-    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'setting': 'active_techs', 'input': True},
-    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'ext': True, 'setting': 'offset_value', 'input': True},
+    {'key': 'techs', 'label': 'Active Technicians', 'fmt': 'int', 'input': True},
+    {'key': 'offset_value', 'label': 'Offset Value', 'fmt': 'money', 'ext': True},
     {'key': 'available', 'label': 'Available', 'fmt': 'int', 'ext': True},
     {'key': 'ro', 'label': 'RO Count', 'fmt': 'int'},
+    {'key': 'forecast', 'label': 'Forecast', 'fmt': 'int'},
     {'key': 'tracking', 'label': 'Tracking', 'fmt': 'int'},
     {'key': 'hours', 'label': 'Hours Billed', 'fmt': 'int', 'ext': True},
     {'key': 'cp_hours', 'label': 'CP Hours', 'fmt': 'int', 'ext': True},
@@ -2012,10 +2013,27 @@ KPI_COLUMNS = [
     {'key': 'total_revenue', 'label': 'Total Revenue', 'fmt': 'money', 'ext': True},
     {'key': 'ros_tech_day', 'label': 'ROs / Active Tech / Day', 'fmt': 'dec'},
     {'key': 'rev_tech_day', 'label': 'Revenue / Active Tech / Day', 'fmt': 'money', 'ext': True},
-    {'key': 'offset_earned', 'label': 'Eligible Offset Earned', 'fmt': 'pct'},
     {'key': 'offset_left', 'label': 'Offset Left On Table', 'fmt': 'money'},
     {'key': 'visit_spend', 'label': '60 Day Visit Spend', 'fmt': 'money', 'ext': True},
 ]
+
+
+def _monthly_goals(period_start, report=None):
+    """One month's Monthly Goals, falling back through what came before it:
+    the saved row, the newest earlier month, the figures that used to live on
+    the KPI Tracker (`kpi_reports.settings`) and the Scorecard for that month,
+    then the standing defaults."""
+    saved = db.get_kpi_monthly_goals(period_start)
+    if saved:
+        return saved
+    prior = db.latest_kpi_monthly_goals_before(period_start)
+    if prior:
+        return prior
+    settings = (report or db.get_kpi_report(period_start) or {}).get('settings')
+    goals = (db.get_kpi_scorecard(period_start) or {}).get('goals')
+    if settings or goals:
+        return kpi_tracker.monthly_goals_from_settings(settings, goals)
+    return kpi_tracker.default_monthly_goals()
 
 
 def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status=200):
@@ -2056,20 +2074,34 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     if store not in kpi_tracker.STORE_BY_CODE:
         store = None
     codes = {store} if store else None
+    # Active techs and the RO forecasts come from that month's Monthly Goals.
     if report:
-        rows, total = kpi_tracker.month_view(report, codes)
+        monthly = _monthly_goals(report['period_start'], report)
+        rows, total = kpi_tracker.month_view(report, codes,
+                                             kpi_tracker.settings_from_goals(monthly),
+                                             kpi_tracker.forecasts_from_goals(monthly))
     elif year_reports:
-        rows, total = kpi_tracker.year_view(year_reports, codes)
+        settings_by_month, forecasts_by_month = {}, {}
+        for rep in year_reports:
+            key = rep['period_start'][:7]
+            monthly = _monthly_goals(rep['period_start'], rep)
+            settings_by_month[key] = kpi_tracker.settings_from_goals(monthly)
+            forecasts_by_month[key] = kpi_tracker.forecasts_from_goals(monthly)
+        rows, total = kpi_tracker.year_view(year_reports, codes,
+                                            settings_by_month, forecasts_by_month)
 
     # Year-over-year against the same month (or the same months) last year.
     yoy = None
     if rows and year:
         try:
-            if report:
-                prior = db.get_kpi_report(f"{year - 1}{report['period_start'][4:10]}")
-                yoy = kpi_tracker.yoy_view([report], [prior] if prior else [], codes)
-            else:
-                yoy = kpi_tracker.yoy_view(year_reports, db.get_kpi_reports_for_year(year - 1), codes)
+            cur = [report] if report else year_reports
+            prior = ([db.get_kpi_report(f"{year - 1}{report['period_start'][4:10]}")] if report
+                     else db.get_kpi_reports_for_year(year - 1))
+            prior = [p for p in prior if p]
+            # Both years' techs/offset come from their own Monthly Goals.
+            by_period = {r['period_start']: kpi_tracker.settings_from_goals(
+                _monthly_goals(r['period_start'], r)) for r in cur + prior}
+            yoy = kpi_tracker.yoy_view(cur, prior, codes, by_period)
         except Exception as e:
             logger.error(f"KPI YoY load failed: {e}")
     # Tracking projects a month in progress to month end; a finished month or
@@ -2092,6 +2124,80 @@ def kpi_tracker_view():
     month = (request.args.get('month') or '').strip()
     store = (request.args.get('store') or '').strip()
     return _kpi_page(int(year) if year.isdigit() else None, month, store)
+
+
+def _monthly_goals_page(month=None, notice=None, error=None, status=200):
+    """Monthly Goals: the month's active techs and RO forecast per store, plus
+    the two company-wide goals. Feeds the KPI Tracker and the EOS Scorecard."""
+    months, monthly, vans = [], None, {}
+    try:
+        keys = {m['period_start'][:7] for m in db.list_kpi_report_months()}
+        keys |= {p[:7] for p in db.list_kpi_monthly_goal_months()}
+        keys |= {_next_month(max(keys))} if keys else {datetime.now().strftime('%Y-%m')}
+        months = [{'key': k, 'label': _month_label(f'{k}-01')} for k in sorted(keys, reverse=True)]
+        this_month = datetime.now().strftime('%Y-%m')
+        default = this_month if any(m['key'] == this_month for m in months) else (months[0]['key'] if months else None)
+        selected = month if any(m['key'] == month for m in months) else default
+        if selected:
+            report = db.get_kpi_report(f'{selected}-01')
+            monthly = _monthly_goals(f'{selected}-01', report)
+            vans = {s['code']: (s.get('raw') or {}).get(kpi_tracker.K_LAUNCHED_VANS)
+                    for s in (report or {}).get('stores') or []}
+    except Exception as e:
+        logger.error(f"Monthly goals load failed: {e}")
+        error = error or 'Could not load the monthly goals from the database.'
+        selected = month
+
+    stores = [{'code': s['code'], 'name': s['name'], 'vans': vans.get(s['code']),
+               **((monthly or {}).get('stores') or {}).get(s['code'], {})}
+              for s in kpi_tracker.STORES]
+    return render_template('kpi_monthly_goals.html', months=months, selected=selected,
+                           stores=stores, goals=(monthly or {}).get('goals') or {},
+                           notice=notice, error=error), status
+
+
+@app.route('/tech-performance/kpi-tracker/monthly-goals')
+def kpi_monthly_goals():
+    month = (request.args.get('month') or '').strip()
+    return _monthly_goals_page(month if _MONTH_RE.match(month) else None)
+
+
+@app.route('/tech-performance/kpi-tracker/monthly-goals/<month>/save', methods=['POST'])
+def kpi_monthly_goals_save(month):
+    if not _MONTH_RE.match(month):
+        return redirect(url_for('kpi_monthly_goals'))
+
+    def number(raw, pct=False):
+        raw = (raw or '').replace('$', '').replace(',', '').strip()
+        if not raw:
+            return None
+        value = float(raw.rstrip('%'))
+        return value / 100 if (pct or raw.endswith('%')) and value > 1 else value
+
+    stores, goals = {}, {}
+    try:
+        for s in kpi_tracker.STORES:
+            techs = number(request.form.get(f"techs__{s['code']}"))
+            forecast = number(request.form.get(f"forecast__{s['code']}"))
+            entry = {}
+            if techs is not None:
+                entry['active_techs'] = max(0, int(techs))
+            if forecast is not None:
+                entry['forecast'] = max(0, forecast)
+            if entry:
+                stores[s['code']] = entry
+        for key, is_pct in (('avg_ro_value', False), ('commercial_mix', True)):
+            value = number(request.form.get(f'goal__{key}'), is_pct)
+            if value is not None:
+                goals[key] = value
+    except ValueError:
+        return _monthly_goals_page(month, error='Techs, forecast and goals must be numbers.', status=400)
+    try:
+        db.upsert_kpi_monthly_goals(f'{month}-01', stores, goals)
+    except Exception as e:
+        logger.error(f"Monthly goals save failed: {e}")
+        return _monthly_goals_page(month, error=f'Could not save the goals: {e}', status=500)
+    return redirect(url_for('kpi_monthly_goals', month=month))
 
 
 @app.route('/tech-performance/kpi-tracker/profitability')
@@ -2146,14 +2252,15 @@ def _kpi_scorecard_page(month=None, notice=None, error=None, status=200):
         if selected:
             start = f'{selected}-01'
             card = db.get_kpi_scorecard(start)
-            goals = (card or {}).get('goals')
-            if not card:  # a fresh month starts from the last month's goals
-                prior = db.latest_kpi_scorecard_before(start)
-                goals = (prior or {}).get('goals') or dict(kpi_tracker.DEFAULT_SCORECARD_GOALS)
             report = db.get_kpi_report(start)
+            # Every goal but the two manual tracking cells comes from Monthly Goals.
+            monthly = _monthly_goals(start, report)
+            vans = sum((s.get('raw') or {}).get(kpi_tracker.K_LAUNCHED_VANS) or 0
+                       for s in (report or {}).get('stores') or []) if report else None
             view = kpi_tracker.scorecard_view(
                 start, db.list_kpi_report_weeks(start), report,
-                (report or {}).get('settings'), goals, (card or {}).get('manual'))
+                kpi_tracker.settings_from_goals(monthly),
+                kpi_tracker.scorecard_goals(monthly, vans), (card or {}).get('manual'))
     except Exception as e:
         logger.error(f"KPI scorecard load failed: {e}")
         error = error or 'Could not load the scorecard from the database.'
@@ -2173,34 +2280,20 @@ def kpi_scorecard():
 
 @app.route('/tech-performance/kpi-tracker/scorecard/<month>/save', methods=['POST'])
 def kpi_scorecard_save(month):
-    """Save the hand-entered half: monthly goals, notes, and the manual
-    Van Count / Active Technicians tracking per week."""
+    """Save the hand-entered half: the notes, and the manual Van Count /
+    Active Technicians tracking per week. The goals live in Monthly Goals."""
     if not _MONTH_RE.match(month):
         return redirect(url_for('kpi_scorecard'))
     start = f'{month}-01'
 
-    # Percentage rows are typed and shown as whole percents ("40"), stored as
-    # a fraction like every other percentage in the app.
-    pct_keys = {r['key'] for s in kpi_tracker.SCORECARD_SECTIONS for r in s['rows']
-                if r.get('fmt') == 'pct'}
-
-    def number(raw, key=None):
+    def number(raw):
         raw = (raw or '').replace('$', '').replace(',', '').strip()
-        if not raw:
-            return None
-        value = float(raw.rstrip('%'))
-        if (key in pct_keys or raw.endswith('%')) and value > 1:
-            value /= 100
-        return value
+        return float(raw.rstrip('%')) if raw else None
 
-    goals, notes, manual = {}, {}, {}
+    notes, manual = {}, {}
     try:
         for field, raw in request.form.items():
-            if field.startswith('goal__'):
-                value = number(raw, field[6:])
-                if value is not None:
-                    goals[field[6:]] = value
-            elif field.startswith('note__'):
+            if field.startswith('note__'):
                 if raw.strip():
                     notes[field[6:]] = raw.strip()
             elif field.startswith('manual__'):
@@ -2209,8 +2302,10 @@ def kpi_scorecard_save(month):
                 if value is not None:
                     manual.setdefault(week, {})[key] = value
     except ValueError:
-        return _kpi_scorecard_page(month, error='Goals must be numbers.', status=400)
+        return _kpi_scorecard_page(month, error='Tracking values must be numbers.', status=400)
     try:
+        # Keep whatever goals the row already had; nothing reads them now.
+        goals = (db.get_kpi_scorecard(start) or {}).get('goals') or {}
         db.upsert_kpi_scorecard(start, goals, notes, manual)
     except Exception as e:
         logger.error(f"KPI scorecard save failed: {e}")
@@ -2275,38 +2370,6 @@ def kpi_tracker_upload():
         notice = (f"Saved {len(saved)} months of {', '.join(map(str, years))}"
                   f"{f' ({replaced} replaced)' if replaced else ''}.")
     return _kpi_page(last['period_start'].year, last['period_start'].strftime('%Y-%m'), notice=notice)
-
-
-@app.route('/tech-performance/kpi-tracker/<month>/settings', methods=['POST'])
-def kpi_tracker_settings(month):
-    if not _MONTH_RE.match(month):
-        return redirect(url_for('kpi_tracker_view'))
-    store = (request.form.get('store') or '').strip()
-    try:
-        report = db.get_kpi_report(f'{month}-01')
-        if not report:
-            return _kpi_page(error='That month is no longer saved.', status=404)
-        settings = dict(report.get('settings') or {})
-        for s in kpi_tracker.STORES:
-            techs = (request.form.get(f"techs__{s['code']}") or '').strip()
-            offset = (request.form.get(f"offset__{s['code']}") or '').replace('$', '').replace(',', '').strip()
-            if not techs and not offset:
-                continue
-            cur = dict(settings.get(s['code']) or {})
-            try:
-                if techs:
-                    cur['active_techs'] = max(0, int(float(techs)))
-                if offset:
-                    cur['offset_value'] = max(0.0, float(offset))
-            except ValueError:
-                return _kpi_page(int(month[:4]), month, store,
-                                 error=f"{s['name']}: techs and offset value must be numbers.", status=400)
-            settings[s['code']] = cur
-        db.update_kpi_settings(f'{month}-01', settings)
-    except Exception as e:
-        logger.error(f"KPI settings save failed: {e}")
-        return _kpi_page(int(month[:4]), month, store, error=f'Could not save the settings: {e}', status=500)
-    return redirect(url_for('kpi_tracker_view', year=month[:4], month=month, store=store or None))
 
 
 @app.route('/tech-performance/kpi-tracker/<month>/delete', methods=['POST'])

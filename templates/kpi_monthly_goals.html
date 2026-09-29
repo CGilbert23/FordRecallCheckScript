@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Goals - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1100px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 180px; cursor: pointer; }
+        .tbtn { display: inline-block; background: #fff; color: #1f2937; border: 1px solid #cbd5e1; padding: 7px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; line-height: 1.2; }
+        .tbtn:hover { background: #f3f4f6; }
+        .tbtn.primary { background: #0068d6; border-color: #0068d6; color: #fff; }
+        .tbtn.primary:hover { background: #0050a8; }
+        table.goals { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        table.goals th, table.goals td { border: 1px solid #c8ced6; padding: 7px 10px; text-align: center; font-variant-numeric: tabular-nums; }
+        table.goals th { background: #1f4e79; color: #fff; font-size: 0.78rem; font-weight: 600; }
+        table.goals td.store { background: #f1f3f6; text-align: left; font-weight: 600; color: #0f2a47; }
+        table.goals td.ford { color: #6b7280; }
+        table.goals tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
+        input.cell { width: 90px; padding: 4px 6px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.88rem; text-align: center; font-family: inherit; }
+        .wide { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e5e7eb; }
+        .wide label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .hint { font-size: 0.8rem; color: #888; margin-top: 14px; }
+        .empty-state { text-align: center; color: #888; padding: 36px 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">What the month is aiming at. The KPI Tracker and the EOS Scorecard both read from here.</p>
+        {% include '_kpi_tabs.html' %}
+
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        {% if notice %}<div class="success">{{ notice }}</div>{% endif %}
+
+        <div class="card">
+            <div class="toolbar">
+                <form method="GET" action="/tech-performance/kpi-tracker/monthly-goals" class="filters">
+                    <label for="month">Month</label>
+                    <select id="month" name="month" onchange="this.form.submit()">
+                        {% for m in months %}
+                        <option value="{{ m.key }}" {% if m.key == selected %}selected{% endif %}>{{ m.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <noscript><button type="submit" class="tbtn">Show</button></noscript>
+                </form>
+                {% if selected %}
+                <div>
+                    <button type="submit" form="goalsForm" class="tbtn primary">Save</button>
+                    <button type="button" class="tbtn" id="resetBtn">Reset</button>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if selected %}
+            <form method="POST" id="goalsForm" action="/tech-performance/kpi-tracker/monthly-goals/{{ selected }}/save">
+            <table class="goals">
+                <thead>
+                    <tr>
+                        <th style="text-align:left">Store</th>
+                        <th>Van Count</th>
+                        <th>Active Techs</th>
+                        <th>Forecast (ROs)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in stores %}
+                    <tr>
+                        <td class="store">{{ s.name }}</td>
+                        <td class="ford">{{ s.vans if s.vans is not none else '&mdash;' | safe }}</td>
+                        <td><input class="cell" type="text" inputmode="numeric" name="techs__{{ s.code }}"
+                                   value="{{ s.active_techs if s.active_techs is not none else '' }}"
+                                   aria-label="{{ s.name }} active techs"></td>
+                        <td><input class="cell" type="text" inputmode="numeric" name="forecast__{{ s.code }}"
+                                   value="{{ s.forecast | int if s.forecast is not none else '' }}"
+                                   aria-label="{{ s.name }} RO forecast"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total">
+                        <td style="text-align:left">TOTALS:</td>
+                        <td>{{ stores | map(attribute='vans') | select('number') | sum }}</td>
+                        <td id="techTotal"></td>
+                        <td id="forecastTotal"></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="wide">
+                <div>
+                    <label for="goal__avg_ro_value">Avg RO Value goal</label>
+                    <input class="cell" type="text" inputmode="decimal" id="goal__avg_ro_value" name="goal__avg_ro_value"
+                           value="{{ goals.avg_ro_value | int if goals.avg_ro_value is not none else '' }}">
+                </div>
+                <div>
+                    <label for="goal__commercial_mix">Commercial Mix goal (%)</label>
+                    <input class="cell" type="text" inputmode="decimal" id="goal__commercial_mix" name="goal__commercial_mix"
+                           value="{{ (goals.commercial_mix * 100) | round | int if goals.commercial_mix is not none else '' }}">
+                </div>
+            </div>
+            </form>
+
+            <p class="hint">Van Count comes from Ford's file and can't be typed. Active Techs drives the KPI Tracker's per-tech figures; Forecast is the store's RO goal and colours the Tracking column. A new month starts as a copy of the month before it.</p>
+            {% else %}
+            <div class="empty-state">Upload Ford's KPI report first &mdash; the months come from there.</div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+    (function () {
+        var form = document.getElementById('goalsForm');
+        if (!form) return;
+        function sum(prefix) {
+            var total = 0;
+            form.querySelectorAll('input[name^="' + prefix + '"]').forEach(function (i) {
+                var v = parseFloat(i.value);
+                if (!isNaN(v)) total += v;
+            });
+            return total;
+        }
+        function retotal() {
+            document.getElementById('techTotal').textContent = sum('techs__').toLocaleString();
+            document.getElementById('forecastTotal').textContent = sum('forecast__').toLocaleString();
+        }
+        form.addEventListener('input', retotal);
+        document.getElementById('resetBtn').addEventListener('click', function () {
+            form.querySelectorAll('input.cell').forEach(function (i) { i.value = i.defaultValue; });
+            retotal();
+        });
+        retotal();
+    })();
+    </script>
+</body>
+</html>

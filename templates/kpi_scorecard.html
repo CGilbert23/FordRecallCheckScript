@@ -104,7 +104,7 @@
                 {% if view %}
                 <div class="actions">
                     <button type="button" class="tbtn not-editing" id="printBtn">Print</button>
-                    <button type="button" class="tbtn not-editing" id="editBtn">Edit Goals &amp; Notes</button>
+                    <button type="button" class="tbtn not-editing" id="editBtn">Edit Notes &amp; Tracking</button>
                     <button type="submit" form="scorecardForm" class="tbtn primary edit-only">Save</button>
                     <button type="button" class="tbtn edit-only" id="cancelBtn">Cancel</button>
                 </div>
@@ -160,14 +160,10 @@
                     {% if row.gap %}<tr class="gap"><td colspan="{{ 4 + view.columns | length * 2 }}"></td></tr>{% endif %}
                     <tr>
                         <td class="label {% if row.store %}store{% endif %}">{{ row.label }}</td>
+                        {# Goals are set on the Monthly Goals tab, so they're read-only here. #}
                         <td class="goal{% if row.derived %} calc{% endif %}"
-                            {% if row.derived %}title="Calculated: {{ {'ro_per_day': "Total RO Count goal / the month's working days", 'ro_per_tech_day': "Total RO Count goal / Active Technicians goal / the month's working days", 'revenue': 'Total RO Count goal x Avg RO Value goal'}[row.key] }}"{% endif %}>
-                            {% if row.derived %}{{ fmtv(row.goal, row.fmt) }}{% else %}
-                            <span class="cell-value">{{ fmtv(row.goal, row.fmt) }}</span>
-                            <span class="cell-input"><input class="cell" type="text" inputmode="decimal" form="scorecardForm"
-                                name="goal__{{ row.key }}" value="{{ rawv(row.goal, row.fmt) }}"
-                                aria-label="{{ row.label }} monthly goal"></span>
-                            {% endif %}
+                            title="{% if row.derived %}Calculated: {{ {'ro_per_day': "Total RO Count goal / the month's working days", 'ro_per_tech_day': "Total RO Count goal / Active Technicians goal / the month's working days", 'revenue': 'Total RO Count goal x Avg RO Value goal'}[row.key] }}{% else %}Set on the Monthly Goals tab{% endif %}">
+                            {{ fmtv(row.goal, row.fmt) }}
                         </td>
                         {% for cell in row.cells %}
                         <td class="{{ cell.band or ('blank' if cell.actual is none else '') }}">{{ fmtv(cell.actual, row.fmt) }}</td>
