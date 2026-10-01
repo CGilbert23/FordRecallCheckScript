@@ -104,7 +104,7 @@
                 {% if view %}
                 <div class="actions">
                     <button type="button" class="tbtn not-editing" id="printBtn">Print</button>
-                    <button type="button" class="tbtn not-editing" id="editBtn">Edit Notes &amp; Tracking</button>
+                    <button type="button" class="tbtn not-editing" id="editBtn">Edit Notes &amp; Manual Figures</button>
                     <button type="submit" form="scorecardForm" class="tbtn primary edit-only">Save</button>
                     <button type="button" class="tbtn edit-only" id="cancelBtn">Cancel</button>
                 </div>
@@ -177,7 +177,16 @@
                             {% else %}{% if cell.tracking is not none %}~{% endif %}{{ fmtv(cell.tracking, row.fmt) }}{% endif %}
                         </td>
                         {% endfor %}
-                        <td class="eom {{ row.eom_band or '' }}">{{ fmtv(row.eom, row.fmt) }}</td>
+                        {# EOM is typed by hand until Ford's closing file lands, then it's automatic. #}
+                        <td class="eom {{ row.eom_band or '' }}"
+                            title="{% if row.eom_typed %}Typed by hand — Ford's closing file will replace it{% else %}From Ford's closing file{% endif %}">
+                            {% if row.eom_typed %}
+                            <span class="cell-value">{{ fmtv(row.eom, row.fmt) }}</span>
+                            <span class="cell-input"><input class="cell" type="text" inputmode="decimal" form="scorecardForm"
+                                name="eom__{{ row.key }}" value="{{ rawv(row.eom, row.fmt) }}"
+                                aria-label="{{ row.label }} month end"></span>
+                            {% else %}{{ fmtv(row.eom, row.fmt) }}{% endif %}
+                        </td>
                         <td class="note">
                             <span class="cell-value">{{ notes.get(row.key, '') }}</span>
                             <span class="cell-input"><input class="cell note-input" type="text" form="scorecardForm"

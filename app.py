@@ -2337,9 +2337,16 @@ def kpi_scorecard_save(month):
         return redirect(url_for('kpi_scorecard'))
     start = f'{month}-01'
 
-    def number(raw):
+    # Percentage rows are typed as whole percents and stored as fractions.
+    pct_keys = {r['key'] for s in kpi_tracker.SCORECARD_SECTIONS for r in s['rows']
+                if r.get('fmt') == 'pct'}
+
+    def number(raw, key=None):
         raw = (raw or '').replace('$', '').replace(',', '').strip()
-        return float(raw.rstrip('%')) if raw else None
+        if not raw:
+            return None
+        value = float(raw.rstrip('%'))
+        return value / 100 if (key in pct_keys or raw.endswith('%')) and value > 1 else value
 
     notes, manual = {}, {}
     try:
@@ -2347,6 +2354,10 @@ def kpi_scorecard_save(month):
             if field.startswith('note__'):
                 if raw.strip():
                     notes[field[6:]] = raw.strip()
+            elif field.startswith('eom__'):
+                value = number(raw, field[5:])
+                if value is not None:
+                    manual.setdefault(kpi_tracker.MANUAL_EOM_KEY, {})[field[5:]] = value
             elif field.startswith('manual__'):
                 week, _, key = field[8:].partition('__')
                 value = number(raw)

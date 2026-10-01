@@ -606,6 +606,10 @@ def yoy_view(cur_reports, prior_reports, codes=None, settings_by_period=None):
 # EOS Scorecard
 # ---------------------------------------------------------------------------
 
+# Where hand-typed EOM figures live inside `kpi_scorecards.manual`, alongside
+# the per-week van/tech entries (which are keyed by date, so no collision).
+MANUAL_EOM_KEY = 'eom'
+
 # Green within 10% of goal, yellow 10-20% under, red more than 20% under.
 SCORECARD_GREEN = 0.90
 SCORECARD_YELLOW = 0.80
@@ -819,12 +823,15 @@ def scorecard_view(period_start, weeks, month_report, settings=None, goals=None,
         columns.append({'key': key, 'label': f'{monday.day}-{calendar.month_abbr[monday.month]}',
                         'metrics': by_week.get(key), 'manual': (manual or {}).get(key) or {}})
     eom = _scorecard_metrics(month_report, settings) if month_report and _is_complete(month_report) else None
+    # EOM can be filled in by hand at the last meeting of the month; Ford's
+    # closing file (the first one of the next month) takes over when it lands.
+    typed_eom = (manual or {}).get(MANUAL_EOM_KEY) or {}
 
     sections = []
     for section in SCORECARD_SECTIONS:
         rows = []
         for spec in section['rows']:
-            rows.append(_scorecard_row(spec, spec['key'], spec['label'], columns, eom, goals))
+            rows.append(_scorecard_row(spec, spec['key'], spec['label'], columns, eom, goals, typed_eom))
             if spec.get('stores'):
                 # Before the month's first upload there's nothing to read the
                 # roster from, so fall back to the store list — the goals still
@@ -833,12 +840,13 @@ def scorecard_view(period_start, weeks, month_report, settings=None, goals=None,
                 for s in _ordered([{'code': c} for c in (known or STORE_BY_CODE)]):
                     code = s['code']
                     rows.append(_scorecard_row({'fmt': 'int', 'store': True}, 'store:' + code,
-                                               _store_name(code), columns, eom, goals))
+                                               _store_name(code), columns, eom, goals, typed_eom))
         sections.append({'title': section['title'], 'rows': rows})
-    return {'columns': columns, 'sections': sections, 'has_data': bool(by_week)}
+    return {'columns': columns, 'sections': sections, 'has_data': bool(by_week),
+            'eom_from_ford': eom is not None}
 
 
-def _scorecard_row(spec, key, label, columns, eom, goals):
+def _scorecard_row(spec, key, label, columns, eom, goals, typed_eom=None):
     goal = goals.get(key)
     try:
         goal = float(goal) if goal not in (None, '') else None
@@ -865,9 +873,11 @@ def _scorecard_row(spec, key, label, columns, eom, goals):
                 cell['band'] = (goal_band(cell['actual'], goal) if spec.get('rate')
                                 else cell['tracking_band'])
         cells.append(cell)
-    eom_value = eom['actual'].get(key) if eom else None
+    # Ford's closing figure wins; the typed one stands in until then.
+    eom_value = eom['actual'].get(key) if eom else (typed_eom or {}).get(key)
     return {'key': key, 'label': label, 'fmt': spec.get('fmt', 'int'), 'goal': goal,
             'cells': cells, 'eom': eom_value, 'eom_band': goal_band(eom_value, goal),
+            'eom_typed': eom is None,
             'rate': bool(spec.get('rate')), 'manual': bool(spec.get('manual')),
             'derived': bool(spec.get('derived')),
             'store': bool(spec.get('store')), 'gap': bool(spec.get('gap'))}
