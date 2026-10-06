@@ -16,9 +16,20 @@ NET is the cost we record; LIST is MSRP and is discarded. The part number we
 want is always the PART NUMBER column, never the number that sometimes shows up
 inside the description (Ford lines read `5923694 | 164R8134 KEY`).
 
-Two quirks the parser has to survive:
+The VIN and RO always follow their part line, but in either order — CDK prints
+them RO-first on some invoices.
+
+Three quirks the parser has to survive:
   * CDK prints a CUSTOMER COPY and an OFFICE COPY of the same content on one
-    physical page, so every block extracts twice. See _dedupe_items.
+    physical page, so every block extracts twice.
+  * A three-line record can straddle a page break — part line at the foot of one
+    page, VIN and RO at the head of the next. Both quirks are handled the same
+    way: split each page at the ACCOUNT NO. sentinel into one segment per printed
+    copy, then concatenate like-numbered segments across pages into one stream
+    per copy (see copy_streams). Copy 0 is authoritative; the rest cross-check it.
+    Parsing page-by-page instead silently dropped the straddling record and then
+    welded its orphaned half onto the next copy's first record, inventing a part
+    group that was never billed.
   * One RO can cover several VINs, and one (VIN, RO) group can straddle a page
     break — so grouping keys on the pair, never on RO alone.
 """
@@ -64,78 +75,126 @@ def extract_text_pages(pdf_bytes):
     return [page.extract_text(extraction_mode='layout') or '' for page in reader.pages]
 
 
-def _dedupe_items(items, sentinel_count, page_no, warnings):
-    """Drop the OFFICE COPY half of a page's line items.
+def split_page_copies(page_text):
+    """One page's text -> one list of lines per printed copy.
 
-    Only halves when both signals agree: the page carried two copy headers AND
-    the item list is an exact positional 2x repetition. Positional (not
-    set-based) so a genuinely repeated line on a one-copy invoice survives.
+    Each copy starts at a SENTINEL line, so anything before the first one is
+    letterhead and is dropped. A two-copy page gives two segments, a one-copy
+    page gives one, and a page with no sentinel at all gives none.
     """
-    if sentinel_count < 2:
-        return items
-    half = len(items) // 2
-    if half and len(items) % 2 == 0 and items[:half] == items[half:]:
-        return items[:half]
-    warnings.append(
-        f"Page {page_no}: looked like a two-copy page but the line items "
-        f"didn't repeat evenly ({len(items)} found) — nothing was de-duplicated."
-    )
+    segments, current, started = [], [], False
+    for line in page_text.split('\n'):
+        if not line.strip():
+            continue
+        if SENTINEL in line:
+            if started:
+                segments.append(current)
+            current, started = [], True
+            continue
+        if started:
+            current.append(line)
+    if started:
+        segments.append(current)
+    return segments
+
+
+def copy_streams(page_texts):
+    """Page texts -> one continuous text stream per printed copy.
+
+    Stitches segment k of every page together in page order, so a record split
+    across a page break is whole again by the time it is parsed. Falls back to
+    the whole document as one stream when no sentinel turns up, which keeps an
+    unfamiliar invoice parsing instead of coming back empty.
+    """
+    per_page = [split_page_copies(text) for text in page_texts]
+    counts = [len(segs) for segs in per_page if segs]
+    if not counts:
+        return ['\n'.join(page_texts)]
+    # min, not max: a short last page mustn't make us index past its segments.
+    return [
+        '\n'.join(line for segs in per_page if k < len(segs) for line in segs[k])
+        for k in range(min(counts))
+    ]
+
+
+def parse_stream(text):
+    """One copy's text -> its line items, in order.
+
+    Each item is {'part_number', 'description', 'net', 'amount', 'qty', 'vin',
+    'ro_number'}. VIN and RO are only ever read while an item is open, which is
+    what keeps the loose RO pattern from swallowing stray numbers elsewhere on
+    the page, and they are taken in whichever order they are printed. An item
+    that reaches the next part line without both is incomplete and is dropped.
+    """
+    items = []
+    current = None
+
+    for line in text.split('\n'):
+        if not line.strip():
+            continue
+
+        m = RE_LINE_ITEM.match(line)
+        if m:
+            current = {
+                'part_number': m.group('part').strip(),
+                'description': m.group('desc').strip(),
+                'net': _to_float(m.group('net')),
+                'amount': _to_float(m.group('amount')),
+                'qty': int(m.group('qty')),
+                'vin': None,
+                'ro_number': None,
+            }
+            continue
+
+        if current is None or RE_REPLACES.match(line):
+            continue
+
+        if current['vin'] is None:
+            vm = RE_VIN.match(line)
+            if vm and any(c.isalpha() for c in vm.group('vin')):
+                current['vin'] = vm.group('vin')
+                if current['ro_number']:
+                    items.append(current)
+                    current = None
+                continue
+
+        if current['ro_number'] is None:
+            rm = RE_RO.match(line)
+            if rm:
+                current['ro_number'] = rm.group('ro')
+                if current['vin']:
+                    items.append(current)
+                    current = None
+
     return items
+
+
+def _identity(items):
+    """The part of an item that two printed copies of a page must agree on."""
+    return [(i['part_number'], i['net'], i['vin'], i['ro_number']) for i in items]
 
 
 def parse_line_items(page_texts):
     """Page texts -> (line items, warnings).
 
-    Each item is {'part_number', 'description', 'net', 'amount', 'qty', 'vin',
-    'ro_number'}. VIN and RO are only ever read while an item is open, which is
-    what keeps the loose RO pattern from swallowing stray numbers elsewhere on
-    the page.
+    Copy 0 is what we keep. The other copies are the same content printed again,
+    so they are parsed only to cross-check it — a disagreement means something
+    was misread, which is worth saying out loud rather than quietly picking a
+    side.
     """
-    items = []
+    streams = copy_streams(page_texts)
+    if not streams:
+        return [], []
+
+    items = parse_stream(streams[0])
     warnings = []
-
-    for page_no, text in enumerate(page_texts, start=1):
-        lines = [ln for ln in text.split('\n') if ln.strip()]
-        sentinel_count = sum(1 for ln in lines if SENTINEL in ln)
-        page_items = []
-        current = None
-
-        def flush():
-            if current is not None and current['vin'] and current['ro_number']:
-                page_items.append(current)
-
-        for line in lines:
-            m = RE_LINE_ITEM.match(line)
-            if m:
-                flush()
-                current = {
-                    'part_number': m.group('part').strip(),
-                    'description': m.group('desc').strip(),
-                    'net': _to_float(m.group('net')),
-                    'amount': _to_float(m.group('amount')),
-                    'qty': int(m.group('qty')),
-                    'vin': None,
-                    'ro_number': None,
-                    'page': page_no,
-                }
-                continue
-            if current is None:
-                continue
-            if RE_REPLACES.match(line):
-                continue
-            if current['vin'] is None:
-                vm = RE_VIN.match(line)
-                if vm and any(c.isalpha() for c in vm.group('vin')):
-                    current['vin'] = vm.group('vin')
-                continue
-            rm = RE_RO.match(line)
-            if rm:
-                current['ro_number'] = rm.group('ro')
-                flush()
-                current = None
-        flush()
-
-        items.extend(_dedupe_items(page_items, sentinel_count, page_no, warnings))
+    for other in streams[1:]:
+        if _identity(parse_stream(other)) != _identity(items):
+            warnings.append(
+                "The printed copies of this invoice didn't read the same — check "
+                "the parts below against the paperwork before applying."
+            )
+            break
 
     return items, warnings
 

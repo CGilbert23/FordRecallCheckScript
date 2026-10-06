@@ -68,7 +68,7 @@
         {% if matched %}
         <div class="card">
             <h2>Will update ({{ matched | length }})</h2>
-            <p class="hint">These keys have no part numbers yet. Edit anything that looks off before applying. <button type="button" class="btn-link" data-toggle-all="matched">Select none</button></p>
+            <p class="hint">These keys have no part numbers yet. Edit anything that looks off before applying. <button type="button" class="btn-link" data-toggle-all="matched">{{ "Select all" if totals_mismatch else "Select none" }}</button></p>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -89,7 +89,7 @@
                     {% for p in matched %}
                         <tr>
                             <td>
-                                <input type="checkbox" name="apply" value="{{ p.token }}" data-group="matched" checked>
+                                <input type="checkbox" name="apply" value="{{ p.token }}" data-group="matched"{% if not totals_mismatch %} checked{% endif %}>
                                 <input type="hidden" name="key_id__{{ p.token }}" value="{{ p.key_id }}">
                                 <input type="hidden" name="label__{{ p.token }}" value="RO {{ p.key.ro_number or p.ro_number }}">
                             </td>

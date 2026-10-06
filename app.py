@@ -1816,6 +1816,13 @@ def mobile_key_import():
         )
 
     matched, conflicts, unmatched = _match_invoice_groups(parsed['groups'], keys)
+    # When the parts we read don't add up to the invoice's own printed total,
+    # something was misread — leave the rows unticked so applying anyway is a
+    # deliberate act rather than one click on a pre-ticked form.
+    totals_mismatch = (
+        parsed['invoice_total'] is not None
+        and abs(parsed['parsed_total'] - parsed['invoice_total']) > 0.01
+    )
     return render_template(
         'mobile_keys_import_review.html',
         matched=matched,
@@ -1824,6 +1831,7 @@ def mobile_key_import():
         warnings=parsed['warnings'],
         parsed_total=parsed['parsed_total'],
         invoice_total=parsed['invoice_total'],
+        totals_mismatch=totals_mismatch,
         filename=request.files['invoice'].filename,
     )
 
