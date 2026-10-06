@@ -1930,6 +1930,9 @@ def _xtime_report_page(month=None, error=None, notice=None, status=200, store=No
                            stores=stores, store=store,
                            mpi_benchmark=xtime_tech_report.MPI_BENCHMARK,
                            asr_benchmark=xtime_tech_report.ASR_BENCHMARK,
+                           pct_band=xtime_tech_report.pct_band,
+                           mpi_bands=xtime_tech_report.MPI_BANDS,
+                           asr_bands=xtime_tech_report.ASR_BANDS,
                            error=error, notice=notice), status
 
 

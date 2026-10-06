@@ -41,6 +41,9 @@
         td { text-align: center; padding: 10px 8px; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; white-space: nowrap; }
         td.name { font-weight: 600; color: #0a1f44; }
         td.pct { font-weight: 600; }
+        td.pct.good { background: #dcfce7; color: #166534; }
+        td.pct.warn { background: #fef9c3; color: #854d0e; }
+        td.pct.bad { background: #fee2e2; color: #991b1b; }
         tr.missing td { color: #9ca3af; }
         th.sortable { cursor: pointer; user-select: none; }
         th.sortable:hover { color: #0068d6; }
@@ -122,7 +125,7 @@
                     <tr>
                         <th class="sortable" data-type="text">Tech</th>
                         <th class="sortable" data-type="text">Store</th>
-                        <th class="sortable" data-type="num">Total RO</th>
+                        <th class="sortable" data-type="num" id="totalRoHead">Xtime Reported - Total RO</th>
                         <th class="sortable" data-type="num">MPI Completed</th>
                         <th class="sortable" data-type="num">MPI %</th>
                         <th class="sortable" data-type="num">Avg Miles</th>
@@ -140,10 +143,10 @@
                         <td data-v="{{ r.store }}">{{ r.store }}{% if r.moved %}<span class="note">Listed under {{ r.report_store }}</span>{% endif %}</td>
                         <td data-v="{{ v(r.total_ro) }}">{{ num(r.total_ro) }}</td>
                         <td data-v="{{ v(r.mpi_completed) }}">{{ num(r.mpi_completed) }}</td>
-                        <td class="pct" data-v="{{ v(r.mpi_pct) }}">{{ pct(r.mpi_pct) }}</td>
+                        <td class="pct {{ pct_band(r.mpi_pct, mpi_bands) }}" data-v="{{ v(r.mpi_pct) }}">{{ pct(r.mpi_pct) }}</td>
                         <td data-v="{{ v(r.avg_miles) }}">{{ num(r.avg_miles) }}</td>
                         <td data-v="{{ v(r.asr) }}">{{ num(r.asr) }}</td>
-                        <td class="pct" data-v="{{ v(r.asr_pct) }}">{{ pct(r.asr_pct) }}</td>
+                        <td class="pct {{ pct_band(r.asr_pct, asr_bands) }}" data-v="{{ v(r.asr_pct) }}">{{ pct(r.asr_pct) }}</td>
                         <td data-v="{{ v(r.lines_sold) }}">{{ num(r.lines_sold) }}</td>
                     </tr>
                     {% else %}
@@ -162,10 +165,10 @@
                         <td>{{ total.store }}</td>
                         <td>{{ num(total.total_ro) }}</td>
                         <td>{{ num(total.mpi_completed) }}</td>
-                        <td>{{ pct(total.mpi_pct) }}</td>
+                        <td class="pct {{ pct_band(total.mpi_pct, mpi_bands) }}">{{ pct(total.mpi_pct) }}</td>
                         <td>{{ num(total.avg_miles) }}</td>
                         <td>{{ num(total.asr) }}</td>
-                        <td>{{ pct(total.asr_pct) }}</td>
+                        <td class="pct {{ pct_band(total.asr_pct, asr_bands) }}">{{ pct(total.asr_pct) }}</td>
                         <td>{{ num(total.lines_sold) }}</td>
                     </tr>
                     <tr class="benchmark">
@@ -191,6 +194,7 @@
         <div class="card how">
             <ul>
                 <li><strong>MPI %</strong> = MPI Completed &divide; Total RO. <strong>ASR %</strong> = ASR &divide; Total RO.</li>
+                <li>Colours: MPI % green at 85%+, yellow 70&ndash;84%, red below 70%. ASR % green at 40%+, yellow 30&ndash;39%, red below 30%.</li>
                 <li>The total row adds up every tech shown (all stores, or just the one picked); its Avg Miles is weighted by each tech's RO count.</li>
             </ul>
         </div>
@@ -228,6 +232,9 @@
                 rows.forEach(function (tr) { tbody.appendChild(tr); });
             });
         });
+        // Open sorted by Total RO, highest first (a real click so the arrow shows).
+        var roHead = document.getElementById('totalRoHead');
+        if (roHead) roHead.click();
     })();
 
     // "Copy for Email": rebuild the table (in its current on-screen sort order)
@@ -250,6 +257,12 @@
             total: 'background:#f3f4f6;color:#111827;font-weight:bold;',
             benchmark: 'background:#eff6ff;color:#0068d6;font-weight:bold;'
         };
+        // MPI % / ASR % bands; bgcolor too, since Outlook can drop inline backgrounds.
+        var BAND = {
+            good: { bg: '#dcfce7', fg: '#166534' },
+            warn: { bg: '#fef9c3', fg: '#854d0e' },
+            bad:  { bg: '#fee2e2', fg: '#991b1b' }
+        };
 
         function esc(s) {
             return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -265,7 +278,13 @@
                 var style = CELL + ROW_STYLE[kind] + (i === 0 && kind === 'body' ? 'font-weight:bold;' : '');
                 var tag = kind === 'head' ? 'th' : 'td';
                 var span = c.colSpan > 1 ? ' colspan="' + c.colSpan + '"' : '';
-                out += '<' + tag + span + ' style="' + style + '">' + esc(text) + '</' + tag + '>';
+                var band = BAND[['good', 'warn', 'bad'].filter(function (k) { return c.classList.contains(k); })[0]];
+                var bg = '';
+                if (band) {
+                    style += 'background:' + band.bg + ';color:' + band.fg + ';font-weight:bold;';
+                    bg = ' bgcolor="' + band.bg + '"';
+                }
+                out += '<' + tag + span + bg + ' style="' + style + '">' + esc(text) + '</' + tag + '>';
             });
             return out + '</tr>';
         }

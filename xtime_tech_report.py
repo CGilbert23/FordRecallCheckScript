@@ -44,8 +44,23 @@ MOBILE_TECHS = [
 ]
 
 # Targets shown in the Benchmark row under the report table.
-MPI_BENCHMARK = 0.90
+MPI_BENCHMARK = 0.85
 ASR_BENCHMARK = 0.40
+
+# Colour bands for the MPI % / ASR % cells: (green at or above, yellow at or
+# above), as whole percents; anything lower is red. Banded on the rounded
+# percent shown, so an on-screen "85%" is never yellow.
+MPI_BANDS = (85, 70)
+ASR_BANDS = (40, 30)
+
+
+def pct_band(value, bands):
+    """'good' / 'warn' / 'bad' for a 0-1 ratio, or '' when there's no value."""
+    if value is None:
+        return ''
+    shown = round(value * 100)
+    green, yellow = bands
+    return 'good' if shown >= green else 'warn' if shown >= yellow else 'bad'
 
 METRIC_KEYS = ('total_ro', 'mpi_completed', 'avg_miles', 'asr', 'lines_requested', 'lines_sold')
 
