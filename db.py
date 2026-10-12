@@ -426,7 +426,6 @@ def list_mobile_keys():
     res = (
         client.table('mobile_keys')
         .select('*')
-        .is_('moved_to_inventory_at', 'null')
         .order('sort_order', desc=False)
         .execute()
     )
@@ -505,25 +504,6 @@ def delete_mobile_key(key_id):
     client.table('mobile_keys').delete().eq('id', key_id).execute()
 
 
-def mark_mobile_key_in_inventory(key_id):
-    """Stamp moved_to_inventory_at = now() so the key shows up under Inventory."""
-    from datetime import datetime, timezone
-    client = get_client()
-    res = client.table('mobile_keys').update({
-        'moved_to_inventory_at': datetime.now(timezone.utc).isoformat(),
-    }).eq('id', key_id).execute()
-    return res.data[0] if res.data else None
-
-
-def clear_mobile_key_inventory(key_id):
-    """Clear the inventory flag so the key returns to the active list."""
-    client = get_client()
-    res = client.table('mobile_keys').update({
-        'moved_to_inventory_at': None,
-    }).eq('id', key_id).execute()
-    return res.data[0] if res.data else None
-
-
 def set_mobile_key_status(key_id, status_done):
     """Flip the per-row Status checkbox (true = done, false = pending)."""
     client = get_client()
@@ -569,16 +549,22 @@ def set_mobile_key_notes(key_id, notes):
     return res.data[0] if res.data else None
 
 
-def list_mobile_keys_in_inventory():
+# ---------------------------------------------------------------------------
+# Key notepad (Mobile Keys -> Key Notepad)
+# ---------------------------------------------------------------------------
+
+def get_key_notepad():
+    """Return the notepad row ({body, updated_at}), or None if never saved."""
     client = get_client()
-    res = (
-        client.table('mobile_keys')
-        .select('*')
-        .not_.is_('moved_to_inventory_at', 'null')
-        .order('moved_to_inventory_at', desc=True)
-        .execute()
-    )
-    return res.data or []
+    res = client.table('key_notepad').select('*').eq('id', 1).limit(1).execute()
+    return res.data[0] if res.data else None
+
+
+def save_key_notepad(body):
+    """Overwrite the single notepad row (created on first save)."""
+    client = get_client()
+    res = client.table('key_notepad').upsert({'id': 1, 'body': body}).execute()
+    return res.data[0] if res.data else None
 
 
 # ---------------------------------------------------------------------------

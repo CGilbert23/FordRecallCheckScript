@@ -35,9 +35,6 @@
         .btn-secondary:hover { background: #4b5563; }
         .btn-danger { background: #dc2626; padding: 12px 20px; }
         .btn-danger:hover { background: #991b1b; }
-        .btn-inventory { background: #fff; color: #b45309; border: 1px solid #b45309; padding: 12px 20px; }
-        .btn-inventory:hover { background: #fffbeb; }
-        .btn-inventory-filled { background: #b45309; color: #fff; border: 1px solid #b45309; padding: 12px 20px; cursor: default; opacity: 0.85; }
         .actions { display: flex; gap: 10px; margin-top: 24px; }
         .footer-actions { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; }
         .footer-actions form { margin: 0; }
@@ -205,13 +202,6 @@
 
             {% if key %}
             <div class="footer-actions">
-                {% if key.moved_to_inventory_at %}
-                <button type="button" class="btn btn-inventory-filled" disabled title="Already in inventory">Already in Inventory</button>
-                {% else %}
-                <form method="POST" action="/mobile-keys/{{ key.id }}/move-to-inventory" onsubmit="return confirm('Move this key to inventory? It will stay in the database but no longer appear in the active list.');">
-                    <button type="submit" class="btn btn-inventory">Move to Inventory</button>
-                </form>
-                {% endif %}
                 <form method="POST" action="/mobile-keys/{{ key.id }}/delete" onsubmit="return confirm('Delete this key record? This cannot be undone.');">
                     <button type="submit" class="btn btn-danger">Delete Key Record</button>
                 </form>

@@ -1,12 +1,11 @@
-{# Notes column for the Mobile Keys list pages (Key Database + Inventory).
+{# Notes column for the Key Database list page.
 
-   Include once, just before </body>. Set `notes_return_to` to 'inventory' on
-   the Inventory page so saving comes back there instead of the Key Database.
+   Include once, just before </body>.
 
    Each row's cell renders a .note-btn button carrying data-key-id, data-label
    and data-note. Hover reads the note, click opens the modal to edit it.
-   The style block lives here rather than in each page's <head> so the two
-   pages can't drift apart (the old popover CSS was already duplicated). #}
+   Self-contained (its own style block) so the column can be dropped onto
+   another page without copying CSS around. #}
 <style>
     .note-btn {
         display: inline-flex; align-items: center; justify-content: center;
@@ -54,7 +53,6 @@
         <h3 id="noteTitle">Note</h3>
         <p id="noteState" class="modal-state"></p>
         <form method="POST" id="noteForm">
-            <input type="hidden" name="return_to" value="{{ notes_return_to or '' }}">
             <label for="note_text">Note:</label>
             <textarea name="notes" id="note_text" placeholder="Anything worth remembering about this key…"></textarea>
             <div class="modal-actions">

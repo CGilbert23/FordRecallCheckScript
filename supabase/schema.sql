@@ -171,9 +171,6 @@ create table mobile_keys (
   key_blank_cost numeric(10, 2),
   programming_cost numeric(10, 2) not null default 60.00,
   offset_eligible boolean not null default true,
-  -- NULL = active key. Non-NULL = timestamp it was moved into inventory
-  -- (customer no longer needed it, but we keep the part on hand).
-  moved_to_inventory_at timestamptz,
   -- Per-row "done" flag. Default false (pending); rep marks done via the
   -- leftmost "Complete" checkbox on the list page. Pending rows render grey.
   status_done boolean not null default false,
@@ -199,9 +196,6 @@ create table mobile_keys (
 );
 create index mobile_keys_cut_date_idx on mobile_keys(cut_date desc);
 create index mobile_keys_vin_idx on mobile_keys(vin);
-create index mobile_keys_inventory_idx
-  on mobile_keys(moved_to_inventory_at desc)
-  where moved_to_inventory_at is not null;
 create index mobile_keys_sort_order_idx on mobile_keys(sort_order);
 create trigger mobile_keys_updated_at
   before update on mobile_keys
@@ -221,6 +215,17 @@ create table key_code_contacts (
 );
 create trigger key_code_contacts_updated_at
   before update on key_code_contacts
+  for each row execute function set_updated_at();
+
+-- Key Notepad (Mobile Keys -> Key Notepad): one free-text scratchpad, mainly
+-- for keys we couldn't do and deleted, so nobody reorders them. Single row.
+create table key_notepad (
+  id smallint primary key default 1 check (id = 1),
+  body text not null default '',
+  updated_at timestamptz not null default now()
+);
+create trigger key_notepad_updated_at
+  before update on key_notepad
   for each row execute function set_updated_at();
 
 -- Xtime Tech Report: one row per uploaded month of the Xtime "Technician RO /

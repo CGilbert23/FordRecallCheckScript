@@ -1518,9 +1518,6 @@ def mobile_key_set_notes(key_id):
         db.set_mobile_key_notes(key_id, notes)
     except Exception as e:
         logger.error(f"Set notes failed for {key_id}: {e}")
-    # The same modal is used from the Inventory page — go back where we came from.
-    if request.form.get('return_to') == 'inventory':
-        return redirect(url_for('mobile_keys_inventory'))
     return redirect(url_for('mobile_keys_list'))
 
 
@@ -1538,34 +1535,28 @@ def mobile_key_reorder():
     return jsonify({'ok': True})
 
 
-@app.route('/mobile-keys/<key_id>/move-to-inventory', methods=['POST'])
-def mobile_key_move_to_inventory(key_id):
+@app.route('/mobile-keys/notepad')
+def mobile_key_notepad():
     try:
-        db.mark_mobile_key_in_inventory(key_id)
+        notepad = db.get_key_notepad()
     except Exception as e:
-        logger.error(f"Move-to-inventory failed for {key_id}: {e}")
-    return redirect(url_for('mobile_keys_list'))
+        logger.error(f"Failed to load key notepad: {e}")
+        notepad = None
+    return render_template('mobile_key_notepad.html', notepad=notepad or {})
 
 
-@app.route('/mobile-keys/<key_id>/restore-from-inventory', methods=['POST'])
-def mobile_key_restore_from_inventory(key_id):
+@app.route('/mobile-keys/notepad/api/save', methods=['POST'])
+def mobile_key_notepad_api_save():
+    payload = request.get_json(silent=True) or {}
+    body = payload.get('body')
+    if not isinstance(body, str):
+        return jsonify({'ok': False, 'error': 'body must be a string'}), 400
     try:
-        db.clear_mobile_key_inventory(key_id)
+        row = db.save_key_notepad(body)
     except Exception as e:
-        logger.error(f"Restore-from-inventory failed for {key_id}: {e}")
-    return redirect(url_for('mobile_keys_inventory'))
-
-
-@app.route('/mobile-keys/inventory')
-def mobile_keys_inventory():
-    try:
-        rows = db.list_mobile_keys_in_inventory()
-    except Exception as e:
-        logger.error(f"Failed to list mobile keys inventory: {e}")
-        rows = []
-    for r in rows:
-        _compute_key_totals(r)
-    return render_template('mobile_keys_inventory.html', keys=rows)
+        logger.error(f"Key notepad save failed: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 500
+    return jsonify({'ok': True, 'updated_at': (row or {}).get('updated_at')})
 
 
 @app.route('/mobile-keys/contacts')
@@ -1760,7 +1751,6 @@ def _match_invoice_groups(groups, keys):
 
         row = p['key']
         p['key_id'] = row['id']
-        p['in_inventory'] = bool(row.get('moved_to_inventory_at'))
         p['existing'] = {col: row.get(col) for _, col in INVOICE_FIELDS}
         p['proposed'] = {col: group.get(col) for _, col in INVOICE_FIELDS}
 
@@ -1807,7 +1797,7 @@ def mobile_key_import():
         )
 
     try:
-        keys = db.list_mobile_keys() + db.list_mobile_keys_in_inventory()
+        keys = db.list_mobile_keys()
     except Exception as e:
         logger.error(f"Failed to load keys for invoice match: {e}")
         return render_template(
