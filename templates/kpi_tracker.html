@@ -78,7 +78,7 @@
         table.kpi.core { width: 100%; table-layout: fixed; }
         table.kpi.core .ext { display: none; }
         /* Tech-count group label ("2-Tech Stores") above each group of stores. */
-        table.kpi tr.group td { background: #e5e9ef; color: #374151; font-weight: 700; font-style: italic; font-size: 0.75rem; padding: 5px 6px; border-top: 2px solid #9ca3af; }
+        table.kpi tr.group td { background: #e5e9ef; color: #374151; font-weight: 700; font-style: italic; font-size: 0.72rem; padding: 2px 6px; line-height: 1.2; border-top: 2px solid #9ca3af; }
         table.kpi tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
@@ -412,7 +412,7 @@
             down:  { bg: '#f8fafc', fg: '#b91c1c', bold: true },
             flat:  { bg: '#f8fafc', fg: '#6b7280', bold: true },
             total: { bg: '#e5e9ef', fg: '#111827', bold: true, italic: true },
-            group: { bg: '#e5e9ef', fg: '#374151', bold: true, italic: true, size: 11 }
+            group: { bg: '#e5e9ef', fg: '#374151', bold: true, italic: true, size: 11, pad: '2px 8px' }
         };
 
         function esc(s) {
@@ -426,7 +426,7 @@
         function cell(text, s, attrs) {
             var size = s.size || 12;
             var css = 'background-color:' + s.bg + ';color:' + s.fg + ';border:1px solid ' + BORDER + ';'
-                + 'padding:5px 8px;text-align:center;vertical-align:middle;'
+                + 'padding:' + (s.pad || '5px 8px') + ';text-align:center;vertical-align:middle;'
                 + 'font-family:Arial,Helvetica,sans-serif;font-size:' + size + 'px;'
                 + 'font-weight:' + (s.bold ? 'bold' : 'normal') + ';font-style:' + (s.italic ? 'italic' : 'normal') + ';';
             var inner = esc(text) || '&nbsp;';
