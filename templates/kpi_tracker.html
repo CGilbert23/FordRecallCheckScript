@@ -77,6 +77,8 @@
         /* Core fills the card (columns stay even); Extended sizes to its columns. */
         table.kpi.core { width: 100%; table-layout: fixed; }
         table.kpi.core .ext { display: none; }
+        /* Tech-count group label ("2-Tech Stores") above each group of stores. */
+        table.kpi tr.group td { background: #dbe7f3; color: #0f2a47; font-weight: 700; text-align: left; padding: 5px 10px; font-size: 0.8rem; border-top: 2px solid #9ca3af; }
         table.kpi tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         table.kpi tr.perday td { border: none; background: none; color: #16a34a; font-style: italic; font-size: 0.75rem; padding-top: 4px; }
         th.sortable { cursor: pointer; user-select: none; }
@@ -187,8 +189,13 @@
                         {% endfor %}
                     </tr>
                 </thead>
+                {# One <tbody> per tech-count group, each led by its label row; sorting stays inside a group. #}
+                {% for g in groups %}
                 <tbody>
-                    {% for r in rows %}
+                    {% if g.label %}
+                    <tr class="group"><td colspan="{{ columns | length }}">{{ g.label }}</td></tr>
+                    {% endif %}
+                    {% for r in g.rows %}
                     <tr>
                         {% for c in columns %}
                         {% set v = r[c.key] %}
@@ -202,6 +209,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                {% endfor %}
                 {% if total and not store %}
                 <tfoot>
                     <tr class="total">
@@ -308,6 +316,12 @@
         function setView(view) {
             table.classList.toggle('core', view !== 'extended');
             if (viewBtn) viewBtn.textContent = view === 'extended' ? 'Extended View' : 'Core View';
+            // Group labels span only the visible columns, or the hidden ones
+            // would add phantom columns to the fixed layout.
+            var visible = Array.prototype.filter.call(table.tHead.rows[0].cells, function (c) {
+                return getComputedStyle(c).display !== 'none';
+            }).length;
+            Array.prototype.forEach.call(table.querySelectorAll('tr.group td'), function (c) { c.colSpan = visible; });
             try { localStorage.setItem('kpiView', view); } catch (e) {}
         }
         var saved = null;
@@ -351,8 +365,9 @@
                 Array.prototype.forEach.call(ths, function (h) { h.classList.remove('asc', 'desc'); });
                 th.classList.add(dir);
                 var sign = dir === 'asc' ? 1 : -1;
-                var tbody = table.tBodies[0];
-                var rows = Array.prototype.slice.call(tbody.rows);
+                // Each <tbody> (tech-count group) sorts on its own; its label row stays on top.
+                Array.prototype.forEach.call(table.tBodies, function (tbody) {
+                var rows = Array.prototype.filter.call(tbody.rows, function (tr) { return !tr.classList.contains('group'); });
                 var val = function (tr) {
                     var raw = tr.cells[col].dataset.v;
                     if (raw === '' || raw === undefined) return null;
@@ -364,6 +379,7 @@
                     return (x < y ? -1 : x > y ? 1 : 0) * sign;
                 });
                 rows.forEach(function (tr) { tbody.appendChild(tr); });
+                });
             });
         });
         }
@@ -399,7 +415,8 @@
             up:    { bg: '#f8fafc', fg: '#047857', bold: true },
             down:  { bg: '#f8fafc', fg: '#b91c1c', bold: true },
             flat:  { bg: '#f8fafc', fg: '#6b7280', bold: true },
-            total: { bg: '#e5e9ef', fg: '#111827', bold: true, italic: true }
+            total: { bg: '#e5e9ef', fg: '#111827', bold: true, italic: true },
+            group: { bg: '#dbe7f3', fg: '#0f2a47', bold: true }
         };
 
         function esc(s) {
@@ -459,14 +476,20 @@
             return out + '</tr>';
         }
         function tableHtml(t) {
-            var cols = Array.prototype.filter.call(t.tBodies[0].rows[0].cells, shown).length;
+            var cols = Array.prototype.filter.call(t.querySelector('tbody tr:not(.group)').cells, shown).length;
             var html = '<table border="1" cellpadding="5" cellspacing="0" bordercolor="' + BORDER + '"'
                 + ' style="border-collapse:collapse;border:1px solid ' + BORDER + ';font-family:Arial,Helvetica,sans-serif;">'
                 + '<tr>' + cell(t.caption.textContent.replace(/\s+/g, ' ').trim(), STYLE.title, 'colspan="' + cols + '"') + '</tr>';
             Array.prototype.forEach.call(t.tHead.rows, function (tr, i) {
                 html += rowHtml(tr, i === 0 ? 'head' : 'head2');
             });
-            Array.prototype.forEach.call(t.tBodies[0].rows, function (tr) { html += rowHtml(tr, 'body'); });
+            Array.prototype.forEach.call(t.tBodies, function (tb) {
+                Array.prototype.forEach.call(tb.rows, function (tr) {
+                    html += tr.classList.contains('group')
+                        ? '<tr>' + cell(cellText(tr.cells[0]), STYLE.group, 'colspan="' + cols + '"').replace('align="center"', 'align="left"').replace('text-align:center', 'text-align:left') + '</tr>'
+                        : rowHtml(tr, 'body');
+                });
+            });
             // Totals row only; the on-page "N /Day" line isn't copied.
             if (t.tFoot) html += rowHtml(t.tFoot.rows[0], 'total');
             return html + '</table>';

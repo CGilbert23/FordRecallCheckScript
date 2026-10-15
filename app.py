@@ -2120,10 +2120,22 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     # a full year has nothing to project, so the column is dropped.
     in_progress = bool(report) and report['days_elapsed'] < report['work_days']
     columns = [c for c in KPI_COLUMNS if c['key'] != 'tracking' or in_progress]
+    # Stores are listed in groups by active tech count (2-tech stores, then
+    # 1-tech), so like is compared with like; sorting stays within a group.
+    groups = []
+    if rows and not store:
+        by_techs = {}
+        for r in rows:
+            by_techs.setdefault(r.get('techs') or 0, []).append(r)
+        for n in sorted(by_techs, reverse=True):
+            label = 'No Active Techs' if n == 0 else f"{n}-Tech Store{'' if len(by_techs[n]) == 1 else 's'}"
+            groups.append({'label': label, 'rows': by_techs[n]})
+    if len(groups) < 2:
+        groups = [{'label': None, 'rows': rows}]
     return render_template('kpi_tracker.html', months=months, years=years, year=year,
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
-                           rows=rows, total=total, columns=columns, yoy=yoy, latest_upload=latest_upload,
+                           rows=rows, groups=groups, total=total, columns=columns, yoy=yoy, latest_upload=latest_upload,
                            late_close_pct=round(kpi_tracker.LATE_CLOSE_UPLIFT * 100),
                            stores=kpi_tracker.STORES, store=store,
                            store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
