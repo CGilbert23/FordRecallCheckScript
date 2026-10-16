@@ -7,7 +7,7 @@ import queue
 import threading
 import logging
 import calendar
-from collections import deque
+from collections import Counter, deque
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
@@ -1376,7 +1376,23 @@ def mobile_keys_list():
         rows = []
     for r in rows:
         _compute_key_totals(r)
-    return render_template('mobile_keys.html', keys=rows)
+    return render_template('mobile_keys.html', keys=rows, summary=_key_summary(rows))
+
+
+def _key_summary(rows):
+    """Figures for the cards above the Key Database: count, top 3 makes,
+    average billed Total, and revenue (billed Totals + offset per eligible key)."""
+    makes = Counter(r.get('make') for r in rows if r.get('make'))
+    revenue = sum(r['total_cost'] for r in rows)
+    offset_keys = sum(1 for r in rows if r.get('offset_eligible'))
+    return {
+        'total_keys': len(rows),
+        'top_makes': sorted(makes.items(), key=lambda kv: (-kv[1], kv[0]))[:3],
+        'avg_cost': revenue / len(rows) if rows else 0,
+        'revenue': revenue,
+        'offset_keys': offset_keys,
+        'offset': offset_keys * db.KEY_OFFSET_VALUE,
+    }
 
 
 @app.route('/mobile-keys/new', methods=['GET', 'POST'])

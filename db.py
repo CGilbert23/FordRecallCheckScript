@@ -59,6 +59,8 @@ KEY_PROGRAMMING_COST_CUSTOMER = 100.00
 # Parts markup applied to the billed Total, by who's billed.
 KEY_MARKUP_INTERNAL = 0.10
 KEY_MARKUP_CUSTOMER = 0.35
+# What Ford pays per offset-eligible key (Key Database summary cards).
+KEY_OFFSET_VALUE = 170.00
 
 _client: Client | None = None
 
