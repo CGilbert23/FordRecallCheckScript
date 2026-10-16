@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key Analytics - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 900px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
+        .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
+        .nav-tab:hover { color: #0068d6; }
+        .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .filters { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .filters label { font-size: 0.85rem; font-weight: 600; color: #374151; }
+        .filters select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; font-family: inherit; background: #fff; }
+        .stat-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff; border-radius: 8px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid #0068d6; }
+        .stat-label { font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 8px; }
+        .stat-value { font-size: 1.9rem; font-weight: 700; color: #0f2a47; font-variant-numeric: tabular-nums; line-height: 1.1; }
+        h2 { font-size: 1.05rem; color: #0f2a47; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        th { background: #e5e7eb; padding: 10px 12px; font-size: 0.72rem; color: #374151; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+        th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        tfoot td { background: #e5e9ef; font-weight: 700; color: #0f2a47; border-bottom: none; }
+        .empty { text-align: center; color: #888; padding: 32px; }
+        @media (max-width: 700px) { .stat-cards { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+
+        <form method="GET" class="filters">
+            <label for="period">Time Range</label>
+            <select name="period" id="period" onchange="this.form.submit()">
+                {% for p in periods %}
+                <option value="{{ p.value }}"{% if p.value == period %} selected{% endif %}>{{ p.label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-label">Total Keys</div>
+                <div class="stat-value">{{ stats.total_keys }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Rev</div>
+                <div class="stat-value">{{ stats.revenue | format_money }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Offset Rev</div>
+                <div class="stat-value">{{ stats.offset | format_money }}</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Keys by Make &mdash; {{ period_label }}</h2>
+            {% if stats.makes %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Make</th>
+                        <th class="num">Keys</th>
+                        <th class="num">Avg Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in stats.makes %}
+                    <tr>
+                        <td>{{ m.make }}</td>
+                        <td class="num">{{ m.count }}</td>
+                        <td class="num">{{ m.avg_cost | format_money }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td class="num">{{ stats.total_keys }}</td>
+                        <td class="num">{{ stats.avg_cost | format_money }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p class="empty">No keys logged yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

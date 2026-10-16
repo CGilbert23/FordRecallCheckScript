@@ -7,7 +7,7 @@ import queue
 import threading
 import logging
 import calendar
-from collections import Counter, deque
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
@@ -1376,23 +1376,60 @@ def mobile_keys_list():
         rows = []
     for r in rows:
         _compute_key_totals(r)
-    return render_template('mobile_keys.html', keys=rows, summary=_key_summary(rows))
+    return render_template('mobile_keys.html', keys=rows)
 
 
-def _key_summary(rows):
-    """Figures for the cards above the Key Database: count, top 3 makes,
-    average billed Total, and revenue (billed Totals + offset per eligible key)."""
-    makes = Counter(r.get('make') for r in rows if r.get('make'))
+def _key_analytics(rows):
+    """Per-make breakdown + revenue for one period of keys.
+
+    Avg Cost is the mean billed Total (total_cost from _compute_key_totals);
+    Rev is the sum of those; Offset is $170 per offset-eligible key.
+    """
+    by_make = {}
+    for r in rows:
+        make = r.get('make') or 'Unknown'
+        by_make.setdefault(make, []).append(r['total_cost'])
+    makes = [{'make': m, 'count': len(c), 'avg_cost': sum(c) / len(c)}
+             for m, c in by_make.items()]
+    makes.sort(key=lambda m: (-m['count'], m['make']))
     revenue = sum(r['total_cost'] for r in rows)
     offset_keys = sum(1 for r in rows if r.get('offset_eligible'))
     return {
+        'makes': makes,
         'total_keys': len(rows),
-        'top_makes': sorted(makes.items(), key=lambda kv: (-kv[1], kv[0]))[:3],
         'avg_cost': revenue / len(rows) if rows else 0,
         'revenue': revenue,
-        'offset_keys': offset_keys,
         'offset': offset_keys * db.KEY_OFFSET_VALUE,
     }
+
+
+@app.route('/mobile-keys/analytics')
+def mobile_key_analytics():
+    """Key Analytics: pick Overall or one month (by cut date)."""
+    try:
+        rows = db.list_mobile_keys()
+    except Exception as e:
+        logger.error(f"Failed to load keys for analytics: {e}")
+        rows = []
+    for r in rows:
+        _compute_key_totals(r)
+
+    # Every month that has a key cut in it, newest first. Undated keys only
+    # count towards Overall.
+    months = sorted({str(r['cut_date'])[:7] for r in rows if r.get('cut_date')}, reverse=True)
+    periods = [{'value': 'overall', 'label': 'Overall'}] + [
+        {'value': m, 'label': _month_label(m + '-01')} for m in months
+    ]
+    period = request.args.get('period', 'overall')
+    if period not in months:
+        period = 'overall'
+    else:
+        rows = [r for r in rows if str(r.get('cut_date') or '')[:7] == period]
+
+    label = next(p['label'] for p in periods if p['value'] == period)
+    return render_template('mobile_key_analytics.html', periods=periods,
+                           period=period, period_label=label,
+                           stats=_key_analytics(rows))
 
 
 @app.route('/mobile-keys/new', methods=['GET', 'POST'])

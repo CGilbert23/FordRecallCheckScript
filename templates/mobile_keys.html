@@ -96,51 +96,12 @@
         }
         .info-bubble strong { display: block; margin-bottom: 4px; }
         .info-tip:hover .info-bubble, .info-tip:focus-within .info-bubble { display: block; }
-        .stat-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
-        .stat-card { background: #fff; border-radius: 8px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid #0068d6; }
-        .stat-label { font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 8px; }
-        .stat-value { font-size: 1.9rem; font-weight: 700; color: #0f2a47; font-variant-numeric: tabular-nums; line-height: 1.1; }
-        .stat-rows { display: flex; flex-direction: column; gap: 4px; }
-        .stat-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.95rem; }
-        .stat-row strong { color: #0f2a47; font-variant-numeric: tabular-nums; }
-        .stat-row .rank { color: #9ca3af; margin-right: 6px; font-size: 0.82rem; }
-        .stat-sub { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
-        @media (max-width: 900px) { .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Fred Beans Mobile Service</h1>
         {% include '_nav.html' %}
-
-        {% if keys %}
-        <div class="stat-cards">
-            <div class="stat-card">
-                <div class="stat-label">Total Keys</div>
-                <div class="stat-value">{{ summary.total_keys }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Top 3 Makes</div>
-                <div class="stat-rows">
-                    {% for make, count in summary.top_makes %}
-                    <div class="stat-row"><span><span class="rank">{{ loop.index }}.</span>{{ make }}</span><strong>{{ count }}</strong></div>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Avg Cost</div>
-                <div class="stat-value">{{ summary.avg_cost | format_money }}</div>
-                <div class="stat-sub">Average billed Total per key</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Revenue</div>
-                <div class="stat-rows">
-                    <div class="stat-row"><span>Rev</span><strong>{{ summary.revenue | format_money }}</strong></div>
-                    <div class="stat-row"><span>Offset</span><strong>{{ summary.offset | format_money }}</strong></div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
 
         <div class="actions">
             <div style="flex: 1; text-align: left;">
