@@ -2067,20 +2067,23 @@ KPI_COLUMNS = [
     {'key': 'ro', 'label': 'RO Count', 'fmt': 'int'},
     {'key': 'forecast', 'label': 'Forecast', 'fmt': 'int'},
     {'key': 'tracking', 'label': 'Tracking', 'fmt': 'int'},
+    {'key': 'ros_tech_day', 'label': 'ROs / Active Tech / Day', 'fmt': 'dec'},
+    {'key': 'avg_ro', 'label': 'Avg RO Value', 'fmt': 'money'},
+    {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct'},
     {'key': 'hours', 'label': 'Hours Billed', 'fmt': 'int', 'ext': True},
     {'key': 'cp_hours', 'label': 'CP Hours', 'fmt': 'int', 'ext': True},
-    {'key': 'commercial_mix', 'label': 'Commercial Mix', 'fmt': 'pct'},
-    {'key': 'avg_ro', 'label': 'Avg RO Value', 'fmt': 'money'},
     {'key': 'hours_tech_day', 'label': 'Hours / Active Tech / Day', 'fmt': 'dec', 'ext': True},
     {'key': 'ro_value', 'label': 'Total RO Value', 'fmt': 'money', 'ext': True},
     {'key': 'pct_total_ro', 'label': '% of Total RO', 'fmt': 'pct', 'ext': True},
     {'key': 'total_offset', 'label': 'Total Offset', 'fmt': 'money', 'ext': True},
     {'key': 'total_revenue', 'label': 'Total Revenue', 'fmt': 'money', 'ext': True},
-    {'key': 'ros_tech_day', 'label': 'ROs / Active Tech / Day', 'fmt': 'dec'},
     {'key': 'rev_tech_day', 'label': 'Revenue / Active Tech / Day', 'fmt': 'money', 'ext': True},
-    {'key': 'offset_left', 'label': 'Offset Left On Table', 'fmt': 'money'},
+    {'key': 'offset_left', 'label': 'Offset Left On Table', 'fmt': 'money', 'ext': True},
     {'key': 'visit_spend', 'label': '60 Day Visit Spend', 'fmt': 'money', 'ext': True},
 ]
+
+
+KPI_LEADER_KEYS = ('ros_tech_day', 'avg_ro', 'commercial_mix')
 
 
 def _monthly_goals(period_start, report=None):
@@ -2185,6 +2188,14 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
             groups.append({'label': label, 'rows': by_techs[n]})
     if len(groups) < 2:
         groups = [{'label': None, 'rows': rows}]
+    # Each group's best ROs/Tech/Day, Avg RO Value and Commercial Mix get a
+    # star (ties all do); a group of one has no one to lead.
+    for g in groups:
+        g['leaders'] = {}
+        for key in KPI_LEADER_KEYS:
+            vals = [r[key] for r in g['rows'] if r.get(key) is not None]
+            if len(vals) > 1:
+                g['leaders'][key] = max(vals)
     return render_template('kpi_tracker.html', months=months, years=years, year=year,
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
