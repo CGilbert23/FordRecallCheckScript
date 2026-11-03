@@ -28,6 +28,7 @@
         table.goals th { background: #1f4e79; color: #fff; font-size: 0.78rem; font-weight: 600; }
         table.goals td.store { background: #f1f3f6; text-align: left; font-weight: 600; color: #0f2a47; }
         table.goals td.ford { color: #6b7280; }
+        table.goals td.perday { color: #475569; font-weight: 600; }
         table.goals tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
         input.cell { width: 90px; padding: 4px 6px; border: 1px solid #93c5fd; border-radius: 4px; font-size: 0.88rem; text-align: center; font-family: inherit; }
         /* The two company-wide goals, above the per-store table so they're
@@ -110,6 +111,7 @@
                         <th>Van Count</th>
                         <th>Active Techs</th>
                         <th>Forecast (ROs)</th>
+                        <th title="Forecast spread across the month's working days">ROs / Day</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,6 +127,7 @@
                         <td><span class="shown">{{ forecast }}</span>
                             <input class="cell typed" type="text" inputmode="numeric" name="forecast__{{ s.code }}"
                                    value="{{ forecast }}" aria-label="{{ s.name }} RO forecast"></td>
+                        <td class="perday" data-for="forecast__{{ s.code }}"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -134,6 +137,7 @@
                         <td>{{ stores | map(attribute='vans') | select('number') | sum }}</td>
                         <td id="techTotal"></td>
                         <td id="forecastTotal"></td>
+                        <td id="perDayTotal"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -149,6 +153,12 @@
     (function () {
         var form = document.getElementById('goalsForm');
         if (!form) return;
+        var workDays = {{ work_days or 0 }};
+        // ROs a day the forecast needs, one decimal (8, 7.5); blank with no forecast.
+        function perDay(forecast) {
+            if (!workDays || !(forecast > 0)) return '';
+            return (Math.round(forecast / workDays * 10) / 10).toString();
+        }
         function sum(prefix) {
             var total = 0;
             form.querySelectorAll('input[name^="' + prefix + '"]').forEach(function (i) {
@@ -160,6 +170,10 @@
         function retotal() {
             document.getElementById('techTotal').textContent = sum('techs__').toLocaleString();
             document.getElementById('forecastTotal').textContent = sum('forecast__').toLocaleString();
+            document.getElementById('perDayTotal').textContent = perDay(sum('forecast__'));
+            form.querySelectorAll('td.perday').forEach(function (td) {
+                td.textContent = perDay(parseFloat(form.querySelector('input[name="' + td.dataset.for + '"]').value));
+            });
         }
         form.addEventListener('input', retotal);
         var editBtn = document.getElementById('editBtn');

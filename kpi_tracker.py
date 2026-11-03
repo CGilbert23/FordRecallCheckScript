@@ -37,13 +37,13 @@ import openpyxl
 # month's settings when there is one, so these only matter for the first).
 STORES = [
     {'code': '01273', 'name': 'Ford Boyertown', 'techs': 2, 'offset_value': 150},
-    {'code': '01341', 'name': 'Ford West Chester', 'techs': 2, 'offset_value': 160},
     {'code': '04197', 'name': 'Ford Mechanicsburg', 'techs': 2, 'offset_value': 160},
+    {'code': '01341', 'name': 'Ford West Chester', 'techs': 2, 'offset_value': 160},
+    {'code': '01017', 'name': 'Ford Exton', 'techs': 1, 'offset_value': 130},
     {'code': '01305', 'name': 'Ford Langhorne', 'techs': 1, 'offset_value': 140},
     {'code': '01203', 'name': 'Ford Doylestown', 'techs': 1, 'offset_value': 150},
-    {'code': '01017', 'name': 'Ford Exton', 'techs': 1, 'offset_value': 130},
-    {'code': '01844', 'name': 'Ford Newtown', 'techs': 1, 'offset_value': 140},
     {'code': '05494', 'name': 'Ford Washington', 'techs': 1, 'offset_value': 120},
+    {'code': '01844', 'name': 'Ford Newtown', 'techs': 1, 'offset_value': 140},
     {'code': '11524', 'name': 'Lincoln Doylestown', 'techs': 1, 'offset_value': 170},
 ]
 STORE_BY_CODE = {s['code']: s for s in STORES}
