@@ -42,11 +42,10 @@
         span.shown { font-weight: 600; color: #0f2a47; }
         span.shown.big { font-size: 1.05rem; min-width: 46px; display: inline-block; }
         body.editing .typed { display: inline-block; }
-        body.editing span.shown { display: none; }
+        body.editing span.shown:not(.days) { display: none; }
         .editing-only { display: none; }
         body.editing .editing-only { display: inline-block; }
         body.editing .not-editing { display: none; }
-        .hint { font-size: 0.8rem; color: #888; margin-top: 14px; }
         .empty-state { text-align: center; color: #888; padding: 36px 12px; }
     </style>
 </head>
@@ -99,6 +98,10 @@
                         <input class="cell big typed" type="text" inputmode="decimal" id="goal__commercial_mix"
                                name="goal__commercial_mix" value="{{ mix }}"><span class="adorn after">%</span></div>
                 </div>
+                <div class="field">
+                    <label>Working Days</label>
+                    <div class="money"><span class="shown big days" title="Weekdays less Ford's holidays">{{ work_days if work_days is not none else '&mdash;' | safe }}</span></div>
+                </div>
             </div>
             <table class="goals">
                 <thead>
@@ -137,7 +140,6 @@
 
             </form>
 
-            <p class="hint">Van Count comes from Ford's file and can't be typed &mdash; a month Ford hasn't reported on yet shows the latest count. Active Techs drives the KPI Tracker's per-tech figures; Forecast is the store's RO goal and colours its Tracking cell. A new month keeps last month's vans and techs, but the forecasts and the two goals above start at 0 &mdash; those are set by hand each month.</p>
             {% else %}
             <div class="empty-state">Upload Ford's KPI report first &mdash; the months come from there.</div>
             {% endif %}

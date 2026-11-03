@@ -191,7 +191,7 @@
                     <tr>
                         {% for c in columns %}
                         <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% elif c.input %} w-inp{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}"
-                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come. Green once it's within 10% of Forecast."{% elif c.key == 'forecast' %}title="This month's RO goal for the store, set on the Monthly Goals tab"{% endif %}>{{ c.label }}</th>
+                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come. Green once it's within 10% of Forecast."{% elif c.key == 'ro' and trend_col == 'ro' %}title="Green once the month's RO count is within 10% of Forecast"{% elif c.key == 'forecast' %}title="This month's RO goal for the store, set on the Monthly Goals tab"{% endif %}>{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -207,7 +207,7 @@
                     <tr>
                         {% for c in columns %}
                         {% set v = r[c.key] %}
-                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' %}store{% elif c.key == 'tracking' %}{{ r.trend or '' }}{% elif c.key == 'forecast' %}goal{% elif c.input %}inp{% endif %}"
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'name' %}store{% elif c.key == trend_col %}{{ r.trend or '' }}{% elif c.key == 'forecast' %}goal{% elif c.input %}inp{% endif %}"
                             data-v="{{ '' if v is none else v }}">
                             {# Tracking is a projection, so it reads ~160, not 160. #}
                             {%- if c.key == 'tracking' and v is not none %}~{% endif -%}
@@ -224,7 +224,7 @@
                 <tfoot>
                     <tr class="total">
                         {% for c in columns %}
-                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == 'tracking' %}{{ total.trend or '' }}{% endif %}">
+                        <td class="{% if c.ext %}ext {% endif %}{% if c.key == trend_col %}{{ total.trend or '' }}{% endif %}">
                             {%- if c.key == 'name' -%}TOTALS:
                             {%- elif c.key == 'offset_value' -%}
                             {%- elif c.key == 'tracking' and total[c.key] is not none -%}~{{ fmtv(total[c.key], c.fmt) }}

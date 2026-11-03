@@ -396,12 +396,13 @@ def _ordered(stores):
     return sorted(stores, key=lambda s: order.get(s['code'], len(order)))
 
 
-def _forecast_row(row, forecast):
+def _forecast_row(row, forecast, finished=False):
     """Attach the month's RO goal for this store and the on-trend colour.
     Green once the projection is within 10% of the goal, red below — two
-    states, since a projection is either on trend or it isn't."""
+    states, since a projection is either on trend or it isn't. A finished
+    month has nothing to project, so its actual RO count is banded instead."""
     row['forecast'] = forecast
-    band = goal_band(row.get('tracking'), forecast)
+    band = goal_band(row.get('ro' if finished else 'tracking'), forecast)
     row['trend'] = ('green' if band == 'green' else 'red') if band else None
     return row
 
@@ -410,6 +411,7 @@ def month_view(report, codes=None, settings=None, forecasts=None):
     """(rows, total) for one saved month. `codes` narrows to those stores;
     `settings` / `forecasts` come from that month's Monthly Goals."""
     days, total_days = report['days_elapsed'], report['work_days']
+    finished = days >= total_days
     settings = settings if settings is not None else report.get('settings')
     forecasts = forecasts or {}
     rows, parts = [], []
@@ -420,11 +422,12 @@ def month_view(report, codes=None, settings=None, forecasts=None):
         parts.append(c)
         rows.append(_forecast_row({'code': s['code'], 'dlr_name': s.get('name'),
                                    'name': _store_name(s['code'], s.get('name')),
-                                   **_derive(c)}, forecasts.get(s['code'])))
+                                   **_derive(c)}, forecasts.get(s['code']), finished))
     total = None
     if parts:
         goals = [r['forecast'] for r in rows if r['forecast'] is not None]
-        total = _forecast_row(_derive(_combine(parts, days)), sum(goals) if goals else None)
+        total = _forecast_row(_derive(_combine(parts, days)), sum(goals) if goals else None,
+                              finished)
     return rows, total
 
 

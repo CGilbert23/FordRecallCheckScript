@@ -2176,6 +2176,9 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     # a full year has nothing to project, so the column is dropped.
     in_progress = bool(report) and report['days_elapsed'] < report['work_days']
     columns = [c for c in KPI_COLUMNS if c['key'] != 'tracking' or in_progress]
+    # The on-trend colour sits on Tracking while a month is running; once it's
+    # finished RO Count itself is banded against Forecast. Full Year isn't banded.
+    trend_col = 'tracking' if in_progress else 'ro' if report and not full_year else None
     # Stores are listed in groups by active tech count (2-tech stores, then
     # 1-tech), so like is compared with like; sorting stays within a group.
     groups = []
@@ -2199,7 +2202,7 @@ def _kpi_page(year=None, month=None, store=None, error=None, notice=None, status
     return render_template('kpi_tracker.html', months=months, years=years, year=year,
                            year_months=year_months, selected=selected, full_year=full_year,
                            report=report, year_reports=year_reports,
-                           rows=rows, groups=groups, total=total, columns=columns, yoy=yoy, latest_upload=latest_upload,
+                           rows=rows, groups=groups, total=total, columns=columns, trend_col=trend_col, yoy=yoy, latest_upload=latest_upload,
                            late_close_pct=round(kpi_tracker.LATE_CLOSE_UPLIFT * 100),
                            stores=kpi_tracker.STORES, store=store,
                            store_name=kpi_tracker.STORE_BY_CODE[store]['name'] if store else None,
@@ -2244,8 +2247,10 @@ def _monthly_goals_page(month=None, notice=None, error=None, status=200):
     stores = [{'code': s['code'], 'name': s['name'], 'vans': vans.get(s['code']),
                **((monthly or {}).get('stores') or {}).get(s['code'], {})}
               for s in kpi_tracker.STORES]
+    # Working days (weekdays less Ford's holidays) — what a forecast gets spread across.
+    work_days = kpi_tracker.work_days(int(selected[:4]), int(selected[5:7])) if selected else None
     return render_template('kpi_monthly_goals.html', months=months, selected=selected,
-                           stores=stores, goals=(monthly or {}).get('goals') or {},
+                           stores=stores, goals=(monthly or {}).get('goals') or {}, work_days=work_days,
                            saved=saved, notice=notice, error=error), status
 
 
