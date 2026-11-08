@@ -8,7 +8,7 @@ Internal Flask app for the mobile service team. Top-level sections:
 - **Useful Links** — SharePoint spreadsheets plus **Used Car Lot Recall Sweeper**, which links straight to the external Vercel app (`used-car-lot-recall-sweeper.vercel.app`). It used to be its own "Used Car Tracker" home tile; the `/used-car-tracker` launcher page still exists for bookmarks but nothing links to it.
 - **Mobile Keys** — Key Database for tracking each key cut (vehicle, parts + costs, P&L). One row per key with computed totals on display.
 
-Recall data is scraped via Selenium, results are written to Excel and emailed via Resend. Account/lead/schedule data lives in Supabase Postgres.
+Recall data comes from the **CarsXE recalls API** (`check_recall_carsxe()` in `recall_checker.py`) whenever `CARSXE_API_KEY` is set — Ford started blocking automated lookups of its recall page in Nov 2026. CarsXE returns every recall on the VIN including ones already done, so rows with `recall_status == 'Complete'` are dropped to match what Ford's site showed (open recalls only); the number is written as `<manufacturer_id>/<nhtsa_id>` (e.g. `25S75/25V455`), same as before. The old Selenium scrape (and the GitHub Actions fallback) only runs when no CarsXE key is configured. Results are written to Excel and emailed via Resend. Account/lead/schedule data lives in Supabase Postgres.
 
 **Production URL:** http://dashboard.fredbeans-mobileservice.com/ (DigitalOcean droplet, nginx reverse-proxies port 80 → container on `127.0.0.1:5000`). Domain `fredbeans-mobileservice.com` is owned by the user; the `dashboard` A record points at the droplet. The old `recallchecker.fredbeans-mobileservice.com` hostname was retired on 2026-05-10 — DNS record was renamed (not duplicated), and the nginx `server_name` in `/etc/nginx/sites-available/recallchecker` was updated to match.
 
@@ -106,6 +106,7 @@ python app.py
 
 ## Environment Variables
 - `SUPABASE_URL`, `SUPABASE_KEY` — required; the app fails fast on first DB call without them.
+- `CARSXE_API_KEY` — CarsXE API key; when set, recall checks use the CarsXE recalls API instead of scraping ford.com (and the GH Actions flag below is ignored).
 - `RESEND_API_KEY` — API key for Resend email service
 - `RESEND_FROM_EMAIL` — From address for email (default: `recallchecks@fredbeans-reporting.com`).
   The domain must be verified in Resend (DKIM/SPF DNS records) or sends fail.

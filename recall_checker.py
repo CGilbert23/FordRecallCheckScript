@@ -385,17 +385,85 @@ def check_ford_recall(driver, vin, log_file=None):
         }
 
 
+CARSXE_RECALLS_URL = 'https://api.carsxe.com/v1/recalls'
+
+
+def check_recall_carsxe(vin, api_key, retries=2):
+    """
+    Look up open recalls for a VIN via the CarsXE recalls API.
+    Returns the same shape as check_ford_recall: {hasRecall, recalls}.
+
+    CarsXE returns every recall ever issued against the VIN, including ones
+    already performed (recall_status == 'Complete'). Ford's own site only
+    listed open recalls, so completed ones are dropped to keep the output the
+    same as before.
+    """
+    import requests
+
+    vin = vin.strip().upper()
+    last_err = 'Unknown error'
+    for attempt in range(retries + 1):
+        try:
+            r = requests.get(CARSXE_RECALLS_URL, params={'key': api_key, 'vin': vin}, timeout=60)
+            try:
+                body = r.json()
+            except ValueError:
+                body = {}
+            # 429 / 5xx are transient - back off and retry. Anything else
+            # (bad VIN, bad key) won't change on retry.
+            if r.status_code == 429 or r.status_code >= 500:
+                last_err = f'HTTP {r.status_code}'
+                time.sleep(3 * (attempt + 1))
+                continue
+            if r.status_code != 200 or not body.get('success'):
+                msg = body.get('error') or body.get('message') or f'HTTP {r.status_code}'
+                return {
+                    'hasRecall': None,
+                    'recalls': [{'number': 'ERROR', 'description': f'CarsXE: {str(msg)[:150]}', 'remedy_available': None}],
+                }
+
+            data = body.get('data') or {}
+            recalls = []
+            for rec in data.get('recalls') or []:
+                if str(rec.get('recall_status') or '').strip().lower() == 'complete':
+                    continue
+                mfr = (rec.get('manufacturer_id') or '').strip().upper()
+                nhtsa = (rec.get('nhtsa_id') or '').strip().upper()
+                number = '/'.join(p for p in (mfr, nhtsa) if p) or 'Unknown'
+                name = (rec.get('recall_name') or rec.get('component') or '').strip()
+                remedy = rec.get('remedy_available')
+                recalls.append({
+                    'number': number,
+                    'description': name.capitalize() if name else 'See Ford website for details',
+                    'remedy_available': remedy if isinstance(remedy, bool) else None,
+                })
+            return {'hasRecall': bool(recalls), 'recalls': recalls}
+        except Exception as e:
+            last_err = str(e)
+            time.sleep(3 * (attempt + 1))
+
+    return {
+        'hasRecall': None,
+        'recalls': [{'number': 'ERROR', 'description': f'CarsXE: {last_err[:150]}', 'remedy_available': None}],
+    }
+
+
 def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     """
     Process a list of VINs and create Excel results file.
     progress_callback: optional function that receives a dict with status updates.
     Returns a summary dict.
     """
+    # CarsXE API is the primary source now - Ford blocks automated lookups of
+    # its recall page. The Selenium / GitHub Actions paths below only run when
+    # no CARSXE_API_KEY is configured.
+    carsxe_key = os.environ.get('CARSXE_API_KEY', '').strip()
+
     # Ford's Akamai blocks DigitalOcean (and Fly/GCP) egress. When this flag
     # is set, delegate to a workflow_dispatch on the headless scraper repo
     # which runs on Azure IPs that Akamai allows. Local dev (residential IP)
     # falls through to the direct Selenium path below.
-    if os.environ.get('USE_GH_ACTIONS_FOR_RECALLS') == '1':
+    if not carsxe_key and os.environ.get('USE_GH_ACTIONS_FOR_RECALLS') == '1':
         from gh_actions_client import run_recall_check_via_actions
         output_dir = os.path.dirname(output_file)
         if output_dir:
@@ -417,8 +485,8 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     base_headers = ['VIN', 'Has Recall']
     results_sheet.append(base_headers)
 
-    driver = setup_driver()
-    log_file = setup_debug_log(output_dir)
+    driver = None if carsxe_key else setup_driver()
+    log_file = None if carsxe_key else setup_debug_log(output_dir)
 
     max_recalls_found = 0
     temp_results = []
@@ -443,6 +511,20 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
     try:
         for idx, vin in enumerate(vins, 1):
             report_progress(status='processing', vin=vin)
+
+            if carsxe_key:
+                recall_data = check_recall_carsxe(vin, carsxe_key)
+                if recall_data['hasRecall'] is None:
+                    errors += 1
+                elif recall_data['hasRecall']:
+                    with_recalls += 1
+                    max_recalls_found = max(max_recalls_found, len(recall_data['recalls']))
+                    temp_results.append({'vin': vin, 'recalls': recall_data['recalls']})
+                else:
+                    no_recalls += 1
+                processed += 1
+                report_progress(status='processing', vin=vin)
+                continue
 
             recall_data = check_ford_recall(driver, vin, log_file)
 
@@ -491,7 +573,8 @@ def process_recalls(vins, output_file, progress_callback=None, vin_units=None):
             time.sleep(1)
 
     finally:
-        driver.quit()
+        if driver:
+            driver.quit()
         if log_file:
             log_file.close()
 
