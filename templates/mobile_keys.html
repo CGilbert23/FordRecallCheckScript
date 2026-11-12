@@ -134,7 +134,8 @@
                             <th class="center">Key Code</th>
                             <th class="center">Complete</th>
                             <th>Appt Date</th>
-                            <th>End User</th>
+                            <th>Pay Type</th>
+                            <th>Source</th>
                             <th>Customer</th>
                             <th>RO</th>
                             <th>VIN</th>
@@ -153,7 +154,7 @@
                                     <span class="info-icon">i</span>
                                     <span class="info-bubble">
                                         <strong>How Total is calculated</strong>
-                                        Parts + parts markup + programming, based on the Billing Information.<br><br>
+                                        Parts + parts markup + programming, based on the Pay Type.<br><br>
                                         &bull; Internal: 10% parts markup + $60 programming<br>
                                         &bull; Customer: 35% parts markup + $100 programming
                                     </span>
@@ -212,6 +213,7 @@
                                     <span class="badge badge-customer">Customer</span>
                                 {% endif %}
                             </td>
+                            <td>{{ k.source or '—' }}</td>
                             <td>{{ k.customer_display }}</td>
                             <td>{{ k.ro_number or '—' }}</td>
                             <td style="font-family: monospace; font-size: 0.7rem;">{{ k.vin }}</td>

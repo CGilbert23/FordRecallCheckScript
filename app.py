@@ -1249,6 +1249,7 @@ def _parse_mobile_key_form(req):
     form = {
         'cut_date': (req.form.get('cut_date') or '').strip(),
         'end_user': (req.form.get('end_user') or '').strip(),
+        'source': (req.form.get('source') or '').strip(),
         'customer_name_internal': (req.form.get('customer_name_internal') or '').strip(),
         'customer_name_external': (req.form.get('customer_name_external') or '').strip(),
         'internal_contact': (req.form.get('internal_contact') or '').strip(),
@@ -1277,7 +1278,10 @@ def _parse_mobile_key_form(req):
         cut_date = None
 
     if form['end_user'] not in db.KEY_END_USERS:
-        return form, 'End User must be Internal or Customer.', None
+        return form, 'Pay Type must be Internal or Customer.', None
+
+    if form['source'] not in db.KEY_SOURCES:
+        return form, 'Pick a Source from the list.', None
 
     if form['end_user'] == 'Internal':
         customer_name = form['customer_name_internal']
@@ -1334,6 +1338,7 @@ def _parse_mobile_key_form(req):
     payload = {
         'cut_date': cut_date.isoformat() if cut_date else None,
         'end_user': form['end_user'],
+        'source': form['source'],
         'customer_name': customer_name,
         'internal_contact': internal_contact or None,
         'ro_number': ro_number or None,
@@ -1363,6 +1368,7 @@ def _mobile_key_form_context(form=None, key=None, error=None):
         makes=db.KEY_MAKES,
         key_types=db.KEY_TYPES,
         end_users=db.KEY_END_USERS,
+        sources=db.KEY_SOURCES,
         programming_default=db.KEY_PROGRAMMING_COST_DEFAULT,
     )
 
@@ -1456,6 +1462,7 @@ def mobile_key_new():
     form = {
         'cut_date': today,
         'end_user': 'Internal',
+        'source': db.KEY_SOURCE_DEFAULT,
         'programming_cost': f"{db.KEY_PROGRAMMING_COST_DEFAULT:.2f}",
         'offset_eligible': 'Y',
     }
@@ -1496,6 +1503,7 @@ def mobile_key_edit(key_id):
     form = {
         'cut_date': existing.get('cut_date') or '',
         'end_user': existing.get('end_user') or 'Internal',
+        'source': existing.get('source') or db.KEY_SOURCE_DEFAULT,
         'customer_name_internal': existing.get('customer_name') if is_internal else '',
         'customer_name_external': existing.get('customer_name') if not is_internal else '',
         'internal_contact': existing.get('internal_contact') or '',

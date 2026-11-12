@@ -44,6 +44,9 @@ CADENCES = ['daily', 'monthly', 'quarterly']
 # the dropdown; customer cuts are free text. The 'Bid Lot' entry covers our
 # own auction lot inventory — internally tracked but not a brand.
 KEY_END_USERS = ['Internal', 'Customer']
+# Where the key job came from: RS = route sheet, UCM = used car manager.
+KEY_SOURCES = ['RS', 'UCM', 'Sales']
+KEY_SOURCE_DEFAULT = 'UCM'
 KEY_INTERNAL_CUSTOMERS = [
     'FB Chevrolet', 'FB CDJR', 'FB Hyundai', 'FB Lincoln', 'FB Ford Doylestown', 'FB Ford Washington',
     'FB GMC', 'FB Subaru', 'FB Toyota', 'Bid Lot',

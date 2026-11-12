@@ -154,6 +154,8 @@ create table mobile_keys (
   id uuid primary key default gen_random_uuid(),
   cut_date date,
   end_user text not null check (end_user in ('Internal', 'Customer')),
+  -- Where the job came from: RS = route sheet, UCM = used car manager.
+  source text not null default 'UCM' check (source in ('RS', 'UCM', 'Sales')),
   customer_name text not null,
   -- Optional person attached to an Internal key (car already sold, key cut at
   -- the buyer's house). Only meaningful when end_user = 'Internal'; rendered as

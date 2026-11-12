@@ -64,7 +64,7 @@
                         <input type="date" name="cut_date" id="cut_date" value="{{ form.cut_date or '' }}">
                     </div>
                     <div>
-                        <label>Billing Information</label>
+                        <label>Pay Type</label>
                         <div class="radios">
                             {% for eu in end_users %}
                             <label>
@@ -73,6 +73,14 @@
                             </label>
                             {% endfor %}
                         </div>
+                    </div>
+                    <div>
+                        <label for="source">Source</label>
+                        <select name="source" id="source">
+                            {% for s in sources %}
+                            <option value="{{ s }}" {% if (form.source or 'UCM') == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
 
