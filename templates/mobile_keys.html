@@ -7,14 +7,14 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
-        .container { max-width: 1800px; margin: 60px auto; padding: 0 20px; }
+        .container { max-width: 1800px; margin: 60px auto; padding: 0 12px; }
         h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
         .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
         .page-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; justify-content: center; flex-wrap: wrap; }
         .nav-tab { padding: 10px 16px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 0.9rem; font-weight: 500; }
         .nav-tab:hover { color: #0068d6; }
         .nav-tab.active { color: #0068d6; border-bottom-color: #0068d6; font-weight: 600; }
-        .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card { background: #fff; border-radius: 8px; padding: 24px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .actions { margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
         .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; text-decoration: none; }
         .btn:hover { background: #0050a8; }
@@ -35,11 +35,13 @@
         .sortable-ghost { opacity: 0.4; background: #eff6ff; }
         .sortable-chosen { background: #f0f9ff; }
         .table-wrap { overflow: auto; max-height: calc(100vh - 240px); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.73rem; min-width: 1380px; }
-        th { text-align: center; padding: 8px 5px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        th { text-align: center; padding: 6px 3px; background: #e5e7eb; border-bottom: 2px solid #cbd5e1; color: #374151; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.3px; white-space: normal; line-height: 1.25; position: sticky; top: 0; z-index: 2; }
         thead tr:first-child th:first-child { border-top-left-radius: 6px; }
         thead tr:first-child th:last-child { border-top-right-radius: 6px; }
-        td { padding: 8px 5px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; text-align: center; }
+        td { padding: 7px 3px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; white-space: nowrap; text-align: center; }
+        /* Free-text columns may wrap so the whole table fits without a horizontal scroll. */
+        td.wrap { white-space: normal; min-width: 80px; }
         tr:last-child td { border-bottom: none; }
         .num { text-align: center; font-variant-numeric: tabular-nums; }
         .center { text-align: center; }
@@ -58,7 +60,13 @@
         .search-input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 320px; font-family: inherit; }
         .search-input:focus { outline: none; border-color: #0068d6; box-shadow: 0 0 0 2px rgba(0,104,214,0.15); }
         .no-results-row td { text-align: center; color: #888; padding: 28px; font-style: italic; }
+        /* Row shading: all four tracking boxes ticked = white; not yet ordered =
+           faint yellow; anything in between (ordered but not closed out) = grey. */
         tr.row-pending td { background: #f3f4f6; }
+        tr.row-unordered td { background: #fefce8; }
+        .edit-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 22px; border: 1px solid #0068d6; border-radius: 5px; color: #0068d6; background: #fff; }
+        .edit-btn:hover { background: #eff6ff; }
+        .edit-btn svg { width: 12px; height: 12px; display: block; }
         .status-box { width: 16px; height: 16px; padding: 0; border: 1px solid #cbd5e1; background: #fff; border-radius: 3px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: transparent; font-family: inherit; font-size: 0.7rem; font-weight: 600; line-height: 1; }
         .status-box:hover { border-color: #94a3b8; }
         .status-box-done { color: #0a6f3b; border-color: #a7b3c2; }
@@ -96,6 +104,40 @@
         }
         .info-bubble strong { display: block; margin-bottom: 4px; }
         .info-tip:hover .info-bubble, .info-tip:focus-within .info-bubble { display: block; }
+        /* Import Invoice popup. Everything is scoped under #importModal so the
+           review tables don't pick up the Key Database's sticky/nowrap rules. */
+        #importModal .modal-card { max-width: 460px; width: 92vw; max-height: 90vh; overflow: auto; position: relative; }
+        #importModal.wide .modal-card { max-width: 1200px; padding-bottom: 0; }
+        #importModal .imp-x { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.4rem; line-height: 1; color: #9ca3af; cursor: pointer; }
+        #importModal .imp-x:hover { color: #374151; }
+        #importModal input[type="file"] { display: block; width: 100%; padding: 14px; border: 2px dashed #cbd5e1; border-radius: 6px; background: #f9fafb; font-size: 0.85rem; cursor: pointer; }
+        #importModal input[type="file"]:hover { border-color: #0068d6; background: #f0f7ff; }
+        #importModal .imp-help { font-size: 0.78rem; color: #6b7280; line-height: 1.55; margin-top: 10px; }
+        #importModal .imp-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
+        #importModal .imp-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px 14px; border-radius: 6px; font-size: 0.9rem; }
+        #importModal .imp-summary { color: #4b5563; font-size: 0.88rem; margin: 2px 30px 14px 0; }
+        #importModal .imp-warnings { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 0.82rem; }
+        #importModal .imp-warnings ul, #importModal .imp-success ul { margin: 6px 0 0 18px; }
+        #importModal .imp-section { margin-bottom: 18px; }
+        #importModal .imp-section h4 { font-size: 0.95rem; margin-bottom: 2px; }
+        #importModal .imp-hint { color: #6b7280; font-size: 0.8rem; margin-bottom: 8px; }
+        #importModal .imp-link { background: none; border: none; color: #0068d6; font-size: 0.78rem; cursor: pointer; text-decoration: underline; padding: 0; }
+        #importModal .imp-table-wrap { overflow-x: auto; }
+        #importModal .imp-table { width: 100%; font-size: 0.8rem; }
+        #importModal .imp-table th { position: static; padding: 7px 6px; font-size: 0.66rem; white-space: nowrap; }
+        #importModal .imp-table td { padding: 7px 6px; background: none; }
+        #importModal .imp-table input[type="text"] { width: 110px; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem; text-align: center; font-family: inherit; }
+        #importModal .imp-table input.money { width: 76px; }
+        #importModal .imp-table input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0068d6; }
+        #importModal .imp-left { text-align: left; }
+        #importModal .imp-muted { color: #9ca3af; }
+        #importModal .imp-note { font-size: 0.7rem; color: #92400e; white-space: normal; max-width: 220px; margin: 0 auto; line-height: 1.4; }
+        #importModal .imp-was { display: block; font-size: 0.66rem; color: #9ca3af; margin-top: 3px; }
+        #importModal .imp-badge { display: inline-block; font-size: 0.66rem; padding: 1px 6px; border-radius: 10px; font-weight: 600; background: #fef3c7; color: #92400e; }
+        #importModal .imp-empty { text-align: center; color: #888; padding: 24px; }
+        #importModal .imp-footer { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e5e7eb; margin: 0 -24px; padding: 12px 24px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+        #importModal .imp-ordered { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; margin: 0 auto 0 0; font-weight: 400; cursor: pointer; }
+        #importModal .btn:disabled { background: #cbd5e1; opacity: 1; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -112,7 +154,7 @@
             </div>
             <div style="flex: 1; text-align: right;">
                 <button type="button" id="copySelectedBtn" class="btn btn-outline">Copy Tool</button>
-                <a href="/mobile-keys/import" class="btn btn-outline">Import Invoice</a>
+                <button type="button" id="importBtn" class="btn btn-outline">Import Invoice</button>
                 <a href="/mobile-keys/new" class="btn">+ Add Key</a>
             </div>
         </div>
@@ -129,10 +171,10 @@
                         <tr>
                             <th class="center copy-cell"><input type="checkbox" id="selectAllKeys" class="copy-check" title="Select all" aria-label="Select all keys to copy"></th>
                             <th aria-label="Drag to reorder"></th>
-                            <th class="center">Notes</th>
                             <th class="center">Ordered</th>
                             <th class="center">Key Code</th>
                             <th class="center">Complete</th>
+                            <th class="center">Closed</th>
                             <th>Appt Date</th>
                             <th>Pay Type</th>
                             <th>Source</th>
@@ -161,29 +203,15 @@
                                 </span>
                             </th>
                             <th class="center">Offset</th>
-                            <th class="center">Actions</th>
+                            <th class="center">Notes</th>
+                            <th class="center">Edit</th>
                         </tr>
                     </thead>
                     <tbody id="keyRows">
                     {% for k in keys %}
-                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.status_done %} class="row-pending"{% endif %}>
+                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
                             <td class="center copy-cell"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
                             <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
-                            <td class="center">
-                                <button type="button" class="note-btn {% if k.notes %}note-btn-filled{% endif %}"
-                                        data-key-id="{{ k.id }}"
-                                        data-label="{{ k.year }} {{ k.make }} {{ k.model }}"
-                                        data-note="{{ k.notes or '' }}"
-                                        aria-label="{{ 'Edit note' if k.notes else 'Add note' }}"
-                                        title="{{ 'Hover to read, click to edit' if k.notes else 'Add note' }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M19 4h-3.5l-1-1h-5l-1 1H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
-                                        <line x1="8" y1="10" x2="16" y2="10"/>
-                                        <line x1="8" y1="14" x2="16" y2="14"/>
-                                        <line x1="8" y1="18" x2="13" y2="18"/>
-                                    </svg>
-                                </button>
-                            </td>
                             <td class="center">
                                 <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-ordered" class="status-form">
                                     <input type="hidden" name="ordered" value="{{ '0' if k.ordered else '1' }}">
@@ -205,6 +233,12 @@
                                     <button type="submit" class="status-box {% if k.status_done %}status-box-done{% endif %}" aria-label="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}" title="{{ 'Mark as not complete' if k.status_done else 'Mark as complete' }}">{% if k.status_done %}✓{% endif %}</button>
                                 </form>
                             </td>
+                            <td class="center">
+                                <form method="POST" action="/mobile-keys/{{ k.id }}/toggle-closed" class="status-form">
+                                    <input type="hidden" name="ro_closed" value="{{ '0' if k.ro_closed else '1' }}">
+                                    <button type="submit" class="status-box {% if k.ro_closed %}status-box-done{% endif %}" aria-label="{{ 'Mark RO as not closed' if k.ro_closed else 'Mark RO as closed' }}" title="{{ 'Mark RO as not closed' if k.ro_closed else 'Mark RO as closed' }}">{% if k.ro_closed %}✓{% endif %}</button>
+                                </form>
+                            </td>
                             <td>{{ k.cut_date | format_short_date or '—' }}</td>
                             <td>
                                 {% if k.end_user == 'Internal' %}
@@ -214,12 +248,12 @@
                                 {% endif %}
                             </td>
                             <td>{{ k.source or '—' }}</td>
-                            <td>{{ k.customer_display }}</td>
+                            <td class="wrap">{{ k.customer_display }}</td>
                             <td>{{ k.ro_number or '—' }}</td>
                             <td style="font-family: monospace; font-size: 0.7rem;">{{ k.vin }}</td>
                             <td>{{ k.year }}</td>
                             <td>{{ k.make }}</td>
-                            <td>{{ k.model }}</td>
+                            <td class="wrap">{{ k.model }}</td>
                             <td class="col-divider">{{ k.key_type }}</td>
                             <td>{{ k.key_fob_part_number or '—' }}</td>
                             <td>{{ k.key_blank_part_number or '—' }}</td>
@@ -235,14 +269,32 @@
                                 {% endif %}
                             </td>
                             <td class="center">
-                                <div class="row-actions">
-                                    <a href="/mobile-keys/{{ k.id }}/edit" class="btn btn-outline btn-xs">Edit</a>
-                                </div>
+                                <button type="button" class="note-btn {% if k.notes %}note-btn-filled{% endif %}"
+                                        data-key-id="{{ k.id }}"
+                                        data-label="{{ k.year }} {{ k.make }} {{ k.model }}"
+                                        data-note="{{ k.notes or '' }}"
+                                        aria-label="{{ 'Edit note' if k.notes else 'Add note' }}"
+                                        title="{{ 'Hover to read, click to edit' if k.notes else 'Add note' }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M19 4h-3.5l-1-1h-5l-1 1H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                                        <line x1="8" y1="10" x2="16" y2="10"/>
+                                        <line x1="8" y1="14" x2="16" y2="14"/>
+                                        <line x1="8" y1="18" x2="13" y2="18"/>
+                                    </svg>
+                                </button>
+                            </td>
+                            <td class="center">
+                                <a href="/mobile-keys/{{ k.id }}/edit" class="edit-btn" title="Edit" aria-label="Edit key">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 20h9"/>
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                    </svg>
+                                </a>
                             </td>
                         </tr>
                     {% endfor %}
                         <tr class="no-results-row" id="noResultsRow" style="display: none;">
-                            <td colspan="23">No keys match that search.</td>
+                            <td colspan="25">No keys match that search.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -267,6 +319,30 @@
             </form>
         </div>
     </div>
+
+    <div id="importModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+        <div class="modal-card">
+            <button type="button" class="imp-x" data-import-close aria-label="Close">&times;</button>
+            <h3 id="importTitle">Import Invoice</h3>
+            <div id="importBody"></div>
+        </div>
+    </div>
+
+    <template id="importUploadTpl">
+        <p class="modal-state">Upload a parts invoice and it'll fill in the part numbers and costs on the matching keys.</p>
+        <div class="imp-error" data-import-error style="display: none;"></div>
+        <form id="importUploadForm" enctype="multipart/form-data">
+            <input type="file" name="invoice" accept="application/pdf,.pdf" required>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-sm btn-light" data-import-close>Cancel</button>
+                <button type="submit" class="btn btn-sm">Read invoice</button>
+            </div>
+        </form>
+        <div class="imp-help">
+            Parts are matched to keys by VIN first, then RO, using the <strong>Net</strong> cost. Nothing is saved until you
+            review the list and click Apply. Needs a real PDF from the parts system &mdash; a scan has no text to read.
+        </div>
+    </template>
 
     {% include '_key_notes.html' %}
 
@@ -532,6 +608,137 @@
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
             });
+        })();
+
+        // Import Invoice popup: pick a PDF, the server parses + matches it and
+        // returns the review as an HTML fragment, which replaces the upload
+        // form inside the popup. Apply posts back with fetch; once anything is
+        // saved, closing the popup reloads the Key Database to show it.
+        (function () {
+            var modal = document.getElementById('importModal');
+            var body = document.getElementById('importBody');
+            var tpl = document.getElementById('importUploadTpl');
+            var openBtn = document.getElementById('importBtn');
+            if (!modal || !body || !tpl) return;
+            var changed = false;
+
+            function esc(t) {
+                var d = document.createElement('div');
+                d.textContent = t == null ? '' : String(t);
+                return d.innerHTML;
+            }
+
+            function close() {
+                modal.classList.add('hidden');
+                if (changed) window.location.reload();
+            }
+
+            function showUpload(error) {
+                modal.classList.remove('wide');
+                body.innerHTML = tpl.innerHTML;
+                var err = body.querySelector('[data-import-error]');
+                if (error) { err.textContent = error; err.style.display = ''; }
+                var form = document.getElementById('importUploadForm');
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var btn = form.querySelector('button[type="submit"]');
+                    btn.disabled = true;
+                    btn.textContent = 'Reading…';
+                    fetch('/mobile-keys/import', { method: 'POST', body: new FormData(form) })
+                        .then(function (r) {
+                            if (r.ok) return r.text().then(showReview);
+                            return r.json().then(function (j) { showUpload(j.error); },
+                                                 function () { showUpload('Upload failed (' + r.status + ').'); });
+                        })
+                        .catch(function () { showUpload('Upload failed — check your connection and try again.'); });
+                });
+            }
+
+            function showReview(html) {
+                modal.classList.add('wide');
+                body.innerHTML = html;
+                var form = document.getElementById('applyForm');
+                var btn = document.getElementById('applyBtn');
+                var boxes = form.querySelectorAll('input[name="apply"]');
+
+                function refresh() {
+                    var n = 0;
+                    for (var i = 0; i < boxes.length; i++) { if (boxes[i].checked) n++; }
+                    btn.textContent = 'Apply ' + n + ' update' + (n === 1 ? '' : 's');
+                    btn.disabled = n === 0;
+                }
+                for (var i = 0; i < boxes.length; i++) boxes[i].addEventListener('change', refresh);
+
+                form.querySelectorAll('[data-toggle-all]').forEach(function (t) {
+                    t.addEventListener('click', function () {
+                        var groupBoxes = form.querySelectorAll('input[data-group="' + t.getAttribute('data-toggle-all') + '"]');
+                        // Flip to whatever the group isn't already: all on, unless they all are.
+                        var allChecked = Array.prototype.every.call(groupBoxes, function (b) { return b.checked; });
+                        groupBoxes.forEach(function (b) { b.checked = !allChecked; });
+                        t.textContent = allChecked ? 'Select all' : 'Select none';
+                        refresh();
+                    });
+                });
+
+                form.querySelector('[data-import-restart]').addEventListener('click', function () { showUpload(); });
+
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var overwrites = form.querySelectorAll('input[name="apply"][data-conflict]:checked').length;
+                    if (overwrites && !window.confirm(
+                        overwrites + ' key' + (overwrites === 1 ? ' already has' : 's already have') +
+                        ' part data that will be replaced. Go ahead?')) return;
+                    btn.disabled = true;
+                    btn.textContent = 'Applying…';
+                    fetch('/mobile-keys/import/apply', { method: 'POST', body: new FormData(form) })
+                        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                        .then(function (res) { showResult(res.ok ? res.j : { error: res.j.error }); })
+                        .catch(function () { showResult({ error: 'Could not save — check your connection and try again.' }); });
+                });
+
+                refresh();
+            }
+
+            function showResult(r) {
+                modal.classList.remove('wide');
+                var html;
+                if (r.error) {
+                    html = '<div class="imp-error">' + esc(r.error) + '</div>';
+                } else {
+                    if (r.applied) changed = true;
+                    html = '<div class="imp-success">' + (r.applied
+                        ? 'Updated ' + r.applied + ' key' + (r.applied === 1 ? '' : 's') +
+                          (r.marked_ordered ? ' and marked ' + (r.applied === 1 ? 'it' : 'them') + ' as Ordered' : '') + '.'
+                        : 'Nothing was applied — no keys were checked off.');
+                    if (r.errors && r.errors.length) {
+                        html += '<ul>' + r.errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>';
+                    }
+                    html += '</div>';
+                }
+                html += '<div class="modal-actions"><button type="button" class="btn btn-sm btn-light" data-import-again>Import another</button>' +
+                        '<button type="button" class="btn btn-sm" data-import-close>Done</button></div>';
+                body.innerHTML = html;
+                body.querySelector('[data-import-again]').addEventListener('click', function () { showUpload(); });
+            }
+
+            function open() {
+                showUpload();
+                modal.classList.remove('hidden');
+            }
+
+            if (openBtn) openBtn.addEventListener('click', open);
+            // Close buttons are re-rendered with each step, so delegate.
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal || e.target.closest('[data-import-close]')) close();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+            });
+            // /mobile-keys/import (old bookmark) redirects here with ?import=1.
+            if (/[?&]import=1/.test(window.location.search)) {
+                history.replaceState(null, '', window.location.pathname);
+                open();
+            }
         })();
     </script>
 </body>

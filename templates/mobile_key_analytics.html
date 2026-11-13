@@ -89,7 +89,40 @@
                 </tfoot>
             </table>
             {% else %}
-            <p class="empty">No keys logged yet.</p>
+            <p class="empty">No keys in this period.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Keys by Customer &mdash; {{ period_label }}</h2>
+            {% if stats.customers %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th class="num">Keys</th>
+                        <th class="num">Avg Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in stats.customers %}
+                    <tr>
+                        <td>{{ c.customer }}</td>
+                        <td class="num">{{ c.count }}</td>
+                        <td class="num">{{ c.avg_cost | format_money }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td class="num">{{ stats.total_keys }}</td>
+                        <td class="num">{{ stats.avg_cost | format_money }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p class="empty">No keys in this period.</p>
             {% endif %}
         </div>
     </div>

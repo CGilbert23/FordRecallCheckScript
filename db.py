@@ -528,6 +528,15 @@ def set_mobile_key_ordered(key_id, ordered):
     return res.data[0] if res.data else None
 
 
+def set_mobile_key_closed(key_id, ro_closed):
+    """Flip the per-row Closed checkbox (the RO has been closed out)."""
+    client = get_client()
+    res = client.table('mobile_keys').update({
+        'ro_closed': bool(ro_closed),
+    }).eq('id', key_id).execute()
+    return res.data[0] if res.data else None
+
+
 def set_mobile_key_key_code(key_id, key_code, key_code_value=None):
     """Set the per-row Key Code checkbox state plus the entered code text.
 

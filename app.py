@@ -1398,10 +1398,24 @@ def _key_analytics(rows):
     makes = [{'make': m, 'count': len(c), 'avg_cost': sum(c) / len(c)}
              for m, c in by_make.items()]
     makes.sort(key=lambda m: (-m['count'], m['make']))
+
+    # Keys by customer: Internal keys by store; every Customer-pay key rolls
+    # up into one "Customer Pay" line.
+    by_customer = {}
+    for r in rows:
+        if r.get('end_user') == 'Internal':
+            name = r.get('customer_name') or 'Unknown'
+        else:
+            name = 'Customer Pay'
+        by_customer.setdefault(name, []).append(r['total_cost'])
+    customers = [{'customer': n, 'count': len(c), 'avg_cost': sum(c) / len(c)}
+                 for n, c in by_customer.items()]
+    customers.sort(key=lambda c: (-c['count'], c['customer']))
     revenue = sum(r['total_cost'] for r in rows)
     offset_keys = sum(1 for r in rows if r.get('offset_eligible'))
     return {
         'makes': makes,
+        'customers': customers,
         'total_keys': len(rows),
         'avg_cost': revenue / len(rows) if rows else 0,
         'revenue': revenue,
@@ -1411,7 +1425,7 @@ def _key_analytics(rows):
 
 @app.route('/mobile-keys/analytics')
 def mobile_key_analytics():
-    """Key Analytics: pick Overall or one month (by cut date)."""
+    """Key Analytics: one month (by cut date, default this month) or Overall."""
     try:
         rows = db.list_mobile_keys()
     except Exception as e:
@@ -1422,11 +1436,15 @@ def mobile_key_analytics():
 
     # Every month that has a key cut in it, newest first. Undated keys only
     # count towards Overall.
-    months = sorted({str(r['cut_date'])[:7] for r in rows if r.get('cut_date')}, reverse=True)
+    # The current month is always offered (and is the default) even before a
+    # key has been cut in it.
+    current = datetime.now(scheduler.TZ).strftime('%Y-%m')
+    months = sorted({str(r['cut_date'])[:7] for r in rows if r.get('cut_date')} | {current},
+                    reverse=True)
     periods = [{'value': 'overall', 'label': 'Overall'}] + [
         {'value': m, 'label': _month_label(m + '-01')} for m in months
     ]
-    period = request.args.get('period', 'overall')
+    period = request.args.get('period', current)
     if period not in months:
         period = 'overall'
     else:
@@ -1553,6 +1571,16 @@ def mobile_key_toggle_ordered(key_id):
         db.set_mobile_key_ordered(key_id, ordered)
     except Exception as e:
         logger.error(f"Toggle ordered failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/toggle-closed', methods=['POST'])
+def mobile_key_toggle_closed(key_id):
+    ro_closed = request.form.get('ro_closed') == '1'
+    try:
+        db.set_mobile_key_closed(key_id, ro_closed)
+    except Exception as e:
+        logger.error(f"Toggle closed failed for {key_id}: {e}")
     return redirect(url_for('mobile_keys_list'))
 
 
@@ -1831,40 +1859,38 @@ def _match_invoice_groups(groups, keys):
     return matched, conflicts, unmatched
 
 
+def _import_error(message, status=400):
+    return jsonify({'error': message}), status
+
+
 @app.route('/mobile-keys/import', methods=['GET', 'POST'])
 def mobile_key_import():
+    # Import Invoice lives in a popup on the Key Database now. A GET (old
+    # bookmark) lands there with the popup open; the popup POSTs here with
+    # fetch and drops the returned review fragment into itself.
     if request.method == 'GET':
-        return render_template('mobile_keys_import.html')
+        return redirect(url_for('mobile_keys_list', **{'import': 1}))
 
     data, error = _read_invoice_upload(request)
     if error:
-        return render_template('mobile_keys_import.html', error=error)
+        return _import_error(error)
 
     try:
         parsed = key_invoice_parser.parse_invoice_pdf(data)
     except ValueError as e:
-        return render_template('mobile_keys_import.html', error=str(e))
+        return _import_error(str(e))
     except Exception as e:
         logger.error(f"Invoice parse failed: {e}")
-        return render_template(
-            'mobile_keys_import.html',
-            error='Could not read that invoice. It may be an unusual layout.',
-        )
+        return _import_error('Could not read that invoice. It may be an unusual layout.')
 
     if not parsed['groups']:
-        return render_template(
-            'mobile_keys_import.html',
-            error='No parts found on that invoice — it may be a scan with no text layer.',
-        )
+        return _import_error('No parts found on that invoice — it may be a scan with no text layer.')
 
     try:
         keys = db.list_mobile_keys()
     except Exception as e:
         logger.error(f"Failed to load keys for invoice match: {e}")
-        return render_template(
-            'mobile_keys_import.html',
-            error='Could not load the Key Database to match against. Try again.',
-        )
+        return _import_error('Could not load the Key Database to match against. Try again.', 500)
 
     matched, conflicts, unmatched = _match_invoice_groups(parsed['groups'], keys)
     # When the parts we read don't add up to the invoice's own printed total,
@@ -1875,7 +1901,7 @@ def mobile_key_import():
         and abs(parsed['parsed_total'] - parsed['invoice_total']) > 0.01
     )
     return render_template(
-        'mobile_keys_import_review.html',
+        '_key_import_review.html',
         matched=matched,
         conflicts=conflicts,
         unmatched=unmatched,
@@ -1929,12 +1955,9 @@ def mobile_key_import_apply():
             errors.extend(f"{key_id}: {msg}" for key_id, msg in failures)
         except Exception as e:
             logger.error(f"Invoice apply failed: {e}")
-            return render_template(
-                'mobile_keys_import.html',
-                error=f'Could not save those keys: {e}',
-            )
+            return _import_error(f'Could not save those keys: {e}', 500)
 
-    return render_template('mobile_keys_import.html', result={
+    return jsonify({
         'applied': applied,
         'selected': len(tokens),
         'errors': errors,

@@ -1,0 +1,157 @@
+{# Invoice review, rendered as a fragment and dropped into the Import Invoice
+   popup on the Key Database (see #importModal in mobile_keys.html). The
+   popup's script wires up the checkboxes and posts the form with fetch. #}
+<p class="imp-summary">Read <strong>{{ filename }}</strong> &mdash; {{ (matched | length) + (conflicts | length) + (unmatched | length) }} part group{{ '' if (matched | length) + (conflicts | length) + (unmatched | length) == 1 else 's' }} totalling {{ parsed_total | format_money }}. Check what's right and apply.</p>
+
+{% if warnings %}
+<div class="imp-warnings">
+    <strong>Worth a look before you apply:</strong>
+    <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form method="POST" action="/mobile-keys/import/apply" id="applyForm">
+
+{% if matched %}
+<div class="imp-section">
+    <h4>Will update ({{ matched | length }})</h4>
+    <p class="imp-hint">These keys have no part numbers yet. Edit anything that looks off before applying. <button type="button" class="imp-link" data-toggle-all="matched">{{ "Select all" if totals_mismatch else "Select none" }}</button></p>
+    <div class="imp-table-wrap">
+        <table class="imp-table">
+            <thead>
+                <tr>
+                    <th></th><th>RO</th><th>VIN</th><th>Vehicle</th><th>Customer</th>
+                    <th>Fob P/N</th><th>Fob $</th><th>Blank P/N</th><th>Blank $</th><th>Total $</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in matched %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="apply" value="{{ p.token }}" data-group="matched"{% if not totals_mismatch %} checked{% endif %}>
+                        <input type="hidden" name="key_id__{{ p.token }}" value="{{ p.key_id }}">
+                        <input type="hidden" name="label__{{ p.token }}" value="RO {{ p.key.ro_number or p.ro_number }}">
+                    </td>
+                    <td>
+                        {{ p.key.ro_number or '—' }}
+                        {% if p.match_note %}<div class="imp-note">{{ p.match_note }}</div>{% endif %}
+                    </td>
+                    <td>{{ p.key.vin or '—' }}</td>
+                    <td>{{ p.key.year }} {{ p.key.make }} {{ p.key.model }}</td>
+                    <td>{{ p.before.customer_display or '—' }}</td>
+                    <td><input type="text" name="fob_pn__{{ p.token }}" value="{{ p.proposed.key_fob_part_number or '' }}"></td>
+                    <td><input type="text" class="money" inputmode="decimal" name="fob_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_fob_cost if p.proposed.key_fob_cost is not none else '' }}"></td>
+                    <td><input type="text" name="blank_pn__{{ p.token }}" value="{{ p.proposed.key_blank_part_number or '' }}"></td>
+                    <td><input type="text" class="money" inputmode="decimal" name="blank_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_blank_cost if p.proposed.key_blank_cost is not none else '' }}"></td>
+                    <td>
+                        <span class="imp-muted">{{ p.before.total_cost | format_money }}</span>
+                        <span class="imp-muted">&rarr;</span>
+                        <strong>{{ p.after.total_cost | format_money }}</strong>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if conflicts %}
+<div class="imp-section">
+    <h4>Already has part data ({{ conflicts | length }})</h4>
+    <p class="imp-hint">These keys already have part numbers or costs saved. Ticking one <strong>replaces</strong> what's there. <button type="button" class="imp-link" data-toggle-all="conflicts">Select all</button></p>
+    <div class="imp-table-wrap">
+        <table class="imp-table">
+            <thead>
+                <tr>
+                    <th></th><th>RO</th><th>VIN</th><th>Vehicle</th><th>Customer</th>
+                    <th>Fob P/N</th><th>Fob $</th><th>Blank P/N</th><th>Blank $</th><th>Total $</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in conflicts %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="apply" value="{{ p.token }}" data-group="conflicts" data-conflict="1">
+                        <input type="hidden" name="key_id__{{ p.token }}" value="{{ p.key_id }}">
+                        <input type="hidden" name="label__{{ p.token }}" value="RO {{ p.key.ro_number or p.ro_number }}">
+                    </td>
+                    <td>
+                        {{ p.key.ro_number or '—' }}
+                        {% if p.match_note %}<div class="imp-note">{{ p.match_note }}</div>{% endif %}
+                    </td>
+                    <td>{{ p.key.vin or '—' }}</td>
+                    <td>{{ p.key.year }} {{ p.key.make }} {{ p.key.model }}</td>
+                    <td>{{ p.before.customer_display or '—' }}</td>
+                    <td>
+                        <input type="text" name="fob_pn__{{ p.token }}" value="{{ p.proposed.key_fob_part_number or '' }}">
+                        <span class="imp-was">was: {{ p.existing.key_fob_part_number or '—' }}</span>
+                    </td>
+                    <td>
+                        <input type="text" class="money" inputmode="decimal" name="fob_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_fob_cost if p.proposed.key_fob_cost is not none else '' }}">
+                        <span class="imp-was">was: {{ p.existing.key_fob_cost | format_money }}</span>
+                    </td>
+                    <td>
+                        <input type="text" name="blank_pn__{{ p.token }}" value="{{ p.proposed.key_blank_part_number or '' }}">
+                        <span class="imp-was">was: {{ p.existing.key_blank_part_number or '—' }}</span>
+                    </td>
+                    <td>
+                        <input type="text" class="money" inputmode="decimal" name="blank_cost__{{ p.token }}" value="{{ '%.2f' % p.proposed.key_blank_cost if p.proposed.key_blank_cost is not none else '' }}">
+                        <span class="imp-was">was: {{ p.existing.key_blank_cost | format_money }}</span>
+                    </td>
+                    <td>
+                        <span class="imp-muted">{{ p.before.total_cost | format_money }}</span>
+                        <span class="imp-muted">&rarr;</span>
+                        <strong>{{ p.after.total_cost | format_money }}</strong>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if unmatched %}
+<div class="imp-section">
+    <h4>No matching key ({{ unmatched | length }})</h4>
+    <p class="imp-hint">Nothing in the Key Database lines up with these. Add the key first, then upload the invoice again.</p>
+    <div class="imp-table-wrap">
+        <table class="imp-table">
+            <thead>
+                <tr><th>RO</th><th>VIN</th><th class="imp-left">Parts on the invoice</th><th class="imp-left">Why</th></tr>
+            </thead>
+            <tbody>
+            {% for p in unmatched %}
+                <tr>
+                    <td>{{ p.ro_number or '—' }}</td>
+                    <td>{{ p.vin or '—' }}</td>
+                    <td class="imp-left">
+                        {% for item in p.group['items'] %}
+                            {{ item.part_number }} &mdash; {{ item.net | format_money }}{% if item.qty > 1 %} <span class="imp-badge">&times;{{ item.qty }}</span>{% endif %}<br>
+                        {% endfor %}
+                    </td>
+                    <td class="imp-left imp-muted">{{ p.reason }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not matched and not conflicts %}
+<p class="imp-empty">Nothing on this invoice matches a key in the database.</p>
+{% endif %}
+
+<div class="imp-footer">
+    <label class="imp-ordered">
+        <input type="checkbox" name="mark_ordered" value="1">
+        Also mark these keys as Ordered
+    </label>
+    <button type="button" class="btn btn-sm btn-light" data-import-restart>Pick another file</button>
+    <button type="submit" class="btn btn-sm" id="applyBtn">Apply {{ matched | length }} update{{ '' if matched | length == 1 else 's' }}</button>
+    <span class="imp-muted" style="font-size: 0.75rem;">Blank boxes are left as they are &mdash; nothing gets cleared.</span>
+</div>
+
+</form>

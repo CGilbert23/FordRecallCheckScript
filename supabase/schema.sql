@@ -185,6 +185,9 @@ create table mobile_keys (
   -- opens when the checkbox is clicked. Default false / null.
   key_code boolean not null default false,
   key_code_value text,
+  -- Per-row "Closed" flag: the RO has been closed out. Rightmost of the four
+  -- tracking checkboxes (Ordered, Key Code, Complete, Closed).
+  ro_closed boolean not null default false,
   -- Free-text notes per key. Surfaced as a textarea on the add/edit form,
   -- and as a hover popover (notepad icon next to customer name) on the list
   -- page when non-empty.
