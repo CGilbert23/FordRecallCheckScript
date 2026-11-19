@@ -2390,6 +2390,32 @@ def kpi_profitability():
                       'yellow': kpi_tracker.profit_thresholds(t)[1]} for t in levels])
 
 
+@app.route('/tech-performance/kpi-tracker/advisor-report')
+def kpi_advisor_report():
+    """Advisor workload by month: one row per service advisor (a store, or the
+    two store pairs that share an advisor)."""
+    want = (request.args.get('month') or '').strip()
+    months, selected, report, rows, total, error = [], None, None, [], None, None
+    try:
+        months = [{'key': m['period_start'][:7], 'label': _month_label(m['period_start']),
+                   'period_start': m['period_start']}
+                  for m in sorted(db.list_kpi_report_months(),
+                                  key=lambda m: m['period_start'], reverse=True)]
+        selected = next((m for m in months if m['key'] == want), months[0] if months else None)
+        if selected:
+            report = db.get_kpi_report(selected['period_start'])
+        if report:
+            monthly = _monthly_goals(report['period_start'], report)
+            rows, total = kpi_tracker.advisor_view(report, kpi_tracker.settings_from_goals(monthly))
+    except Exception as e:
+        logger.error(f"Advisor report load failed: {e}")
+        error = 'Could not load saved KPI reports from the database.'
+    in_progress = bool(report) and report['days_elapsed'] < report['work_days']
+    return render_template('kpi_advisor_report.html', months=months, selected=selected,
+                           report=report, rows=rows, total=total, in_progress=in_progress,
+                           error=error)
+
+
 def _next_month(key):
     """'2026-09' -> '2026-10'."""
     y, m = int(key[:4]), int(key[5:7])

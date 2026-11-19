@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advisor Report - Fred Beans Mobile Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1100px; margin: 60px auto; padding: 0 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 12px; text-align: center; }
+        .subtitle { color: #666; margin-bottom: 20px; text-align: center; }
+        .card { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.9rem; }
+        .filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+        .filters label { display: block; font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
+        .filters select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; min-width: 180px; cursor: pointer; }
+        .filters select:focus { outline: none; border-color: #0068d6; }
+        .btn { display: inline-block; background: #0068d6; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; }
+        .table-wrap { overflow-x: auto; }
+        table.adv { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        table.adv caption { background: #0f2a47; color: #fff; font-size: 1rem; font-weight: 700; padding: 8px; border: 1px solid #c8ced6; border-bottom: none; }
+        table.adv th, table.adv td { border: 1px solid #c8ced6; text-align: center; padding: 8px 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        table.adv th { background: #1f4e79; color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; user-select: none; }
+        table.adv th:hover { background: #2a5f91; }
+        table.adv th .arrow { font-size: 0.65rem; margin-left: 4px; opacity: 0.85; }
+        table.adv td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; text-align: left; padding-left: 10px; }
+        table.adv td.pdel { font-weight: 700; color: #0f2a47; }
+        table.adv td.pdel.no { color: #9ca3af; font-weight: 500; }
+        table.adv tr.total td { background: #e5e9ef; font-weight: 700; font-style: italic; border-top: 2px solid #9ca3af; }
+        .note { font-size: 0.78rem; color: #888; margin-top: 10px; }
+        .empty-state { text-align: center; color: #888; padding: 36px 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+        <p class="subtitle">Each service advisor's workload for the month.</p>
+        {% include '_kpi_tabs.html' %}
+
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+        <div class="card">
+            {% if months %}
+            <form method="GET" action="/tech-performance/kpi-tracker/advisor-report" class="filters">
+                <div>
+                    <label for="month">Month</label>
+                    <select id="month" name="month" onchange="this.form.submit()">
+                        {% for m in months %}
+                        <option value="{{ m.key }}" {% if selected and m.key == selected.key %}selected{% endif %}>{{ m.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <noscript><button type="submit" class="btn">Show</button></noscript>
+            </form>
+            {% endif %}
+
+            {% if rows %}
+            {% macro money(v) %}{% if v is none %}&mdash;{% else %}${{ '{:,.0f}'.format(v) }}{% endif %}{% endmacro %}
+            <div class="table-wrap">
+            <table class="adv" id="advTable">
+                <caption>{{ selected.label }} &ndash; Advisor Workload{% if in_progress %} ({{ report.days_elapsed }}/{{ report.work_days }} Working Days){% endif %}</caption>
+                <thead>
+                    <tr>
+                        <th data-type="text">Store</th>
+                        <th data-type="num">Van Count</th>
+                        <th data-type="num">Active Techs</th>
+                        <th data-type="text">PDEL</th>
+                        <th data-type="num" id="roHeader">Total RO</th>
+                        <th data-type="num">Total Revenue</th>
+                        <th data-type="num">Avg RO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        <td class="store" data-v="{{ r.name }}">{{ r.name }}</td>
+                        <td data-v="{{ r.units }}">{{ '{:,.0f}'.format(r.units) }}</td>
+                        <td data-v="{{ r.techs }}">{{ '{:,.0f}'.format(r.techs) }}</td>
+                        <td class="pdel {% if not r.pdel %}no{% endif %}" data-v="{{ 'X' if r.pdel else '' }}">{{ 'X' if r.pdel else '--' }}</td>
+                        <td data-v="{{ r.ro }}">{{ '{:,.0f}'.format(r.ro) }}</td>
+                        <td data-v="{{ r.revenue }}">{{ money(r.revenue) }}</td>
+                        <td data-v="{{ r.avg_ro if r.avg_ro is not none else '' }}">{{ money(r.avg_ro) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if total %}
+                <tfoot>
+                    <tr class="total">
+                        <td>TOTALS:</td>
+                        <td>{{ '{:,.0f}'.format(total.units) }}</td>
+                        <td>{{ '{:,.0f}'.format(total.techs) }}</td>
+                        <td></td>
+                        <td>{{ '{:,.0f}'.format(total.ro) }}</td>
+                        <td>{{ money(total.revenue) }}</td>
+                        <td>{{ money(total.avg_ro) }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+            </div>
+            <p class="note">Ford &amp; Lincoln Doylestown and Ford Newtown &amp; Washington share an advisor, so each pair is one row. Revenue is Ford's Total RO Value (no offset).{% if in_progress %} Month to date.{% endif %}</p>
+            {% elif months %}
+            <div class="empty-state">No KPI data for this month.</div>
+            {% else %}
+            <div class="empty-state">No KPI reports uploaded yet. Upload Ford's weekly file on the KPI Tracker tab to get started.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var table = document.getElementById('advTable');
+        if (!table) return;
+        var headers = table.querySelectorAll('thead th');
+        var state = { col: -1, dir: 1 };
+        headers.forEach(function (th, idx) {
+            th.addEventListener('click', function () {
+                var num = th.dataset.type === 'num';
+                // Numbers open highest-first, text A-Z; a second click flips it.
+                state.dir = state.col === idx ? -state.dir : (num ? -1 : 1);
+                state.col = idx;
+                var body = table.tBodies[0];
+                var rows = Array.prototype.slice.call(body.rows);
+                rows.sort(function (a, b) {
+                    var x = a.cells[idx].dataset.v, y = b.cells[idx].dataset.v;
+                    if (x === '' && y === '') return 0;
+                    if (x === '') return 1;
+                    if (y === '') return -1;
+                    if (num) return (parseFloat(x) - parseFloat(y)) * state.dir;
+                    return x.localeCompare(y) * state.dir;
+                });
+                rows.forEach(function (r) { body.appendChild(r); });
+                headers.forEach(function (h) { var a = h.querySelector('.arrow'); if (a) a.remove(); });
+                var arrow = document.createElement('span');
+                arrow.className = 'arrow';
+                arrow.textContent = state.dir > 0 ? '▲' : '▼';
+                th.appendChild(arrow);
+            });
+        });
+        // Open sorted by Total RO, highest first.
+        document.getElementById('roHeader').click();
+    })();
+    </script>
+</body>
+</html>

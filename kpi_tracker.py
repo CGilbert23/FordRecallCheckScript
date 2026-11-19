@@ -533,6 +533,46 @@ def profitability_view(reports):
     return rows, totals, months_present
 
 
+# Advisor Report: one service advisor per store, except two advisors who each
+# cover a pair of stores — those pairs are reported as one row.
+ADVISOR_GROUPS = [
+    {'name': 'Ford & Lincoln Doylestown', 'codes': ('01203', '11524')},
+    {'name': 'Ford Newtown & Washington', 'codes': ('01844', '05494')},
+]
+# Stores that also handle PDEL work (an X in the Advisor Report's PDEL column).
+PDEL_STORES = {'01305', '04197', '01341', '01017'}  # Langhorne, Mechanicsburg, West Chester, Exton
+
+
+def advisor_view(report, settings=None):
+    """(rows, total) for the Advisor Report: one row per advisor's workload —
+    a store, or a grouped pair of stores — with vans, active techs, RO count,
+    revenue (Total RO Value, no offset) and Avg RO Value."""
+    days, total_days = report['days_elapsed'], report['work_days']
+    settings = settings if settings is not None else report.get('settings')
+    comps = {s['code']: (s, _components(s, settings, days, total_days))
+             for s in _ordered(report.get('stores') or [])}
+    grouped = {code: g for g in ADVISOR_GROUPS for code in g['codes']}
+    rows, done = [], set()
+    for code, (store, _) in comps.items():
+        if code in done:
+            continue
+        group = grouped.get(code)
+        codes = [c for c in group['codes'] if c in comps] if group else [code]
+        done.update(codes)
+        c = _combine([comps[c][1] for c in codes], days)
+        rows.append({'name': group['name'] if group else _store_name(code, store.get('name')),
+                     'pdel': any(c2 in PDEL_STORES for c2 in codes),
+                     'units': c['units'], 'techs': c['techs'], 'ro': c['ro'],
+                     'revenue': c['ro_value'], 'avg_ro': _div(c['ro_value'], c['ro'])})
+    total = None
+    if comps:
+        c = _combine([v[1] for v in comps.values()], days)
+        total = {'units': c['units'], 'techs': c['techs'], 'ro': c['ro'],
+                 'revenue': c['ro_value'], 'avg_ro': _div(c['ro_value'], c['ro'])}
+    rows.sort(key=lambda r: r['ro'], reverse=True)
+    return rows, total
+
+
 YOY_METRICS = ('ro', 'avg_ro', 'commercial_mix', 'total_revenue', 'total_offset')
 
 
