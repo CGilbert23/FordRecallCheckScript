@@ -140,6 +140,8 @@ def holidays(year):
 def work_days(year, month, through=None):
     """Working days from the 1st through `through` (default: month end)."""
     last = calendar.monthrange(year, month)[1]
+    if through and (through.year, through.month) < (year, month):
+        return 0  # e.g. a file dated the 1st, which covers nothing of this month yet
     end = min(through.day, last) if through else last
     off = holidays(year)
     return sum(1 for d in range(1, end + 1)
@@ -246,14 +248,15 @@ def parse_report(data, filename='', today=None):
         full = work_days(year, month)
         days = _days_elapsed(stores)
         if days is None:
-            # Nobody has an RO yet — fall back to the calendar. A Monday
-            # file runs through the Friday before it.
-            days = full if complete else work_days(year, month, ref - timedelta(days=3))
+            # Nobody has an RO yet — fall back to the calendar. Ford's file
+            # runs two days behind its date (Monday -> Saturday, i.e. through
+            # Friday; a Thursday file -> through Tuesday).
+            days = full if complete else work_days(year, month, ref - timedelta(days=2))
         # A finished month's day count is Ford's, whatever our holiday list says.
         total_days = days if complete else max(full, days)
         months.append({
             'period_start': date(year, month, 1),
-            'as_of': ref,  # the Monday the file was sent: the scorecard's column
+            'as_of': ref,  # the date the file was sent; the scorecard files it under that week's Monday
             # A scorecard week column only makes sense for a weekly file dated
             # inside the month it covers. A year file (every month at once) and
             # the file that closes out the prior month aren't weeks.
@@ -814,17 +817,29 @@ def scorecard_view(period_start, weeks, month_report, settings=None, goals=None,
     """
     start = period_start if isinstance(period_start, date) else _parse_date(period_start)
     goals, manual = derived_goals(goals, start.year, start.month), manual or {}
+    # One column per week, keyed by its Monday (so the hand-typed tracking
+    # cells keep their key). Ford sometimes sends a mid-week file too (a
+    # Wednesday/Thursday one): it lands in that week's column and, being
+    # further along, replaces the Monday numbers; the label shows its date.
+    # A file dated before the month's first Monday gets a column of its own.
+    week_starts = mondays(start.year, start.month)
     by_week = {}
     for w in weeks:
+        as_of = _parse_date(str(w['as_of'])[:10])
+        anchor = max((d for d in week_starts if d <= as_of), default=as_of)
         m = _scorecard_metrics(w, settings)
-        by_week[str(w['as_of'])[:10]] = m
+        m['as_of'] = as_of
+        best = by_week.get(anchor)
+        if best is None or (m['days'], as_of) > (best['days'], best['as_of']):
+            by_week[anchor] = m
     latest = max(by_week.values(), key=lambda m: m['days'], default=None)
 
     columns = []
-    for monday in mondays(start.year, start.month):
-        key = monday.isoformat()
-        columns.append({'key': key, 'label': f'{monday.day}-{calendar.month_abbr[monday.month]}',
-                        'metrics': by_week.get(key), 'manual': (manual or {}).get(key) or {}})
+    for anchor in sorted(set(week_starts) | set(by_week)):
+        key = anchor.isoformat()
+        shown = by_week[anchor]['as_of'] if anchor in by_week else anchor
+        columns.append({'key': key, 'label': f'{shown.day}-{calendar.month_abbr[shown.month]}',
+                        'metrics': by_week.get(anchor), 'manual': (manual or {}).get(key) or {}})
     eom = _scorecard_metrics(month_report, settings) if month_report and _is_complete(month_report) else None
     # EOM can be filled in by hand at the last meeting of the month; Ford's
     # closing file (the first one of the next month) takes over when it lands.
