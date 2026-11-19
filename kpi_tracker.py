@@ -801,6 +801,10 @@ def _scorecard_metrics(snapshot, settings):
     tracking = {k: (v * factor if v is not None and factor else None)
                 for k, v in actual.items()
                 if k in ('ro', 'revenue') or k.startswith('store:')}
+    # RO projections round to the nearest 10, same as the KPI Tracker's Tracking.
+    for k, v in tracking.items():
+        if v is not None and k != 'revenue':
+            tracking[k] = int(round(v, -1))
     return {'actual': actual, 'tracking': tracking, 'days': days, 'work_days': total,
             'stores': per_store, 'complete': _is_complete(snapshot)}
 
@@ -855,13 +859,35 @@ def scorecard_view(period_start, weeks, month_report, settings=None, goals=None,
                 # roster from, so fall back to the store list — the goals still
                 # need a row to be typed into.
                 known = latest['stores'] if latest else {}
-                for s in _ordered([{'code': c} for c in (known or STORE_BY_CODE)]):
+                for s in _ranked_stores(eom or latest, known or STORE_BY_CODE):
                     code = s['code']
                     rows.append(_scorecard_row({'fmt': 'int', 'store': True}, 'store:' + code,
                                                _store_name(code), columns, eom, goals, typed_eom))
         sections.append({'title': section['title'], 'rows': rows})
     return {'columns': columns, 'sections': sections, 'has_data': bool(by_week),
             'eom_from_ford': eom is not None}
+
+
+def _ranked_stores(snapshot, codes):
+    """Per-store RO rows under Total RO Count: grouped like the KPI Tracker by
+    Active Technicians from Monthly Goals (2-tech stores, then 1-tech — Ford's
+    van count can run ahead of staffing), highest RO Tracking first in each —
+    from the newest upload, so the order re-sorts itself as data comes in.
+    A finished month (no Tracking) ranks on its actual RO count. Ties, and
+    everything before the first upload, keep the STORES order."""
+    stores = _ordered([{'code': c} for c in codes])
+    if not snapshot:
+        return stores
+    order = {s['code']: i for i, s in enumerate(stores)}
+
+    def key(s):
+        c = s['code']
+        comp = snapshot['stores'].get(c) or {}
+        pace = snapshot['tracking'].get('store:' + c)
+        if pace is None:
+            pace = snapshot['actual'].get('store:' + c)
+        return (-(comp.get('techs') or 0), -(pace or 0), order[c])
+    return sorted(stores, key=key)
 
 
 def _scorecard_row(spec, key, label, columns, eom, goals, typed_eom=None):
