@@ -64,7 +64,6 @@
                 <thead>
                     <tr>
                         <th data-type="text">Store</th>
-                        <th data-type="num">Van Count</th>
                         <th data-type="num">Active Techs</th>
                         <th data-type="text">PDEL</th>
                         <th data-type="num" id="roHeader">Total RO</th>
@@ -76,7 +75,6 @@
                     {% for r in rows %}
                     <tr>
                         <td class="store" data-v="{{ r.name }}">{{ r.name }}</td>
-                        <td data-v="{{ r.units }}">{{ '{:,.0f}'.format(r.units) }}</td>
                         <td data-v="{{ r.techs }}">{{ '{:,.0f}'.format(r.techs) }}</td>
                         <td class="pdel {% if not r.pdel %}no{% endif %}" data-v="{{ 'X' if r.pdel else '' }}">{{ 'X' if r.pdel else '--' }}</td>
                         <td data-v="{{ r.ro }}">{{ '{:,.0f}'.format(r.ro) }}</td>
@@ -89,7 +87,6 @@
                 <tfoot>
                     <tr class="total">
                         <td>TOTALS:</td>
-                        <td>{{ '{:,.0f}'.format(total.units) }}</td>
                         <td>{{ '{:,.0f}'.format(total.techs) }}</td>
                         <td></td>
                         <td>{{ '{:,.0f}'.format(total.ro) }}</td>
