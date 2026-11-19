@@ -58,6 +58,7 @@
         table.kpi td.store { background: #f1f3f6; font-weight: 600; color: #0f2a47; }
         /* Tracking: green once the projection is within 10% of Forecast, else red. */
         table.kpi td.green { background: #cdeccf; color: #14532d; font-weight: 600; }
+        table.kpi td.yellow { background: #fbeec2; color: #713f12; font-weight: 600; }
         table.kpi td.red { background: #f7d2d2; color: #7f1d1d; font-weight: 600; }
         table.kpi td.goal { background: #f8fafc; color: #475569; }
         table.kpi td.inp { background: #e8f1fb; }
@@ -191,7 +192,7 @@
                     <tr>
                         {% for c in columns %}
                         <th class="sortable{% if c.ext %} ext{% endif %}{% if c.key == 'name' %} w-name{% elif c.input %} w-inp{% endif %}" data-type="{{ 'text' if c.fmt == 'text' else 'num' }}"
-                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come. Green once it's within 10% of Forecast."{% elif c.key == 'ro' and trend_col == 'ro' %}title="Green once the month's RO count is within 10% of Forecast"{% elif c.key == 'forecast' %}title="This month's RO goal for the store, set on the Monthly Goals tab"{% endif %}>{{ c.label }}</th>
+                            {% if c.key == 'tracking' %}title="Projected month end, including a {{ late_close_pct }}% late-close bump on the days still to come. Green at or above Forecast, yellow up to 10% under, red more than 10% under."{% elif c.key == 'ro' and trend_col == 'ro' %}title="Green at or above Forecast, yellow up to 10% under, red more than 10% under"{% elif c.key == 'forecast' %}title="This month's RO goal for the store, set on the Monthly Goals tab"{% endif %}>{{ c.label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -414,6 +415,7 @@
             inp:   { bg: '#e8f1fb', fg: '#111827' },
             goal:  { bg: '#f8fafc', fg: '#475569' },
             onTrend:  { bg: '#cdeccf', fg: '#14532d', bold: true },
+            nearTrend: { bg: '#fbeec2', fg: '#713f12', bold: true },
             offTrend: { bg: '#f7d2d2', fg: '#7f1d1d', bold: true },
             prev:  { bg: '#ffffff', fg: '#6b7280' },
             up:    { bg: '#f8fafc', fg: '#047857', bold: true },
@@ -454,6 +456,7 @@
             if (cl.contains('goal')) return STYLE.goal;
             // Tracking carries its on-trend colour into the email copy.
             if (cl.contains('green')) return STYLE.onTrend;
+            if (cl.contains('yellow')) return STYLE.nearTrend;
             if (cl.contains('red')) return STYLE.offTrend;
             if (cl.contains('inp')) return STYLE.inp;
             if (cl.contains('prev')) return STYLE.prev;

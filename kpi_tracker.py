@@ -400,13 +400,12 @@ def _ordered(stores):
 
 
 def _forecast_row(row, forecast, finished=False):
-    """Attach the month's RO goal for this store and the on-trend colour.
-    Green once the projection is within 10% of the goal, red below — two
-    states, since a projection is either on trend or it isn't. A finished
-    month has nothing to project, so its actual RO count is banded instead."""
+    """Attach the month's RO goal for this store and the on-trend colour —
+    the same bands as the EOS Scorecard (`goal_band`): green at or above the
+    goal, yellow up to 10% under, red more than 10% under. A finished month
+    has nothing to project, so its actual RO count is banded instead."""
     row['forecast'] = forecast
-    band = goal_band(row.get('ro' if finished else 'tracking'), forecast)
-    row['trend'] = ('green' if band == 'green' else 'red') if band else None
+    row['trend'] = goal_band(row.get('ro' if finished else 'tracking'), forecast)
     return row
 
 
@@ -616,9 +615,9 @@ def yoy_view(cur_reports, prior_reports, codes=None, settings_by_period=None):
 # the per-week van/tech entries (which are keyed by date, so no collision).
 MANUAL_EOM_KEY = 'eom'
 
-# Green within 10% of goal, yellow 10-20% under, red more than 20% under.
-SCORECARD_GREEN = 0.90
-SCORECARD_YELLOW = 0.80
+# Green at or above goal, yellow up to 10% under, red more than 10% under.
+SCORECARD_GREEN = 1.00
+SCORECARD_YELLOW = 0.90
 
 # Rows, in the order the team's spreadsheet lists them. `rate` rows are per-day
 # or per-RO figures — they're compared to the goal as-is (no pacing) and have

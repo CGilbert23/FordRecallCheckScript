@@ -40,7 +40,7 @@
         table.eos td.track { font-style: italic; color: #475569; }
         table.eos td.eom { background: #f8fafc; font-weight: 700; }
         table.eos td.note { text-align: left; font-style: italic; color: #92400e; white-space: normal; }
-        /* Green within 10% of goal, yellow 10-20% under, red more than 20% under. */
+        /* Green at or above goal, yellow up to 10% under, red more than 10% under. */
         table.eos td.green { background: #cdeccf; color: #14532d; font-weight: 600; }
         table.eos td.yellow { background: #fbeec2; color: #713f12; font-weight: 600; }
         table.eos td.red { background: #f7d2d2; color: #7f1d1d; font-weight: 600; }
@@ -201,9 +201,9 @@
             </div>
 
             <div class="legend">
-                <span><span class="swatch" style="background:#cdeccf"></span>Within 10% of goal</span>
-                <span><span class="swatch" style="background:#fbeec2"></span>10&ndash;20% under</span>
-                <span><span class="swatch" style="background:#f7d2d2"></span>More than 20% under</span>
+                <span><span class="swatch" style="background:#cdeccf"></span>At or above goal</span>
+                <span><span class="swatch" style="background:#fbeec2"></span>Up to 10% under</span>
+                <span><span class="swatch" style="background:#f7d2d2"></span>More than 10% under</span>
             </div>
             {% else %}
             <div class="empty-state">Pick a month to start a scorecard.</div>
