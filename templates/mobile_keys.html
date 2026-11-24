@@ -53,6 +53,7 @@
         .badge-yes { background: #ecfdf5; color: #065f46; }
         .badge-no { background: #fef2f2; color: #b91c1c; }
         .badge-sublet { background: #ede9fe; color: #5b21b6; font-size: 0.62rem; padding: 1px 6px; }
+        .badge-unable { background: #fee2e2; color: #991b1b; font-size: 0.62rem; padding: 1px 6px; }
         .row-actions { display: flex; gap: 6px; align-items: center; justify-content: center; }
         .row-actions form { display: inline; margin: 0; }
         .empty { text-align: center; color: #888; padding: 40px; }
@@ -65,8 +66,6 @@
            faint yellow; anything in between (ordered but not closed out) = grey. */
         tr.row-pending td { background: #f3f4f6; }
         tr.row-unordered td { background: #fefce8; }
-        /* Marked Unable on the edit form: overrides the shading above. */
-        tr.row-unable td { background: #fdecec; }
         .edit-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 22px; border: 1px solid #0068d6; border-radius: 5px; color: #0068d6; background: #fff; }
         .edit-btn:hover { background: #eff6ff; }
         .edit-btn svg { width: 12px; height: 12px; display: block; }
@@ -212,7 +211,7 @@
                     </thead>
                     <tbody id="keyRows">
                     {% for k in keys %}
-                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if k.unable %} class="row-unable" title="Marked Unable"{% elif not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
+                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
                             <td class="center copy-cell"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
                             <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
                             <td class="center">
@@ -251,7 +250,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ k.source or '—' }}</td>
-                            <td class="wrap">{{ k.customer_display }}{% if k.sublet %} <span class="badge badge-sublet" title="Another dealership did the programming">Sublet</span>{% endif %}</td>
+                            <td class="wrap">{{ k.customer_display }}{% if k.sublet %} <span class="badge badge-sublet" title="Another dealership did the programming">Sublet</span>{% endif %}{% if k.unable %} <span class="badge badge-unable" title="Nothing could be done — we ate the cost">Unable</span>{% endif %}</td>
                             <td>{{ k.ro_number or '—' }}</td>
                             <td style="font-family: monospace; font-size: 0.7rem;">{{ k.vin }}</td>
                             <td>{{ k.year }}</td>

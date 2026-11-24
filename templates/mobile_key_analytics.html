@@ -26,6 +26,9 @@
         th { background: #e5e7eb; padding: 10px 12px; font-size: 0.72rem; color: #374151; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
         td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
         th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        thead th { cursor: pointer; user-select: none; white-space: nowrap; }
+        thead th:hover { background: #d9dde3; }
+        thead th .arrow { display: inline-block; width: 10px; margin-left: 4px; color: #6b7280; font-size: 0.65rem; }
         tfoot td { background: #e5e9ef; font-weight: 700; color: #0f2a47; border-bottom: none; }
         .empty { text-align: center; color: #888; padding: 32px; }
         .hint { color: #6b7280; font-size: 0.85rem; margin: -6px 0 12px; }
@@ -214,5 +217,59 @@
             {% endif %}
         </div>
     </div>
+    <script>
+        // Click any column header to sort that table: numbers and dates
+        // highest/newest first, text A–Z; click again to flip. The Total row
+        // lives in <tfoot> so it never moves; blanks (—) always sink.
+        (function () {
+            function value(td) {
+                var t = (td ? td.textContent : '').trim();
+                if (!t || t === '—') return null;
+                var d = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);   // M/D/YY
+                if (d) return Number(d[3].slice(-2)) * 10000 + Number(d[1]) * 100 + Number(d[2]);
+                var n = t.replace(/[$,%]/g, '');
+                if (/^-?\d+(\.\d+)?$/.test(n)) return Number(n);
+                return t.toLowerCase();
+            }
+
+            document.querySelectorAll('table').forEach(function (table) {
+                var tbody = table.tBodies[0];
+                var heads = table.tHead ? table.tHead.rows[0].cells : [];
+                if (!tbody) return;
+                var sortCol = -1, desc = false;
+
+                Array.prototype.forEach.call(heads, function (th, col) {
+                    var arrow = document.createElement('span');
+                    arrow.className = 'arrow';
+                    th.appendChild(arrow);
+                    th.title = 'Sort';
+                    th.addEventListener('click', function () {
+                        var rows = Array.prototype.slice.call(tbody.rows);
+                        if (col === sortCol) {
+                            desc = !desc;
+                        } else {
+                            // First click: numbers/dates high-first, text A–Z.
+                            var sample = rows.map(function (r) { return value(r.cells[col]); })
+                                             .filter(function (v) { return v !== null; })[0];
+                            desc = typeof sample === 'number';
+                            sortCol = col;
+                        }
+                        rows.sort(function (a, b) {
+                            var x = value(a.cells[col]), y = value(b.cells[col]);
+                            if (x === null && y === null) return 0;
+                            if (x === null) return 1;
+                            if (y === null) return -1;
+                            var c = x < y ? -1 : x > y ? 1 : 0;
+                            return desc ? -c : c;
+                        });
+                        rows.forEach(function (r) { tbody.appendChild(r); });
+                        Array.prototype.forEach.call(heads, function (h, i) {
+                            h.querySelector('.arrow').textContent = i === sortCol ? (desc ? '▼' : '▲') : '';
+                        });
+                    });
+                });
+            });
+        })();
+    </script>
 </body>
 </html>
