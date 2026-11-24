@@ -537,12 +537,18 @@ def set_mobile_key_closed(key_id, ro_closed):
     return res.data[0] if res.data else None
 
 
-def set_mobile_key_unable(key_id, unable):
-    """Flag a key we had and tried everything on but couldn't make work."""
+def set_mobile_key_outcome(key_id, field, on):
+    """Flag a key's outcome: 'unable' (tried everything, nothing worked, we
+    ate the cost) or 'sublet' (another dealership did the programming, job
+    still done). The two are mutually exclusive, so setting one clears the
+    other."""
+    if field not in ('unable', 'sublet'):
+        raise ValueError(f'Unknown key outcome: {field}')
+    update = {field: bool(on)}
+    if on:
+        update['sublet' if field == 'unable' else 'unable'] = False
     client = get_client()
-    res = client.table('mobile_keys').update({
-        'unable': bool(unable),
-    }).eq('id', key_id).execute()
+    res = client.table('mobile_keys').update(update).eq('id', key_id).execute()
     return res.data[0] if res.data else None
 
 

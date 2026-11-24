@@ -37,12 +37,16 @@
         .btn-danger:hover { background: #991b1b; }
         .actions { display: flex; gap: 10px; margin-top: 24px; }
         .footer-actions { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; }
-        .footer-actions form { margin: 0; display: flex; align-items: center; gap: 12px; }
-        .btn-unable { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; padding: 10px 18px; font-size: 0.9rem; }
+        .footer-actions form { margin: 0; }
+        .btn-flag { background: #fff; padding: 10px 18px; font-size: 0.9rem; }
+        .btn-unable { color: #b91c1c; border: 1px solid #fca5a5; }
         .btn-unable:hover { background: #fef2f2; }
-        .btn-unable-on { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 10px 18px; font-size: 0.9rem; }
-        .btn-unable-on:hover { background: #fecaca; }
-        .unable-hint { font-size: 0.8rem; color: #6b7280; }
+        .btn-unable.on { background: #fee2e2; color: #991b1b; }
+        .btn-unable.on:hover { background: #fecaca; }
+        .btn-sublet { color: #6d28d9; border: 1px solid #c4b5fd; }
+        .btn-sublet:hover { background: #f5f3ff; }
+        .btn-sublet.on { background: #ede9fe; color: #5b21b6; }
+        .btn-sublet.on:hover { background: #ddd6fe; }
         .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
@@ -221,16 +225,20 @@
             {% if key %}
             <form method="POST" action="/mobile-keys/{{ key.id }}/delete" id="deleteKeyForm" onsubmit="return confirm('Delete this key record? This cannot be undone.');"></form>
 
+            {# Outcome flags. Unable = nothing could be done, we ate the cost (left out
+               of the Analytics totals). Sublet = another dealership did the
+               programming, job still done (counts as a key done). Setting one
+               clears the other; clicking a lit one turns it back off. #}
             <div class="footer-actions">
                 <form method="POST" action="/mobile-keys/{{ key.id }}/toggle-unable">
                     <input type="hidden" name="unable" value="{{ '0' if key.unable else '1' }}">
-                    {% if key.unable %}
-                    <button type="submit" class="btn btn-unable-on">Unmark Unable</button>
-                    <span class="unable-hint">This key is marked Unable &mdash; it's left out of the Analytics totals.</span>
-                    {% else %}
-                    <button type="submit" class="btn btn-unable">Mark Unable</button>
-                    <span class="unable-hint">We had the key and tried everything, but it didn't work. Turns the row light red and moves it out of the Analytics totals.</span>
-                    {% endif %}
+                    <button type="submit" class="btn btn-flag btn-unable{% if key.unable %} on{% endif %}"
+                            title="{{ 'Marked Unable — click to clear' if key.unable else 'Nothing could be done — we ate the cost' }}">{% if key.unable %}&#10003; {% endif %}Unable</button>
+                </form>
+                <form method="POST" action="/mobile-keys/{{ key.id }}/toggle-sublet">
+                    <input type="hidden" name="sublet" value="{{ '0' if key.sublet else '1' }}">
+                    <button type="submit" class="btn btn-flag btn-sublet{% if key.sublet %} on{% endif %}"
+                            title="{{ 'Marked Sublet — click to clear' if key.sublet else 'Another dealership did the programming — job still done' }}">{% if key.sublet %}&#10003; {% endif %}Sublet</button>
                 </form>
             </div>
             {% endif %}

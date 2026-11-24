@@ -192,6 +192,10 @@ create table mobile_keys (
   -- didn't work. Row shows light red; left out of the Analytics totals and
   -- listed separately there, since we eat the parts cost.
   unable boolean not null default false,
+  -- "Sublet" on the edit form: another dealership did the programming but the
+  -- job still got done. Counts in the Analytics totals like any other key.
+  -- Mutually exclusive with unable (the app clears one when setting the other).
+  sublet boolean not null default false,
   -- Free-text notes per key. Surfaced as a textarea on the add/edit form,
   -- and as a hover popover (notepad icon next to customer name) on the list
   -- page when non-empty.

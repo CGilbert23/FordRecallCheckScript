@@ -52,6 +52,7 @@
         .badge-customer { background: #ecfdf5; color: #065f46; }
         .badge-yes { background: #ecfdf5; color: #065f46; }
         .badge-no { background: #fef2f2; color: #b91c1c; }
+        .badge-sublet { background: #ede9fe; color: #5b21b6; font-size: 0.62rem; padding: 1px 6px; }
         .row-actions { display: flex; gap: 6px; align-items: center; justify-content: center; }
         .row-actions form { display: inline; margin: 0; }
         .empty { text-align: center; color: #888; padding: 40px; }
@@ -250,7 +251,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ k.source or '—' }}</td>
-                            <td class="wrap">{{ k.customer_display }}</td>
+                            <td class="wrap">{{ k.customer_display }}{% if k.sublet %} <span class="badge badge-sublet" title="Another dealership did the programming">Sublet</span>{% endif %}</td>
                             <td>{{ k.ro_number or '—' }}</td>
                             <td style="font-family: monospace; font-size: 0.7rem;">{{ k.vin }}</td>
                             <td>{{ k.year }}</td>

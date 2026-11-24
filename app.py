@@ -1393,7 +1393,8 @@ def _key_analytics(rows):
 
     Keys marked Unable (we had the key, tried everything, it didn't work) are
     left out of every figure above and listed on their own, with the parts
-    cost we ate on them.
+    cost we ate on them. Sublet keys (another dealership did the programming)
+    still got done, so they count everywhere; they're just called out.
     """
     unable = [r for r in rows if r.get('unable')]
     rows = [r for r in rows if not r.get('unable')]
@@ -1429,6 +1430,8 @@ def _key_analytics(rows):
         'offset': offset_keys * db.KEY_OFFSET_VALUE,
         'unable': unable,
         'unable_cost': sum(r['total_parts_cost'] for r in unable),
+        'sublet': sorted((r for r in rows if r.get('sublet')),
+                         key=lambda r: str(r.get('cut_date') or ''), reverse=True),
     }
 
 
@@ -1595,11 +1598,19 @@ def mobile_key_toggle_closed(key_id):
 
 @app.route('/mobile-keys/<key_id>/toggle-unable', methods=['POST'])
 def mobile_key_toggle_unable(key_id):
-    unable = request.form.get('unable') == '1'
     try:
-        db.set_mobile_key_unable(key_id, unable)
+        db.set_mobile_key_outcome(key_id, 'unable', request.form.get('unable') == '1')
     except Exception as e:
         logger.error(f"Toggle unable failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/toggle-sublet', methods=['POST'])
+def mobile_key_toggle_sublet(key_id):
+    try:
+        db.set_mobile_key_outcome(key_id, 'sublet', request.form.get('sublet') == '1')
+    except Exception as e:
+        logger.error(f"Toggle sublet failed for {key_id}: {e}")
     return redirect(url_for('mobile_keys_list'))
 
 

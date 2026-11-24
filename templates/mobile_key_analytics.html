@@ -30,6 +30,10 @@
         .empty { text-align: center; color: #888; padding: 32px; }
         .hint { color: #6b7280; font-size: 0.85rem; margin: -6px 0 12px; }
         .unable-card { border-top: 3px solid #f87171; }
+        .sublet-card { border-top: 3px solid #a78bfa; }
+        .sublet-card tfoot td { background: #f3f0ff; color: #5b21b6; }
+        .stat-sub { font-size: 0.75rem; color: #6d28d9; margin-top: 6px; }
+        .stat-sub .sub-unable { color: #b91c1c; }
         .unable-card tfoot td { background: #fdecec; color: #991b1b; }
         @media (max-width: 700px) { .stat-cards { grid-template-columns: 1fr; } }
     </style>
@@ -52,6 +56,11 @@
             <div class="stat-card">
                 <div class="stat-label">Total Keys</div>
                 <div class="stat-value">{{ stats.total_keys }}</div>
+                {% if stats.sublet or stats.unable %}
+                <div class="stat-sub">
+                    {% if stats.sublet %}incl. {{ stats.sublet | length }} sublet{% endif %}{% if stats.sublet and stats.unable %} &middot; {% endif %}{% if stats.unable %}<span class="sub-unable">{{ stats.unable | length }} unable not counted</span>{% endif %}
+                </div>
+                {% endif %}
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Rev</div>
@@ -129,10 +138,48 @@
             {% endif %}
         </div>
 
+        {# Sublet keys are already counted in everything above; this just names them. #}
+        <div class="card sublet-card">
+            <h2>Sublet Keys &mdash; {{ period_label }}</h2>
+            <p class="hint">Another dealership did the programming, but the job got done &mdash; these <strong>are counted</strong> in the totals above.</p>
+            {% if stats.sublet %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Appt Date</th>
+                        <th>Customer</th>
+                        <th>Vehicle</th>
+                        <th>RO</th>
+                        <th class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in stats.sublet %}
+                    <tr>
+                        <td>{{ k.cut_date | format_short_date or '—' }}</td>
+                        <td>{{ k.customer_display }}</td>
+                        <td>{{ k.year }} {{ k.make }} {{ k.model }}</td>
+                        <td>{{ k.ro_number or '—' }}</td>
+                        <td class="num">{{ k.total_cost | format_money }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4">{{ stats.sublet | length }} sublet key{{ '' if stats.sublet | length == 1 else 's' }} of {{ stats.total_keys }} done</td>
+                        <td class="num">{{ stats.sublet | sum(attribute='total_cost') | format_money }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p class="empty">No sublet keys in this period.</p>
+            {% endif %}
+        </div>
+
         {# Keys marked Unable are left out of everything above; this is the cost we ate. #}
         <div class="card unable-card">
             <h2>Unable Keys &mdash; {{ period_label }}</h2>
-            <p class="hint">Keys we had and tried everything on, but couldn't make work. Not counted in the totals above &mdash; we eat the parts cost.</p>
+            <p class="hint">Nothing could be done on these &mdash; we ate the parts cost. <strong>Not counted</strong> in any of the totals above.</p>
             {% if stats.unable %}
             <table>
                 <thead>
