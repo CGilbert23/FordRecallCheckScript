@@ -64,6 +64,8 @@
            faint yellow; anything in between (ordered but not closed out) = grey. */
         tr.row-pending td { background: #f3f4f6; }
         tr.row-unordered td { background: #fefce8; }
+        /* Marked Unable on the edit form: overrides the shading above. */
+        tr.row-unable td { background: #fdecec; }
         .edit-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 22px; border: 1px solid #0068d6; border-radius: 5px; color: #0068d6; background: #fff; }
         .edit-btn:hover { background: #eff6ff; }
         .edit-btn svg { width: 12px; height: 12px; display: block; }
@@ -209,7 +211,7 @@
                     </thead>
                     <tbody id="keyRows">
                     {% for k in keys %}
-                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
+                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if k.unable %} class="row-unable" title="Marked Unable"{% elif not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
                             <td class="center copy-cell"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
                             <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
                             <td class="center">

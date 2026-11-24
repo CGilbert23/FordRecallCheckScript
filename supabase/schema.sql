@@ -188,6 +188,10 @@ create table mobile_keys (
   -- Per-row "Closed" flag: the RO has been closed out. Rightmost of the four
   -- tracking checkboxes (Ordered, Key Code, Complete, Closed).
   ro_closed boolean not null default false,
+  -- "Mark Unable" on the edit form: we had the key and tried everything but it
+  -- didn't work. Row shows light red; left out of the Analytics totals and
+  -- listed separately there, since we eat the parts cost.
+  unable boolean not null default false,
   -- Free-text notes per key. Surfaced as a textarea on the add/edit form,
   -- and as a hover popover (notepad icon next to customer name) on the list
   -- page when non-empty.

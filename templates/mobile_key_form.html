@@ -37,7 +37,12 @@
         .btn-danger:hover { background: #991b1b; }
         .actions { display: flex; gap: 10px; margin-top: 24px; }
         .footer-actions { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; }
-        .footer-actions form { margin: 0; }
+        .footer-actions form { margin: 0; display: flex; align-items: center; gap: 12px; }
+        .btn-unable { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; padding: 10px 18px; font-size: 0.9rem; }
+        .btn-unable:hover { background: #fef2f2; }
+        .btn-unable-on { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 10px 18px; font-size: 0.9rem; }
+        .btn-unable-on:hover { background: #fecaca; }
+        .unable-hint { font-size: 0.8rem; color: #6b7280; }
         .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
@@ -203,15 +208,29 @@
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn">{{ 'Save Changes' if key else 'Create Key Record' }}</button>
+                    <button type="submit" class="btn">Save</button>
+                    {% if key %}
+                    {# Lives in the separate delete form below (forms can't nest); the
+                       form="" attribute lets it sit on the same line as Save. #}
+                    <button type="submit" form="deleteKeyForm" class="btn btn-danger">Delete</button>
+                    {% endif %}
                     <a href="/mobile-keys" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
 
             {% if key %}
+            <form method="POST" action="/mobile-keys/{{ key.id }}/delete" id="deleteKeyForm" onsubmit="return confirm('Delete this key record? This cannot be undone.');"></form>
+
             <div class="footer-actions">
-                <form method="POST" action="/mobile-keys/{{ key.id }}/delete" onsubmit="return confirm('Delete this key record? This cannot be undone.');">
-                    <button type="submit" class="btn btn-danger">Delete Key Record</button>
+                <form method="POST" action="/mobile-keys/{{ key.id }}/toggle-unable">
+                    <input type="hidden" name="unable" value="{{ '0' if key.unable else '1' }}">
+                    {% if key.unable %}
+                    <button type="submit" class="btn btn-unable-on">Unmark Unable</button>
+                    <span class="unable-hint">This key is marked Unable &mdash; it's left out of the Analytics totals.</span>
+                    {% else %}
+                    <button type="submit" class="btn btn-unable">Mark Unable</button>
+                    <span class="unable-hint">We had the key and tried everything, but it didn't work. Turns the row light red and moves it out of the Analytics totals.</span>
+                    {% endif %}
                 </form>
             </div>
             {% endif %}

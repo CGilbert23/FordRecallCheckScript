@@ -1390,7 +1390,14 @@ def _key_analytics(rows):
 
     Avg Cost is the mean billed Total (total_cost from _compute_key_totals);
     Rev is the sum of those; Offset is $170 per offset-eligible key.
+
+    Keys marked Unable (we had the key, tried everything, it didn't work) are
+    left out of every figure above and listed on their own, with the parts
+    cost we ate on them.
     """
+    unable = [r for r in rows if r.get('unable')]
+    rows = [r for r in rows if not r.get('unable')]
+    unable.sort(key=lambda r: str(r.get('cut_date') or ''), reverse=True)
     by_make = {}
     for r in rows:
         make = r.get('make') or 'Unknown'
@@ -1420,6 +1427,8 @@ def _key_analytics(rows):
         'avg_cost': revenue / len(rows) if rows else 0,
         'revenue': revenue,
         'offset': offset_keys * db.KEY_OFFSET_VALUE,
+        'unable': unable,
+        'unable_cost': sum(r['total_parts_cost'] for r in unable),
     }
 
 
@@ -1581,6 +1590,16 @@ def mobile_key_toggle_closed(key_id):
         db.set_mobile_key_closed(key_id, ro_closed)
     except Exception as e:
         logger.error(f"Toggle closed failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/toggle-unable', methods=['POST'])
+def mobile_key_toggle_unable(key_id):
+    unable = request.form.get('unable') == '1'
+    try:
+        db.set_mobile_key_unable(key_id, unable)
+    except Exception as e:
+        logger.error(f"Toggle unable failed for {key_id}: {e}")
     return redirect(url_for('mobile_keys_list'))
 
 

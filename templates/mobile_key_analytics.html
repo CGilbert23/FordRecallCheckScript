@@ -28,6 +28,9 @@
         th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
         tfoot td { background: #e5e9ef; font-weight: 700; color: #0f2a47; border-bottom: none; }
         .empty { text-align: center; color: #888; padding: 32px; }
+        .hint { color: #6b7280; font-size: 0.85rem; margin: -6px 0 12px; }
+        .unable-card { border-top: 3px solid #f87171; }
+        .unable-card tfoot td { background: #fdecec; color: #991b1b; }
         @media (max-width: 700px) { .stat-cards { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -123,6 +126,44 @@
             </table>
             {% else %}
             <p class="empty">No keys in this period.</p>
+            {% endif %}
+        </div>
+
+        {# Keys marked Unable are left out of everything above; this is the cost we ate. #}
+        <div class="card unable-card">
+            <h2>Unable Keys &mdash; {{ period_label }}</h2>
+            <p class="hint">Keys we had and tried everything on, but couldn't make work. Not counted in the totals above &mdash; we eat the parts cost.</p>
+            {% if stats.unable %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Appt Date</th>
+                        <th>Customer</th>
+                        <th>Vehicle</th>
+                        <th>RO</th>
+                        <th class="num">Parts Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in stats.unable %}
+                    <tr>
+                        <td>{{ k.cut_date | format_short_date or '—' }}</td>
+                        <td>{{ k.customer_display }}</td>
+                        <td>{{ k.year }} {{ k.make }} {{ k.model }}</td>
+                        <td>{{ k.ro_number or '—' }}</td>
+                        <td class="num">{{ k.total_parts_cost | format_money }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4">Total &mdash; {{ stats.unable | length }} key{{ '' if stats.unable | length == 1 else 's' }}</td>
+                        <td class="num">{{ stats.unable_cost | format_money }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p class="empty">No keys marked Unable in this period.</p>
             {% endif %}
         </div>
     </div>
