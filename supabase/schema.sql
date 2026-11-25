@@ -196,6 +196,10 @@ create table mobile_keys (
   -- job still got done. Counts in the Analytics totals like any other key.
   -- Mutually exclusive with unable (the app clears one when setting the other).
   sublet boolean not null default false,
+  -- "Skipped" on the edit form: never ordered, we already knew we couldn't do
+  -- it. Listed in its own table under the Key Database; left out of Analytics.
+  -- Mutually exclusive with unable and sublet.
+  skipped boolean not null default false,
   -- Free-text notes per key. Surfaced as a textarea on the add/edit form,
   -- and as a hover popover (notepad icon next to customer name) on the list
   -- page when non-empty.

@@ -47,6 +47,10 @@
         .btn-sublet:hover { background: #f5f3ff; }
         .btn-sublet.on { background: #ede9fe; color: #5b21b6; }
         .btn-sublet.on:hover { background: #ddd6fe; }
+        .btn-skipped { color: #4b5563; border: 1px solid #cbd5e1; }
+        .btn-skipped:hover { background: #f3f4f6; }
+        .btn-skipped.on { background: #e5e7eb; color: #1f2937; }
+        .btn-skipped.on:hover { background: #d1d5db; }
         .error { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
         a.nav-link { color: #0068d6; text-decoration: none; }
         a.nav-link:hover { text-decoration: underline; }
@@ -227,8 +231,10 @@
 
             {# Outcome flags. Unable = nothing could be done, we ate the cost (left out
                of the Analytics totals). Sublet = another dealership did the
-               programming, job still done (counts as a key done). Setting one
-               clears the other; clicking a lit one turns it back off. #}
+               programming, job still done (counts as a key done). Skipped = never
+               ordered, we knew we couldn't do it (own table on the Key Database,
+               left out of Analytics). Setting one clears the others; clicking a
+               lit one turns it back off. #}
             <div class="footer-actions">
                 <form method="POST" action="/mobile-keys/{{ key.id }}/toggle-unable">
                     <input type="hidden" name="unable" value="{{ '0' if key.unable else '1' }}">
@@ -239,6 +245,11 @@
                     <input type="hidden" name="sublet" value="{{ '0' if key.sublet else '1' }}">
                     <button type="submit" class="btn btn-flag btn-sublet{% if key.sublet %} on{% endif %}"
                             title="{{ 'Marked Sublet — click to clear' if key.sublet else 'Another dealership did the programming — job still done' }}">{% if key.sublet %}&#10003; {% endif %}Sublet</button>
+                </form>
+                <form method="POST" action="/mobile-keys/{{ key.id }}/toggle-skipped">
+                    <input type="hidden" name="skipped" value="{{ '0' if key.skipped else '1' }}">
+                    <button type="submit" class="btn btn-flag btn-skipped{% if key.skipped %} on{% endif %}"
+                            title="{{ 'Marked Skipped — click to clear' if key.skipped else 'Not ordering — we already know we can&#39;t do it' }}">{% if key.skipped %}&#10003; {% endif %}Skipped</button>
                 </form>
             </div>
             {% endif %}

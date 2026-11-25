@@ -48,7 +48,7 @@ KEY_END_USERS = ['Internal', 'Customer']
 KEY_SOURCES = ['RS', 'UCM', 'Sales']
 KEY_SOURCE_DEFAULT = 'UCM'
 KEY_INTERNAL_CUSTOMERS = [
-    'FB Chevrolet', 'FB CDJR', 'FB Hyundai', 'FB Lincoln', 'FB Ford Doylestown', 'FB Ford Washington',
+    'FB Chevrolet', 'FB CDJR', 'FB Hyundai', 'FB Lincoln', 'FB Ford Doylestown', 'FB Ford Washington', 'FB Ford Langhorne',
     'FB GMC', 'FB Subaru', 'FB Toyota', 'Bid Lot',
 ]
 KEY_MAKES = [
@@ -537,16 +537,19 @@ def set_mobile_key_closed(key_id, ro_closed):
     return res.data[0] if res.data else None
 
 
+KEY_OUTCOMES = ('unable', 'sublet', 'skipped')
+
+
 def set_mobile_key_outcome(key_id, field, on):
     """Flag a key's outcome: 'unable' (tried everything, nothing worked, we
-    ate the cost) or 'sublet' (another dealership did the programming, job
-    still done). The two are mutually exclusive, so setting one clears the
-    other."""
-    if field not in ('unable', 'sublet'):
+    ate the cost), 'sublet' (another dealership did the programming, job
+    still done) or 'skipped' (never ordered -- we knew we couldn't do it).
+    They're mutually exclusive, so setting one clears the others."""
+    if field not in KEY_OUTCOMES:
         raise ValueError(f'Unknown key outcome: {field}')
     update = {field: bool(on)}
     if on:
-        update['sublet' if field == 'unable' else 'unable'] = False
+        update.update({other: False for other in KEY_OUTCOMES if other != field})
     client = get_client()
     res = client.table('mobile_keys').update(update).eq('id', key_id).execute()
     return res.data[0] if res.data else None

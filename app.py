@@ -1382,7 +1382,11 @@ def mobile_keys_list():
         rows = []
     for r in rows:
         _compute_key_totals(r)
-    return render_template('mobile_keys.html', keys=rows)
+    # Skipped keys (never ordered, we knew we couldn't do them) get their own
+    # table under the main one.
+    return render_template('mobile_keys.html',
+                           keys=[r for r in rows if not r.get('skipped')],
+                           skipped_keys=[r for r in rows if r.get('skipped')])
 
 
 def _key_analytics(rows):
@@ -1396,6 +1400,9 @@ def _key_analytics(rows):
     cost we ate on them. Sublet keys (another dealership did the programming)
     still got done, so they count everywhere; they're just called out.
     """
+    # Skipped keys were never attempted -- they don't belong in any figure.
+    skipped = sum(1 for r in rows if r.get('skipped'))
+    rows = [r for r in rows if not r.get('skipped')]
     unable = [r for r in rows if r.get('unable')]
     rows = [r for r in rows if not r.get('unable')]
     unable.sort(key=lambda r: str(r.get('cut_date') or ''), reverse=True)
@@ -1429,6 +1436,7 @@ def _key_analytics(rows):
         'revenue': revenue,
         'offset': offset_keys * db.KEY_OFFSET_VALUE,
         'unable': unable,
+        'skipped': skipped,
         'unable_cost': sum(r['total_parts_cost'] for r in unable),
         'sublet': sorted((r for r in rows if r.get('sublet')),
                          key=lambda r: str(r.get('cut_date') or ''), reverse=True),
@@ -1602,6 +1610,15 @@ def mobile_key_toggle_unable(key_id):
         db.set_mobile_key_outcome(key_id, 'unable', request.form.get('unable') == '1')
     except Exception as e:
         logger.error(f"Toggle unable failed for {key_id}: {e}")
+    return redirect(url_for('mobile_keys_list'))
+
+
+@app.route('/mobile-keys/<key_id>/toggle-skipped', methods=['POST'])
+def mobile_key_toggle_skipped(key_id):
+    try:
+        db.set_mobile_key_outcome(key_id, 'skipped', request.form.get('skipped') == '1')
+    except Exception as e:
+        logger.error(f"Toggle skipped failed for {key_id}: {e}")
     return redirect(url_for('mobile_keys_list'))
 
 

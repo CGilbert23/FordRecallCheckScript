@@ -37,6 +37,7 @@
         .sublet-card tfoot td { background: #f3f0ff; color: #5b21b6; }
         .stat-sub { font-size: 0.75rem; color: #6d28d9; margin-top: 6px; }
         .stat-sub .sub-unable { color: #b91c1c; }
+        .stat-sub .sub-skipped { color: #6b7280; }
         .unable-card tfoot td { background: #fdecec; color: #991b1b; }
         @media (max-width: 700px) { .stat-cards { grid-template-columns: 1fr; } }
     </style>
@@ -59,11 +60,11 @@
             <div class="stat-card">
                 <div class="stat-label">Total Keys</div>
                 <div class="stat-value">{{ stats.total_keys }}</div>
-                {% if stats.sublet or stats.unable %}
-                <div class="stat-sub">
-                    {% if stats.sublet %}incl. {{ stats.sublet | length }} sublet{% endif %}{% if stats.sublet and stats.unable %} &middot; {% endif %}{% if stats.unable %}<span class="sub-unable">{{ stats.unable | length }} unable not counted</span>{% endif %}
-                </div>
-                {% endif %}
+                {% set notes = [] %}
+                {% if stats.sublet %}{% set _ = notes.append('<span>incl. %d sublet</span>' % (stats.sublet | length)) %}{% endif %}
+                {% if stats.unable %}{% set _ = notes.append('<span class="sub-unable">%d unable not counted</span>' % (stats.unable | length)) %}{% endif %}
+                {% if stats.skipped %}{% set _ = notes.append('<span class="sub-skipped">%d skipped not counted</span>' % stats.skipped) %}{% endif %}
+                {% if notes %}<div class="stat-sub">{{ notes | join(' &middot; ') | safe }}</div>{% endif %}
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Rev</div>

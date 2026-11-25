@@ -53,6 +53,8 @@
         .badge-yes { background: #ecfdf5; color: #065f46; }
         .badge-no { background: #fef2f2; color: #b91c1c; }
         .badge-sublet { background: #ede9fe; color: #5b21b6; font-size: 0.62rem; padding: 1px 6px; }
+        #skippedRows .drag-handle { visibility: hidden; }  /* drag-reorder is main table only */
+        .section-title { font-size: 1.05rem; color: #374151; margin: 0 0 12px 4px; }
         .badge-unable { background: #fee2e2; color: #991b1b; font-size: 0.62rem; padding: 1px 6px; }
         .row-actions { display: flex; gap: 6px; align-items: center; justify-content: center; }
         .row-actions form { display: inline; margin: 0; }
@@ -143,32 +145,8 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Fred Beans Mobile Service</h1>
-        {% include '_nav.html' %}
-
-        <div class="actions">
-            <div style="flex: 1; text-align: left;">
-                <span class="muted" style="font-size: 0.9rem;" id="keyCount">{{ keys | length }} key{{ '' if keys | length == 1 else 's' }} on record</span>
-            </div>
-            <div style="flex: 1; text-align: center;">
-                <input type="text" id="keySearch" class="search-input" placeholder="Search by year, make, or model…" autocomplete="off">
-            </div>
-            <div style="flex: 1; text-align: right;">
-                <button type="button" id="copySelectedBtn" class="btn btn-outline">Copy Tool</button>
-                <button type="button" id="importBtn" class="btn btn-outline">Import Invoice</button>
-                <a href="/mobile-keys/new" class="btn">+ Add Key</a>
-            </div>
-        </div>
-
-        {% if not keys %}
-        <div class="card">
-            <p class="empty">No keys logged yet. <a href="/mobile-keys/new" class="nav-link">Add the first one.</a></p>
-        </div>
-        {% else %}
-        <div class="card">
-            <div class="table-wrap">
-                <table>
+{# Header and row shared by the main table and the Skipped table below it. #}
+{% macro key_head() %}
                     <thead>
                         <tr>
                             <th class="center copy-cell"><input type="checkbox" id="selectAllKeys" class="copy-check" title="Select all" aria-label="Select all keys to copy"></th>
@@ -209,9 +187,9 @@
                             <th class="center">Edit</th>
                         </tr>
                     </thead>
-                    <tbody id="keyRows">
-                    {% for k in keys %}
-                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
+{% endmacro %}
+{% macro key_row(k) %}
+                        <tr data-key-id="{{ k.id }}" data-search="{{ k.year }} {{ k.make }} {{ k.model }} {{ k.customer_display }} {{ k.notes or '' }}" data-copy="{{ k.copy_line }}"{% if k.skipped %}{% elif not k.ordered %} class="row-unordered"{% elif not (k.key_code and k.status_done and k.ro_closed) %} class="row-pending"{% endif %}>
                             <td class="center copy-cell"><input type="checkbox" class="copy-check row-copy-check" aria-label="Select this key to copy"></td>
                             <td class="center"><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
                             <td class="center">
@@ -294,10 +272,58 @@
                                 </a>
                             </td>
                         </tr>
+{% endmacro %}
+    <div class="container">
+        <h1>Fred Beans Mobile Service</h1>
+        {% include '_nav.html' %}
+
+        <div class="actions">
+            <div style="flex: 1; text-align: left;">
+                <span class="muted" style="font-size: 0.9rem;" id="keyCount">{{ keys | length }} key{{ '' if keys | length == 1 else 's' }} on record</span>
+            </div>
+            <div style="flex: 1; text-align: center;">
+                <input type="text" id="keySearch" class="search-input" placeholder="Search by year, make, or model…" autocomplete="off">
+            </div>
+            <div style="flex: 1; text-align: right;">
+                <button type="button" id="copySelectedBtn" class="btn btn-outline">Copy Tool</button>
+                <button type="button" id="importBtn" class="btn btn-outline">Import Invoice</button>
+                <a href="/mobile-keys/new" class="btn">+ Add Key</a>
+            </div>
+        </div>
+
+        {% if not keys %}
+        <div class="card">
+            <p class="empty">{% if skipped_keys %}No active keys.{% else %}No keys logged yet.{% endif %} <a href="/mobile-keys/new" class="nav-link">Add the first one.</a></p>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="table-wrap">
+                <table>
+                    {{ key_head() }}
+                    <tbody id="keyRows">
+                    {% for k in keys %}
+                        {{ key_row(k) }}
                     {% endfor %}
                         <tr class="no-results-row" id="noResultsRow" style="display: none;">
                             <td colspan="25">No keys match that search.</td>
                         </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if skipped_keys %}
+        {# Keys we never ordered because we already knew we couldn't do them. #}
+        <div class="card">
+            <h2 class="section-title">Skipped <span class="muted">({{ skipped_keys | length }})</span></h2>
+            <div class="table-wrap">
+                <table>
+                    {{ key_head() }}
+                    <tbody id="skippedRows">
+                    {% for k in skipped_keys %}
+                        {{ key_row(k) }}
+                    {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -361,11 +387,11 @@
         (function () {
             var btn = document.getElementById('copySelectedBtn');
             var selectAll = document.getElementById('selectAllKeys');
-            var tbody = document.getElementById('keyRows');
-            if (!btn || !tbody) return;
+            if (!btn) return;
 
+            // Both tables (main + Skipped) take part in Copy.
             var boxes = Array.prototype.slice.call(
-                tbody.querySelectorAll('input.row-copy-check')
+                document.querySelectorAll('input.row-copy-check')
             );
             var flashTimer = null;
             var armed = false;
@@ -486,10 +512,10 @@
 
         (function () {
             var search = document.getElementById('keySearch');
-            var rowsContainer = document.getElementById('keyRows');
+            var rowsContainer = document;  // search covers the Skipped table too
             var countEl = document.getElementById('keyCount');
             var noResults = document.getElementById('noResultsRow');
-            if (!search || !rowsContainer) return;
+            if (!search) return;
 
             var rows = Array.prototype.slice.call(
                 rowsContainer.querySelectorAll('tr[data-search]')
